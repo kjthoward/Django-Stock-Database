@@ -1,0 +1,61 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+<div class="container-fluid">
+
+<h4>{{ header }}{% if headerlink.url %}<a href="{{ headerlink.url }}">{% endif %}{{ headerlink.label }}{% if headerlink.url %}</a>{% endif %}</h4>
+
+{% if pages %}
+{{ text1 }}
+<ul class="list-inline">
+	{% for entry, url in pages %}
+	<li class="list-inline-item"> {% if url %}<a href="{{ url }}">{% endif %}{{ entry }}{% if url %}</a>{% endif %}</li>
+	{% endfor %}
+</ul>
+{{ text2 }}
+{% endif %}
+
+        {% for tabrow in tabs %}
+          <ul class="nav nav-tabs">
+            {% for tab in tabrow %}
+              <li {% if tab.active %}class="active"{% endif %}>
+                <a href="{{ tab.url }}">{{ tab.label }}{% if tab.badge %} <span class="badge">{{ tab.badge }}</span>{% endif %}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endfor %}
+
+        <table class="table table-striped">
+            <tr>
+                {% for item, url in headings %}
+                <th scope="col">{% if url %}<a href="{{ url }}" style="color:black" title="Click to Sort by {{ item }}">{% endif %}{{ item }}{% if url %}</a>{% endif %}</th>
+                {% endfor %}
+            </tr>
+            {% for row, strike in body %} 
+            <tr>
+                {% for entry, url in row %}
+                  <td>{% if url %}<a href="{{ url }}">{% endif %}{% if strike %}<del>{% endif %}{{ entry }}{% if strike %}</del>{% endif %}{% if url %}</a>{% endif %}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+
+</div>
+
+
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

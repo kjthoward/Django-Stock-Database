@@ -1,0 +1,55 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h4>{{ identifier }}</h4>
+    <form action="{{ url }}" method="post">
+        {% csrf_token %}
+        <table class="table table-striped">
+            <tr>
+                {% for entry in headings %}
+                <th scope="col">{{ entry }}</th>
+                {% endfor %}
+                <th></th>
+            </tr>
+            {% for row, request_id, checked, cyto in body %} 
+            <tr>
+                {% for entry in row %}
+                <td>
+                    {{ entry }}
+                </td>
+                {% endfor %}
+                <td><input type="checkbox" name="requests" value="{{ request_id }}" {{ checked }} /></td>
+				{% if cyto %}<td><input type="number" name="volume"/></td>{% endif %}
+				<td></td>
+            </tr>
+            {% endfor %}
+        </table>
+		{% if total %}<p>{{ form }}</p>
+		<b>Total Volume Made (µl):</b>
+		<input type="number" name="total_volume"/>
+		<div class="row">
+		  <div class="col-md-12 bs-linebreak">
+		  </div>
+		</div>
+		{% endif %}
+        <input type="submit" class="btn btn-success" name="submit" value="save" />
+        <input type="submit" class="btn btn-danger" name="submit" value="cancel" />
+    </form>
+</div>
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

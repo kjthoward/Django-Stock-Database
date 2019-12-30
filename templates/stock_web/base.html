@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	{{ form.media.css }}
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% block meta %}
+    {% endblock meta %}
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>{% block title %}{% endblock title %}</title>
+	{% block ico %}{% endblock ico %}
+	{% load staticfiles %}
+    <!-- JQuery -->
+    <script src="{% static 'base/jquery.min.js' %}"></script>
+	<!-- Alert Script -->
+	<script src="{% static 'base/sweetalert.min.js' %}"></script>
+    <!-- Bootstrap -->
+		<!-- Latest compiled and minified CSS -->
+		<link href="{% static 'base/bootstrap.min.css' %}" rel="stylesheet" integrity="sha256-7s5uDGW3AHqw6xtJmNNtr+OBRJUlgkNJEo78P4b0yRw= sha512-nNo+yCHEyn0smMxSswnf/OnX6/KwJuZTlNZBjauKhTK0c+zT+q5JOCx0UFhXQ6rJR9jg6Es8gPuD2uZcYDLqSw==" crossorigin="anonymous">
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="{% static 'base/bootstrap.min.js' %}" integrity="sha256-KXn5puMvxCw+dAYznun+drMdG1IFl3agK0p/pqT9KAo= sha512-2e8qq0ETcfWRI4HJBzQiA3UoyFk6tbNyG+qSaIBZLyW9Xf3sWZHN/lxe9fTh1U45DpPf07yj94KsUHHWe4Yk1A==" crossorigin="anonymous"></script>
+
+  </head>
+
+  <body>
+	{{ form.media.js }}
+    {% block toolbar %}
+    {% endblock toolbar %}
+    {% block content %}
+    {% endblock content %}
+  </body>
+  {% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} <script>swal("Stock Database", "{{ message }}") </script> {% endif %}
+    
+	{% if message.level == DEFAULT_MESSAGE_LEVELS.INFO %}<li>{{ message }}</li>{% endif %}
+		
+    {% endfor %}
+	{% endif %}
+</ul>
+</html>

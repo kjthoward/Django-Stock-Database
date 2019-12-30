@@ -1,0 +1,41 @@
+{% extends "stock_web/base.html" %}
+{% load staticfiles %}
+{% block title %}Stock Database{% endblock title %}
+{% block ico %}<link rel="shortcut icon" type="image/png" href="{% static 'stock_web/favicon.ico' %}"/>{% endblock ico %}
+{% block toolbar %}
+  <!-- Fixed toolbar -->
+  <nav class="navbar navbar-toolbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="/stock/listinv/">Stock Database</a>
+      </div>
+      {% if toolbar %}
+        {% for section, position  in  toolbar %}
+          <ul class="nav navbar-nav navbar-{{ position }}">
+            {% for button in section %}
+              <li{% if button.active %} class="active"{% endif %} {% if button.dropdown %} class="dropdown"{% endif %}>
+                <a{% if button.url %} href="{{ button.url }}"{% elif button.dropdown %} class="dropdown-toggle" data-toggle="dropdown" role="button"{% endif %}>
+                  {% if button.glyphicon %}<span class="glyphicon glyphicon-{{ button.glyphicon }}"></span>{% endif %}
+                  {{ button.name|capfirst }}
+                  {% if button.dropdown %}<span class="caret"></span>{% endif %}
+                  {% if button.badge %} <span class="badge">{{ button.badge }}</span>{% endif %}
+                </a>
+                {% if button.dropdown %}
+                  <ul class="dropdown-menu" style="max-width: 500px;">
+                    {% for dropdown in button.dropdown %}
+					  {% if dropdown.glyphicon %}<span class="glyphicon glyphicon-{{ dropdown.glyphicon }}"></span>{% endif %}
+                      {% if dropdown.separator %}<li role="separator" class="divider"></li>{% endif %}
+                      {% if dropdown.url %}<li><a href="{{ dropdown.url }}">{{ dropdown.name }}
+                      {% if dropdown.badge %} <span class="badge">{{ dropdown.badge }}</span>{% endif %}
+                      </a></li>{% endif %}
+                    {% endfor %}
+                  </ul> 
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul> 
+        {% endfor %}          
+      {% endif %}
+    </div>
+  </nav>
+{% endblock toolbar %}

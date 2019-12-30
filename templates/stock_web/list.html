@@ -1,0 +1,49 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+<div class="container-fluid">
+
+<h4>{{ header }}{% if headerlink.url %}<a href="{{ headerlink.url }}">{% endif %}{{ headerlink.label }}{% if headerlink.url %}</a>{% endif %}</h4>
+
+        {% for tabrow in tabs %}
+          <ul class="nav nav-tabs">
+            {% for tab in tabrow %}
+              <li {% if tab.active %}class="active"{% endif %}>
+                <a href="{{ tab.url }}">{{ tab.label }}{% if tab.badge %} <span class="badge">{{ tab.badge }}</span>{% endif %}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endfor %}
+
+        <table class="table table-striped">
+            <tr>
+                {% for item in headings %}
+                <th scope="col">{{ item }}</th>
+                {% endfor %}
+            </tr>
+            {% for row, low in body %} 
+            <tr {% if low %} scope="col" style="color:red" {% endif %}>
+                {% for entry, url in row %}
+                  <td>{% if url %}<a href="{{ url }}">{% endif %}{{ entry }}{% if url %}</a>{% endif %}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+
+</div>
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

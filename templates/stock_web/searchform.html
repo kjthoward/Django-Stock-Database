@@ -1,0 +1,29 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+    <form action="{{ url }}" method="post">
+      {% csrf_token %}
+      <fieldset><legend>{{ heading }}</legend>
+          <table>
+            {{ form }}
+          </table>
+        <input type="submit" class="btn btn-success" name="submit" value="search" />
+        <input type="submit" class="btn btn-danger" name="submit" value="cancel" />
+      </fieldset>
+    </form>
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

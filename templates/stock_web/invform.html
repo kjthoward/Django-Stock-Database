@@ -1,0 +1,31 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+
+<h4>{{ header }}</h4>
+
+    <form action="{{ url }}" method="post">
+      {% csrf_token %}
+          <table>
+            {{ form }}
+          </table>
+        <input type="submit" class="btn btn-success" name="submit" value="book-in" />
+        <input type="submit" class="btn btn-danger" name="submit" value="cancel" />
+    </form>
+
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

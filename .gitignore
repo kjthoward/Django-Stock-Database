@@ -1,0 +1,5 @@
+*.bat
+*.sqlite3
+*KEY.txt
+*email.json
+static/

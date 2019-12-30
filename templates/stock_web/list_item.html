@@ -1,0 +1,84 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+
+<div class="container-fluid">
+{% for head, url in header %}
+{% if url %}<a href="{{ url }}">{% endif %}
+<h4>{{ head }}</h4>
+{% if url %}</a>{% endif %}
+{% endfor %}
+
+
+
+        {% for tabrow in tabs %}
+          <ul class="nav nav-tabs">
+            {% for tab in tabrow %}
+              <li {% if tab.active %}class="active"{% endif %}>
+                <a href="{{ tab.url }}">{{ tab.label }}{% if tab.badge %} <span class="badge">{{ tab.badge }}</span>{% endif %}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endfor %}
+
+        <table class="table" >
+            <tr class="active" >
+                {% for item in headings %}
+                <th scope="col">{{ item }}</th>
+                {% endfor %}
+            </tr>
+            {% for row, stripe in body %} 
+            <tr {% if stripe %}class="active" {% endif %}>
+                {% for entry, url, style in row %}
+                <td{% if style %} class="{{ style }}"{% endif %}>
+                    {% if url %}<a href="{{ url }}">{% endif %}
+                    {{ entry }}
+                    {% if url %}</a>{% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+
+<div align="right">
+<h1>{{ newinformation }}{% if newinformation.url %}<a href="{{ newinformation.url }}">{% endif %}{{ newinformation.label }}{% if newinformation.url %}</a>{% endif %}</h1>
+</div>
+
+{% if cyto %}
+<table class="table" >
+	<h1>VOLUMES USED</h1>
+	<tr class="active" >
+		{% for item in cyto_headings %}
+		<th scope="col">{{ item }}</th>
+		{% endfor %}
+	</tr>
+	{% for row, stripe in cyto_body %} 
+	<tr {% if stripe %}class="active" {% endif %}>
+		{% for entry, url, style in row %}
+		<td{% if style %} class="{{ style }}"{% endif %}>
+			{% if url %}<a href="{{ url }}">{% endif %}
+			{{ entry }}
+			{% if url %}</a>{% endif %}
+		</td>
+		{% endfor %}
+	</tr>
+	{% endfor %}
+</table>
+		
+{% endif %}
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
