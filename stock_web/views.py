@@ -168,9 +168,7 @@ def resetpw(httprequest):
             text="The Password for your stock database account {} has been reset".format(USER.username)
             text+="\n\nYour new password is: {}".format(new_pw)
             text+="\n\nYou will be required to change this upon login"
-            text+="\n\nYou can visit the site at: {}".format(settings.SITE_URL)
             text+="\n\nIF YOU DID NOT REQUEST THIS RESET PLEASE CONTACT AN ADMIN ASAP"
-            text+="\n\nThis message was automatically sent on behalf of the Stock Team"
             try:
                 send(subject,text,USER.email)
                 messages.success(httprequest, "Password has been reset and emailed to {}".format(USER.email))
@@ -787,8 +785,6 @@ def useitem(httprequest,pk):
                         subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
                         text="Item {} has a stock level of {}µl".format(item.reagent.name,item.reagent.count_no)
                         text+="\n\nMinimum Stock level for this item is {}µl.".format(item.reagent.min_count)
-                        text+="\n\nYou can visit the site at: {}".format(settings.SITE_URL)
-                        text+="\n\nThis message was automatically sent on behalf of the Stock Team"
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
                                 try:
@@ -835,8 +831,6 @@ def openitem(httprequest, pk):
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
                             text="Item {} has a stock level of {}".format(item.reagent.name,item.reagent.count_no)
                             text+="\n\nMinimum Stock level for this item is {}.".format(item.reagent.min_count)
-                            text+="\n\nYou can visit the site at: {}".format(settings.SITE_URL)
-                            text+="\n\nThis message was automatically sent on behalf of the Stock Team"
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
                                     try:
@@ -907,8 +901,6 @@ def finishitem(httprequest, pk):
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
                             text="Item {} has a stock level of {}".format(item.reagent.name,item.reagent.count_no)
                             text+="\n\nMinimum Stock level for this item is {}.".format(item.reagent.min_count)
-                            text+="\n\nYou can visit the site at: {}".format(settings.SITE_URL)
-                            text+="\n\nThis message was automatically sent on behalf of the Stock Team"
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
                                     try:
@@ -921,8 +913,6 @@ def finishitem(httprequest, pk):
                         subject="{} - Discarded without validation".format(item.reagent.name)    
                         text="Item {} ({}) has been discarded by {} without having validation data".format(item.reagent.name,item.internal.batch_number,httprequest.user.username)
                         text+="\n\nThe reason they entered was: {}".format(form.cleaned_data["fin_text"] if form.cleaned_data["fin_text"]!=None else "NOT ENTERED")
-                        text+="\n\nYou can visit the site at: {}".format(settings.SITE_URL)
-                        text+="\n\nThis message was automatically sent on behalf of the Stock Team"
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
                                 try:
