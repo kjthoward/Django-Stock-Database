@@ -3,3 +3,4 @@
 *KEY.txt
 *email.json
 /static/
+__pycache__/

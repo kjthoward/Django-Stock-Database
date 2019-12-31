@@ -165,10 +165,10 @@ def resetpw(httprequest):
                 reset=ForceReset.objects.create(user=USER, force_password_change=True)
             reset.save()
             subject="Password for stock database account {} has been changed".format(USER.username)
-            text="The Password for your stock database account {} has been reset".format(USER.username)
-            text+="\n\nYour new password is: {}".format(new_pw)
-            text+="\n\nYou will be required to change this upon login"
-            text+="\n\nIF YOU DID NOT REQUEST THIS RESET PLEASE CONTACT AN ADMIN ASAP"
+            text="<p>The Password for your stock database account {} has been reset<br><br>".format(USER.username)
+            text+="Your new password is: {}<br><br>".format(new_pw)
+            text+="You will be required to change this upon login<br><br>"
+            text+="IF YOU DID NOT REQUEST THIS RESET PLEASE CONTACT AN ADMIN ASAP<br><br>"
             try:
                 send(subject,text,USER.email)
                 messages.success(httprequest, "Password has been reset and emailed to {}".format(USER.email))
@@ -783,8 +783,8 @@ def useitem(httprequest,pk):
                     
                     if EMAIL==True:
                         subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
-                        text="Item {} has a stock level of {}µl".format(item.reagent.name,item.reagent.count_no)
-                        text+="\n\nMinimum Stock level for this item is {}µl.".format(item.reagent.min_count)
+                        text="<p>Item {} has a stock level of {}µl<br><br>".format(item.reagent.name,item.reagent.count_no)
+                        text+="Minimum Stock level for this item is {}µl.<br><br>".format(item.reagent.min_count)
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
                                 try:
@@ -829,8 +829,8 @@ def openitem(httprequest, pk):
                                                                                                                                               make))
                         if EMAIL==True:
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
-                            text="Item {} has a stock level of {}".format(item.reagent.name,item.reagent.count_no)
-                            text+="\n\nMinimum Stock level for this item is {}.".format(item.reagent.min_count)
+                            text="<p>Item {} has a stock level of {}<br><br>".format(item.reagent.name,item.reagent.count_no)
+                            text+="Minimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
                                     try:
@@ -899,8 +899,8 @@ def finishitem(httprequest, pk):
                                                                                                                                               make))
                         if EMAIL==True:
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
-                            text="Item {} has a stock level of {}".format(item.reagent.name,item.reagent.count_no)
-                            text+="\n\nMinimum Stock level for this item is {}.".format(item.reagent.min_count)
+                            text="<p>Item {} has a stock level of {}<br><br>".format(item.reagent.name,item.reagent.count_no)
+                            text+="\n\nMinimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
                                     try:
@@ -911,8 +911,8 @@ def finishitem(httprequest, pk):
                 if item.val_id is None and item.is_op==True and item.sol is None:
                     if EMAIL==True:
                         subject="{} - Discarded without validation".format(item.reagent.name)    
-                        text="Item {} ({}) has been discarded by {} without having validation data".format(item.reagent.name,item.internal.batch_number,httprequest.user.username)
-                        text+="\n\nThe reason they entered was: {}".format(form.cleaned_data["fin_text"] if form.cleaned_data["fin_text"]!=None else "NOT ENTERED")
+                        text="<p>Item {} ({}) has been discarded by {} without having validation data<br><br>".format(item.reagent.name,item.internal.batch_number,httprequest.user.username)
+                        text+="\n\nThe reason they entered was: {}<br><br>".format(form.cleaned_data["fin_text"] if form.cleaned_data["fin_text"]!=None else "NOT ENTERED")
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
                                 try:

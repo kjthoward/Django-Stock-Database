@@ -37,12 +37,10 @@ def create_profile(sender, instance, created, **kwargs):
         USER=ForceReset.objects.get(user=instance)
         if USER.emailed==False:
             subject="Stock Database account created"
-            text="An account on the Stock Database has been created with the following details:"
-            text+="\n\nUsername: {}".format(instance.username)
-            text+="\n\nPassword: password"
-            text+="\n\nNOTE - you will be required to change this password upon first log in"
-            text+="\n\nYou can visit the site at: {}".format(settings.SITE_URL)
-            text+="\n\nThis message was automatically sent on behalf of the Stock Team"
+            text="<p>An account on the Stock Database has been created with the following details:<br><br>"
+            text+="Username: {}<br><br>".format(instance.username)
+            text+="Password: password<br><br>"
+            text+="NOTE - you will be required to change this password upon first log in<br><br>"
             if EMAIL==True:
                 try:
                     send(subject,text,instance.email)
