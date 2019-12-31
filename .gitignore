@@ -4,3 +4,4 @@
 *email.json
 /static/
 __pycache__/
+migrations/
