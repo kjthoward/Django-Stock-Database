@@ -91,7 +91,7 @@ def PRIME():
                                                 ('PyroMark Denaturation Sol. (500 ml)', '979007', 'Qiagen', '2', False),
                                                 ('PyroMark Wash Buffer (conc., 200 ml)', '979008', 'Qiagen', '1', False),
                                                 ('PyroMark Annealing Buffer (250 ml)', '979009', 'Qiagen', '1', False),
-                                                ('17-5113-01 STREPTAVIDIN SEPHAROSE HIGH PERFORMANCE', '17-5113-01', 'VWR', '1', False),
+                                                ('STREPTAVIDIN SEPHAROSE HIGH PERFORMANCE', '17-5113-01', 'VWR', '1', False),
                                                 ('MEGAMIX ROYAL - 50ml', '2MMR-50', 'Clent Life Science', '1', False),
                                                 ):
             
