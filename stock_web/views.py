@@ -138,7 +138,7 @@ def change_password(httprequest):
     else:
         form = PasswordChangeForm(httprequest.user)
     submiturl = reverse("stock_web:change_password")
-    cancelurl = HttpResponseRedirect(reverse("stock_web:listinv"))
+    cancelurl = reverse("stock_web:listinv")
     context={"form": form, "heading":"Change Password for {}".format(httprequest.user),
              "submiturl": submiturl, "cancelurl": cancelurl, "toolbar":_toolbar(httprequest, active="Account Settings")}
 ##    if ForceReset.objects.get(user=httprequest.user.pk).force_password_change==False:
@@ -180,7 +180,7 @@ def resetpw(httprequest):
     else:
         form=PWResetForm()
     submiturl = reverse("stock_web:resetpw")
-    cancelurl = HttpResponseRedirect(reverse("stock_web:listinv"))
+    cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/pwform.html", {"form": form, "heading":"Enter Username to Reset Password for", "submiturl": submiturl, "cancelurl": cancelurl })
 
 def forcereset(httprequest):
@@ -213,7 +213,7 @@ def search(httprequest):
     else:
         form = SearchForm()
     submiturl = reverse("stock_web:search")
-    cancelurl = HttpResponseRedirect(reverse("stock_web:listinv"))
+    cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/searchform.html", {"form": form, "heading":"Enter Search Query", "toolbar": _toolbar(httprequest, active="search"), "submiturl": submiturl, "cancelurl": cancelurl })
 
 
