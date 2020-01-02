@@ -29,9 +29,9 @@ def send(sbj,text,to):
     msg["Subject"]=sbj
     msg.add_header('reply-to', reply_to)
     text+="You can visit the site at: {}<br><br>".format(settings.SITE_URL)
-    text+="This message was automatically sent on behalf of the Stock Team<br><br>"
+    text+="This message was automatically sent on behalf of the Stock Team.<br><br>"
     #pdb.set_trace()
-    html='<html><head></head><body>{}If you have any issues please contact <a href="mailto:Kieran.howard@ouh.nhs.uk?subject=Stock%20Database">kieran.howard@ouh.nhs.uk</a> or reply to this message</p></body></html>'.format(text)
+    html='<html><head></head><body>{}If you have any issues please contact <a href="mailto:Kieran.howard@ouh.nhs.uk?subject=Stock%20Database">kieran.howard@ouh.nhs.uk</a> or reply to this message.</p></body></html>'.format(text)
     msg.attach(MIMEText(html, 'html'))
     msg['to']=to
     server.sendmail(msg['from'], msg['to'], msg.as_string())

@@ -40,7 +40,7 @@ def create_profile(sender, instance, created, **kwargs):
             text="<p>An account on the Stock Database has been created with the following details:<br><br>"
             text+="Username: {}<br><br>".format(instance.username)
             text+="Password: password<br><br>"
-            text+="NOTE - you will be required to change this password upon first log in<br><br>"
+            text+="NOTE - you will be required to change this password when you first log in.<br><br>"
             if EMAIL==True:
                 try:
                     send(subject,text, instance.email)
