@@ -5,4 +5,3 @@ django-session-timeout==0.0.4
 reportlab==3.5.32
 whitenoise==4.1.4
 openpyxl==2.4.5
-sendgrid==3.2.1
