@@ -43,12 +43,9 @@ def create_profile(sender, instance, created, **kwargs):
             text+="NOTE - you will be required to change this password upon first log in<br><br>"
             if EMAIL==True:
                 try:
-                    response=send(subject,text, user.email)
-                    if response.status_code==202:
-                        USER.emailed=True
-                        USER.save()
-                    else:
-                        raise Exception
+                    send(subject,text, instance.email)
+                    USER.emailed=True
+                    USER.save()
                 except:
                     print("EMAIL ERROR")
                     pass
