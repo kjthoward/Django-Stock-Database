@@ -170,8 +170,11 @@ def resetpw(httprequest):
             text+="You will be required to change this upon login<br><br>"
             text+="IF YOU DID NOT REQUEST THIS RESET PLEASE CONTACT AN ADMIN ASAP<br><br>"
             try:
-                send(subject,text,USER.email)
-                messages.success(httprequest, "Password has been reset and emailed to {}".format(USER.email))
+                response=send(subject,text,USER.email)
+                if response.status_code==202:
+                    messages.success(httprequest, "Password has been reset and emailed to {}".format(USER.email))
+                else:
+                    raise Exception
             except:
                 messages.success(httprequest, "Email did not send. Please try again. If error persists contact an Admin")
             return HttpResponseRedirect(reverse("stock_web:loginview"))
@@ -788,7 +791,9 @@ def useitem(httprequest,pk):
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
                                 try:
-                                    send(subject,text, user.email)
+                                    reponse=send(subject,text, user.email)
+                                    if response.status_code!=202:
+                                        raise Exception
                                 except Exception as e:
                                     print(e)
                 if int(item.current_vol)==0:
@@ -834,7 +839,9 @@ def openitem(httprequest, pk):
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
                                     try:
-                                        send(subject,text, user.email)
+                                        response=send(subject,text, user.email)
+                                        if response.status_code!=202:
+                                            raise Exception
                                     except Exception as e:
                                         print(e)
                 #Shows a warning if the item is opened after it's expiry date
@@ -904,7 +911,9 @@ def finishitem(httprequest, pk):
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
                                     try:
-                                        send(subject,text, user.email)
+                                        response=send(subject,text, user.email)
+                                        if response.status_code!=202:
+                                            raise Exception
                                     except Exception as e:
                                         print(e)
                 
@@ -916,7 +925,9 @@ def finishitem(httprequest, pk):
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
                                 try:
-                                    send(subject,text, user.email)
+                                    response=send(subject,text, user.email)
+                                    if response.status_code!=202:
+                                        raise Exception
                                 except Exception as e:
                                     print(e)
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
