@@ -1,3 +1,4 @@
+*.DS_Store
 *.bat
 *.sqlite3
 *KEY.txt
