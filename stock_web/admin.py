@@ -29,20 +29,20 @@ admin.site.site_header="Stock (Web) Database Admin Page"
 admin.site.index_title="Stock Administration"
 #Changes the "View site" URL
 admin.site.site_url = "/stock/listinv/"
-    
+
 
 class PWResetForm(AdminPasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super(PWResetForm, self).__init__(*args, **kwargs)
-        self.fields['password1'] = forms.CharField(initial="password",widget=forms.HiddenInput(),label="")
-        self.fields['password2'] = forms.CharField(initial="password",widget=forms.HiddenInput(),label="")
-    
+        self.fields['password1'] = forms.CharField(initial="stockdb1",widget=forms.HiddenInput(),label="")
+        self.fields['password2'] = forms.CharField(initial="stockdb1",widget=forms.HiddenInput(),label="")
+
 #Password gets set as 'password' required to change on first login
-class UserCreationFormExtended(UserCreationForm): 
-    def __init__(self, *args, **kwargs): 
-        super(UserCreationFormExtended, self).__init__(*args, **kwargs) 
-        self.fields['password1'] = forms.CharField(widget=forms.HiddenInput(),initial="password")
-        self.fields['password2'] = forms.CharField(widget=forms.HiddenInput(),initial="password")
+class UserCreationFormExtended(UserCreationForm):
+    def __init__(self, *args, **kwargs):
+        super(UserCreationFormExtended, self).__init__(*args, **kwargs)
+        self.fields['password1'] = forms.CharField(widget=forms.HiddenInput(),initial="stockdb1")
+        self.fields['password2'] = forms.CharField(widget=forms.HiddenInput(),initial="stockdb1")
 
 UserAdmin.add_form = UserCreationFormExtended
 UserAdmin.add_fieldsets = (
@@ -60,11 +60,11 @@ class CustomUserAdmin(UserAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         is_superuser = request.user.is_superuser
-        disabled_fields = set()  
+        disabled_fields = set()
         #Only Superusers can change usernames or create super users, checks if form is add or change
         #as obviously you need to be able to add username...
         if not is_superuser:
-            
+
             if "change" in request.path:
                 disabled_fields = {
                 'username',
@@ -158,6 +158,3 @@ class CustomUserAdmin(UserAdmin):
             'admin/stock_web/change_password.html',
             context,
         )
-   
-
-

@@ -33,9 +33,9 @@ ALLOWED_HOSTS = ['127.0.0.1']
 
 SITE_URL="NOT CONFIGURED"
 
-LOGIN_URL="/stock/loginview/" 
+LOGIN_URL="/stock/loginview/"
 
-INSTALLED_APPS = [ 
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -131,9 +131,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
-##    {
-##        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-##    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
   {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
@@ -164,4 +164,3 @@ STATIC_URL = '/static/'
 STATIC_ROOT=os.path.join(BASE_DIR,"static")
 if DEBUG==False:
     SELECT2_CSS="django_select2/select2.min.css"
-

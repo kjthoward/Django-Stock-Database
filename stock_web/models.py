@@ -26,7 +26,7 @@ class ForceReset(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT)
     force_password_change = models.BooleanField(default=True)
     emailed=models.BooleanField(default=False)
-    
+
 #automatically adds user to ForceReset table upon creation
 #if not done will give errors when trying to do checks
 @receiver(post_save, sender=User)
@@ -39,7 +39,7 @@ def create_profile(sender, instance, created, **kwargs):
             subject="Stock Database account created"
             text="<p>An account on the Stock Database has been created with the following details:<br><br>"
             text+="Username: {}<br><br>".format(instance.username)
-            text+="Password: password<br><br>"
+            text+="Password: stockdb1<br><br>"
             text+="NOTE - you will be required to change this password when you first log in.<br><br>"
             if EMAIL==True:
                 try:
@@ -63,7 +63,7 @@ class Suppliers(models.Model):
     def create(cls, name):
         supplier = cls.objects.create(name=name)
         return supplier
-    
+
 ##class Storage(models.Model):
 ##    def __str__(self):
 ##        return self.name
@@ -157,9 +157,9 @@ class Recipe(models.Model):
     reagent=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"Reagent ID", related_name="Reagent_ID")
     shelf_life=models.PositiveIntegerField(verbose_name=u"Shelf Life (Months)")
     is_cyto=models.BooleanField(default=False, verbose_name=u"Tick if this is a FISH/CYTO Probe Mix")
-    
+
     @classmethod
-    def create(cls, values): 
+    def create(cls, values):
         with transaction.atomic():
             minstock=values["number"]
             del(values["number"])
@@ -181,7 +181,7 @@ class Recipe(models.Model):
                         }
             recipe.reagent=(Reagents.create(values))
             recipe.save()
-            
+
 
     def length(self):
         count=0
@@ -199,8 +199,8 @@ class Recipe(models.Model):
                 for stock in in_stock:
                     possibles+=[stock]
         return possibles
-                
-    
+
+
 class Inventory(models.Model):
     def __str__(self):
         return "{}, Lot:{}, Batch:{}".format(self.reagent.name, self.lot_no, self.internal)
@@ -233,7 +233,7 @@ class Inventory(models.Model):
     date_fin=models.DateField(null=True, blank=True, verbose_name=u"Date Finished")
     finished=models.BooleanField(default=False)
     fin_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="3+", blank=True, null=True)
-    fin_text = models.CharField(max_length=100, blank=True, null=True, verbose_name=u"Finished Reason")  
+    fin_text = models.CharField(max_length=100, blank=True, null=True, verbose_name=u"Finished Reason")
     vol_rec=models.PositiveIntegerField(verbose_name=u"Volume Received (µl)", blank=True, null=True)
     current_vol=models.PositiveIntegerField(verbose_name=u"Current Volume (µl)", blank=True, null=True)
     last_usage=models.ForeignKey('CytoUsage', blank=True, null=True, on_delete=models.PROTECT)
@@ -254,7 +254,7 @@ class Inventory(models.Model):
             amount=1
         with transaction.atomic():
             try:
-                values["val_id"]=Inventory.objects.filter(reagent=values["reagent"].id, lot_no=values["lot_no"],val_id__gte=0).first().val_id 
+                values["val_id"]=Inventory.objects.filter(reagent=values["reagent"].id, lot_no=values["lot_no"],val_id__gte=0).first().val_id
             except: pass
             if "~" in values["reagent"].name:
                 try:
@@ -262,7 +262,7 @@ class Inventory(models.Model):
                     values["val_id"]=Validation.objects.get(val_date=values["date_rec"], val_run="NOT_TO_BE_TESTED").pk
                 except:
                     values["val_id"]=Validation.objects.create(val_date=values["date_rec"], val_run="NOT_TO_BE_TESTED",val_user_id=user.id).pk
-                    
+
             internals=[]
             for _ in range(amount):
                 inventory=cls(**values)
@@ -291,7 +291,7 @@ class Inventory(models.Model):
             invitem.op_user=user
             invitem.is_op=True
             invitem.save()
-            
+
     @classmethod
     def take_out(cls, vol, item, user, date=datetime.datetime.now().date(), sol=None):
         with transaction.atomic():
@@ -318,7 +318,7 @@ class Inventory(models.Model):
             val=Validation.new(values["val_date"], values["val_run"].upper(), user)
             #bulk_update(updates.values(),[item.val_id=val])
             Inventory.objects.filter(reagent=reagent_id, lot_no=lot).update(val_id=val)
-            
+
             #for item in items:
             #    item.val_id=val
             #Inventory.objects.bulk_update(items,['val_id'])
@@ -330,14 +330,14 @@ class Inventory(models.Model):
             invitem.fin_text=values["fin_text"]
             invitem.date_fin=values["date_fin"]
             invitem.finished=True
-            
+
             reagent=Inventory.objects.get(id=item).reagent
             if reagent.is_cyto==False and invitem.is_op==False:
                 reagent.count_no=F("count_no")-1
                 invitem.save()
                 reagent.save()
             if reagent.is_cyto==True:
-                
+
                 if invitem.current_vol!=0:
                     use=CytoUsage.use(item,invitem.current_vol,0,invitem.current_vol,user,None,values["date_fin"])
                     invitem.last_usage=use
@@ -348,11 +348,11 @@ class Inventory(models.Model):
                 reagent.save()
                 invitem.current_vol=0
                 invitem.save()
-           
+
 
 class CytoUsage(models.Model):
     class Meta:
-        verbose_name_plural = "Cyto Reagent Usage"  
+        verbose_name_plural = "Cyto Reagent Usage"
     item=models.ForeignKey(Inventory, blank=True, null=True, on_delete=models.PROTECT)
     start=models.PositiveIntegerField()
     end=models.PositiveIntegerField()
@@ -366,7 +366,7 @@ class CytoUsage(models.Model):
         invitem=Inventory.objects.get(pk=int(item))
         use=CytoUsage.objects.create(item=invitem, start=start_vol,
                                     end=end_vol, used=volume,
-                                    date=date, user=user, sol=sol)    
+                                    date=date, user=user, sol=sol)
         invitem.last_usage=use
         invitem.save()
         return use
@@ -399,7 +399,7 @@ class Solutions(models.Model):
                     values={"date_op":comp.date_rec,
                           }
                     comp.open(values, comp.pk, user)
-            
+
             solution=cls.objects.create(recipe=rec, creator_user=user, date_created=datetime.datetime.today(),**comps_dict)
             solution.save()
             #Shelf life/Expiry calculations
