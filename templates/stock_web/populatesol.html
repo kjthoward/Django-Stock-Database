@@ -12,7 +12,7 @@
                 {% endfor %}
                 <th></th>
             </tr>
-            {% for row, request_id, checked, cyto in body %} 
+            {% for row, request_id, checked, cyto in body %}
             <tr>
                 {% for entry in row %}
                 <td>
@@ -34,22 +34,7 @@
 		</div>
 		{% endif %}
         <input type="submit" class="btn btn-success" name="submit" value="save" />
-        <input type="submit" class="btn btn-danger" name="submit" value="cancel" />
+        <a class="btn btn-danger" href="{{ cancelurl }}">cancel</a>
     </form>
 </div>
 {% endblock content %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1170,7 +1170,8 @@ def createnewsol(httprequest, pk):
                     "toolbar": _toolbar(httprequest),
                     "total":cyto,
                     "identifier":title,
-                    "form":form
+                    "form":form,
+                    "cancelurl": reverse("stock_web:newinv",args=["_"]),
                   }
         return render(httprequest, "stock_web/populatesol.html", context)  
         
