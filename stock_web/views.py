@@ -564,9 +564,9 @@ def _item_context(httprequest, item, undo):
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
-        headings = ["Date Created", "Created By", "Conition Recieved", "Expiry Date"]
+        headings = ["Date Created", "Created By", "Condition Recieved", "Expiry Date"]
     else:
-        headings = ["Date Recieved", "Recieved By", "Conition Recieved", "Expiry Date"]
+        headings = ["Date Recieved", "Recieved By", "Condition Recieved", "Expiry Date"]
     values = [item.date_rec.strftime("%d/%m/%y"), item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
     urls = ["", "", "", ""]
     SKIP=False
@@ -651,9 +651,9 @@ def _cyto_context(httprequest, item, undo):
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
-        headings = ["Date Created", "Created By", "Conition Recieved", "Expiry Date"]
+        headings = ["Date Created", "Created By", "Condition Recieved", "Expiry Date"]
     else:
-        headings = ["Date Recieved", "Recieved By", "Conition Recieved", "Expiry Date"]
+        headings = ["Date Recieved", "Recieved By", "Condition Recieved", "Expiry Date"]
     values = [item.date_rec.strftime("%d/%m/%y"), item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
     urls = ["", "", "", ""]
     SKIP=False
