@@ -336,7 +336,11 @@ class Inventory(models.Model):
                 reagent.count_no=F("count_no")-1
                 invitem.save()
                 reagent.save()
-            if reagent.is_cyto==True:
+
+            elif reagent.is_cyto==False and invitem.is_op==True:
+                invitem.save()
+                
+            elif reagent.is_cyto==True:
 
                 if invitem.current_vol!=0:
                     use=CytoUsage.use(item,invitem.current_vol,0,invitem.current_vol,user,None,values["date_fin"])
