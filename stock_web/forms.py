@@ -8,7 +8,7 @@ from .models import Suppliers, Reagents, Internal, Recipe, Inventory
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}))
     password = forms.CharField(max_length=20, widget=forms.PasswordInput(attrs={"autocomplete": "off"}))
-#sets width of all Select2Widget search boxes    
+#sets width of all Select2Widget search boxes
 Select2Widget=Select2Widget(attrs={"style": "width:12.5em"})
 
 #custom select date widget (based off of default), allows you to set a custom data range to display
@@ -18,7 +18,7 @@ class MySelectDateWidget(forms.SelectDateWidget):
         self.is_required = False
         context = super(MySelectDateWidget, self).get_context(name, value, attrs)
         self.is_required = old_state
-        return context   
+        return context
 
 class NewInvForm1(forms.ModelForm):
     reagent=forms.ModelChoiceField(queryset = Reagents.objects.all().exclude(is_active=False).order_by("name"), label="Reagent", widget=Select2Widget)
@@ -52,7 +52,7 @@ class NewInvForm(forms.ModelForm):
                    "reagent":forms.HiddenInput(),
                    "vol_rec":forms.HiddenInput(),
                    "current_vol":forms.HiddenInput()}
-        
+
     def clean(self):
         super(NewInvForm, self).clean()
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
@@ -71,7 +71,7 @@ class NewProbeForm(forms.ModelForm):
                    "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
                    "reagent":forms.HiddenInput(),
                    "current_vol":forms.HiddenInput()}
-        
+
     def clean(self):
         super(NewProbeForm, self).clean()
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
@@ -97,43 +97,43 @@ class UseItemForm(forms.ModelForm):
             self.add_error("vol_used", forms.ValidationError("Volume Used Exceeds Current Volume in Tube"))
         if self.cleaned_data["date_used"]<self.cleaned_data["date_op"]:
             self.add_error("date_used", forms.ValidationError("Date Used is before Date Open"))
-        if self.cleaned_data["last_usage"] is not None:  
+        if self.cleaned_data["last_usage"] is not None:
             if self.cleaned_data["date_used"]<self.cleaned_data["last_usage"].date:
                 self.add_error("date_used", forms.ValidationError("This Usage Date is before the most recent use"))
         if self.cleaned_data["date_used"]>datetime.date.today():
             self.add_error("date_used", forms.ValidationError("Date of use occurs in the future"))
-        
+
 class OpenItemForm(forms.ModelForm):
-    date_op = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)),initial=datetime.datetime.now(), label=u"Date Open")
+    date_op = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Open")
     class Meta:
-        model = Inventory 
+        model = Inventory
         fields = ("date_rec",)
         widgets = {"date_rec":forms.HiddenInput}
     def clean(self):
         super(OpenItemForm, self).clean()
         if self.cleaned_data["date_op"]<datetime.datetime.strptime(self.data["date_rec"],"%Y-%m-%d").date():
-            self.add_error("date_op", forms.ValidationError("Date open occurs before received date"))                   
+            self.add_error("date_op", forms.ValidationError("Date open occurs before received date"))
         elif self.cleaned_data["date_op"]>datetime.date.today():
             self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
-            
+
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=MySelectDateWidget(years=range(datetime.date.today().year-1,datetime.datetime.today().year+5)),initial=datetime.datetime.now(), label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
     class Meta:
-        model = Inventory 
+        model = Inventory
         fields = ("date_op",)
         widgets=  {"date_op":forms.HiddenInput}
     def clean(self):
         super(ValItemForm, self).clean()
         if self.cleaned_data["val_date"]<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
-            self.add_error("val_date", forms.ValidationError("Date validated occurs before date opened"))  
+            self.add_error("val_date", forms.ValidationError("Date validated occurs before date opened"))
         elif self.cleaned_data["val_date"]>datetime.date.today():
             self.add_error("val_date", forms.ValidationError("Date of validation run occurs in the future"))
-            
+
 class FinishItemForm(forms.ModelForm):
     date_fin = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)),initial=datetime.datetime.now(), label=u"Date Finished")
     class Meta:
-        model = Inventory 
+        model = Inventory
         fields = ("date_op","fin_text","is_op")
         widgets = {"date_op":forms.HiddenInput,
                    "is_op":forms.HiddenInput,
@@ -155,7 +155,7 @@ class NewSupForm(forms.ModelForm):
         super(NewSupForm, self).clean()
         if Suppliers.objects.filter(name=self.cleaned_data["name"]).exists():
             self.add_error("name", forms.ValidationError("A Supplier with the name {} already exists".format(self.cleaned_data["name"])))
-                                                                 
+
 class NewReagentForm(forms.ModelForm):
     class Meta:
         model = Reagents
@@ -169,12 +169,12 @@ class NewReagentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(NewReagentForm, self).__init__(*args, **kwargs)
         self.fields["supplier_def"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
-            
+
     def clean(self):
         super(NewReagentForm, self).clean()
         if Reagents.objects.filter(name=self.cleaned_data["name"]).exists():
             self.add_error("name", forms.ValidationError("A Reagent with the name {} already exists".format(self.cleaned_data["name"])))
-          
+
 class NewRecipeForm(forms.ModelForm):
     number=forms.IntegerField(min_value=1, label=u"Minimum Stock Level")
     class Meta:
@@ -196,7 +196,7 @@ class NewRecipeForm(forms.ModelForm):
 ##        super(NewRecipeForm, self).__init__(*args, **kwargs)
 ##        for i in range(1,11):
 ##            self.fields["comp{}".format(i)].queryset=Reagents.objects.filter(recipe_id=None)
-        
+
     def clean(self):
         super(NewRecipeForm, self).clean()
         comps=[]
@@ -225,17 +225,17 @@ class NewRecipeForm(forms.ModelForm):
             self.add_error("shelf_life", forms.ValidationError("Shelf Life must be 1 month or more"))
         if errors:
             raise forms.ValidationError(errors)
-        
+
 class SearchForm(forms.Form):
     reagent=forms.CharField(label="Reagent Name", max_length=30, required=False)
     supplier=forms.CharField(label="Supplier Name", max_length=25, required=False)
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
-    
+
 class ChangeDefForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
-    
+
 class ChangeDefForm(forms.Form):
     supplier_def=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").exclude(is_active=False).order_by("name"), label=u"Select New Supplier", widget=Select2Widget)
     old=forms.ModelChoiceField(queryset = Suppliers.objects.all().order_by("name"), widget=forms.HiddenInput())
@@ -269,7 +269,7 @@ class EditSupForm(forms.Form):
 
 class EditReagForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
-       
+
 class EditInvForm(forms.Form):
     item=forms.CharField(label="Reagent Internal ID", max_length=4,widget=forms.TextInput(attrs={"autocomplete": "off"}))
     def clean(self):
@@ -297,7 +297,7 @@ class ChangeMinForm(forms.Form):
         if int(self.cleaned_data["old"])==int(self.cleaned_data["number"]):
             self.add_error("number", forms.ValidationError("This is the same as the Current Minimum Stock Level"))
 
-class StockReportForm(forms.Form): 
+class StockReportForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).order_by("name"), label="Reagent", widget=Select2Widget)
 
 class InvReportForm(forms.Form):
@@ -322,9 +322,9 @@ class PWResetForm(forms.Form):
         try:
             USER=User.objects.get(username=self.cleaned_data["user"])
             if USER.email=="":
-                self.add_error("user", forms.ValidationError("User {} does not have an email address entered.\nContact an Admin to reset you password".format(self.cleaned_data["user"])))                                                                                                                  
+                self.add_error("user", forms.ValidationError("User {} does not have an email address entered.\nContact an Admin to reset you password".format(self.cleaned_data["user"])))
         except:
             self.add_error("user", forms.ValidationError("Username {} does not exist".format(self.cleaned_data["user"])))
-        
+
 class WitnessForm(forms.Form):
     name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).order_by("username"), widget=Select2Widget, label=u"Select Witness")

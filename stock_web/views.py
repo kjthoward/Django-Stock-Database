@@ -48,7 +48,7 @@ def no_reset(user):
         return False
     else:
         return True
-    
+
 #sets up database for first use (sets up groups and adds Admin as superuser/staff)
 def prime(httprequest):
     if len(User.objects.all())!=0:
@@ -58,7 +58,7 @@ def prime(httprequest):
         PRIME()
         messages.success(httprequest, "Database Primed")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
-   
+
 def _toolbar(httprequest, active=""):
     inventory_dropdown = [{"name":"All", "url":reverse("stock_web:inventory", args=["_", "all","_",1])},
                           {"name":"In Stock", "url":reverse("stock_web:inventory", args=["_", "instock","_", 1])},
@@ -68,22 +68,22 @@ def _toolbar(httprequest, active=""):
                           {"name":"Not validated", "url":reverse("stock_web:inventory", args=["_", "notvalidated","_",1])},
                           {"name":"List View","url":reverse("stock_web:listinv")},
                           ]
-    
+
     toolbar = [([{"name":"Inventory", "dropdown":inventory_dropdown},
                  {"name":"Recipes", "url":reverse("stock_web:recipes"), "glyphicon":"folder-open"},
                  {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"]),"glyphicon":"download"},
                  ], "left")]
 
-    
-    
+
+
     undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedef", args=["_"])},
                      {"name": "Edit Minimum Stock Levels", "url":reverse("stock_web:changemin",args=["_"])},
                      {"name": "(De)Activate Reagents", "url":reverse("stock_web:activreag")},
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
-                     
-                     
+
+
     if httprequest.user.is_staff:
         toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"]), "glyphicon":"list"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
@@ -96,8 +96,8 @@ def _toolbar(httprequest, active=""):
 
     else:
         toolbar.append(([{"name": "New Inventory Item", "glyphicon": "plus", "url":reverse("stock_web:newinv", args=["_"])}],"right"))
-   
-    
+
+
     toolbar[1][0].append({"name": "search", "glyphicon": "search", "url": reverse("stock_web:search")})
     toolbar[1][0].append({"name":"Account Settings", "glyphicon":"cog", "dropdown":[
                          {"name": "Logout "+str(httprequest.user), "url": reverse("stock_web:loginview")},
@@ -151,10 +151,10 @@ def resetpw(httprequest):
         return HttpResponseRedirect(reverse("stock_web:loginview"))
     if httprequest.method == 'POST':
         form=PWResetForm(httprequest.POST)
-        
+
         if form.is_valid():
             new_pw=''.join(random.choice(string.ascii_letters + string.digits) for _ in range(15))
-            USER = User.objects.get(username=form.data["user"])            
+            USER = User.objects.get(username=form.data["user"])
             USER.set_password(new_pw)
             USER.save()
             try:
@@ -205,7 +205,7 @@ def search(httprequest):
                                   ]:
                     val = form.cleaned_data[key]
                     if val:
-                        queries += ["{}={}".format(query, val)] 
+                        queries += ["{}={}".format(query, val)]
                 return HttpResponseRedirect(reverse("stock_web:inventory", args=["search", ";".join(queries),"_","1"]))
     else:
         form = SearchForm()
@@ -220,10 +220,10 @@ def loginview(httprequest):
         messages.success(httprequest,"You are now logged out")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
     else:
-        
+
         if httprequest.method == "POST" and "login" in httprequest.POST:
             form = LoginForm(httprequest.POST)
-            
+
             if form.is_valid():
                 user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
                 if user is not None and user.is_active:
@@ -235,7 +235,7 @@ def loginview(httprequest):
                         return HttpResponseRedirect(reverse("stock_web:listinv"))
             else:
                 pdb.set_trace()
-        
+
         else:
             form = LoginForm()
     return render(httprequest, "stock_web/login.html", {"form": form})
@@ -256,7 +256,7 @@ def listinv(httprequest):
               "",
               ]
         body.append((zip(values,urls), True if item.count_no<item.min_count else False))
-      
+
     context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest, active="Inventory")}
     return render(httprequest, "stock_web/list.html", context)
 
@@ -358,7 +358,7 @@ def inventory(httprequest, search, what, sortby, page):
                                                      if sortquery=="days_rem" else "order=days_rem",1])]
     headings=zip(headings,headurls)
     body=[]
-    
+
     if "date_op" in sortby:
         q=items.extra(select={'date_op_null': 'date_op is null'})
         items = q.extra(order_by=['date_op_null',sortquery])
@@ -368,9 +368,9 @@ def inventory(httprequest, search, what, sortby, page):
             items = sorted(items, key = lambda item:int(item.days_remaining()), reverse=False)
         elif pos==False:
             items = sorted(items, key = lambda item:int(item.days_remaining()), reverse=True)
-            
-    
-    
+
+
+
     items_trunc=items[(page-1)*200:page*200]
     for item in items_trunc:
         values = [item.reagent.name,
@@ -390,17 +390,17 @@ def inventory(httprequest, search, what, sortby, page):
               "",
               ]
         body.append((zip(values,urls),item.finished))
-    
+
     context = {"header":title,"headings":headings, "body":body,
                "toolbar":_toolbar(httprequest, active="Inventory")}
     if pages:
         context.update({"pages":pages, "text1": "Click to change page",
                         "text2":"Current page is {} showing items {}-{}".format(page,(page-1)*200,
                                                                          page*200 if (page*200<len(items)) else (len(items)))})
-    
+
     return render(httprequest, "stock_web/listinventory.html", context)
 
-@user_passes_test(is_logged_in, login_url=UNAUTHURL)        
+@user_passes_test(is_logged_in, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def stockreport(httprequest, pk, extension):
     submiturl = reverse("stock_web:stockreport",args=[pk,extension])
@@ -421,14 +421,14 @@ def stockreport(httprequest, pk, extension):
                         return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["name"].pk,1]))
         else:
             form = form()
-        
+
     else:
         title="{} - Stock Report".format(Reagents.objects.get(pk=int(pk)))
         #gets items, with open items first, then sorted by expirey date
         items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
         body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
-        
+
         for item in items:
             body+= [[ item.supplier.name,
                       item.lot_no,
@@ -438,13 +438,13 @@ def stockreport(httprequest, pk, extension):
                       item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                       item.op_user.username if item.op_user is not None else "",
                       item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
-                      item.val.val_run if item.val is not None else "",                       
+                      item.val.val_run if item.val is not None else "",
                       ]]
         if extension=='0':
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
             table=report_gen(body,title,httpresponse,httprequest.user.username)
-            
+
         if extension=='1':
             workbook = openpyxl.Workbook()
             worksheet = workbook.active
@@ -452,10 +452,10 @@ def stockreport(httprequest, pk, extension):
                 worksheet.append(row)
             httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
             httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
-        return httpresponse               
+        return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def invreport(httprequest,what, extension):
     submiturl = reverse("stock_web:invreport",args=[what,extension])
@@ -465,13 +465,13 @@ def invreport(httprequest,what, extension):
     form=InvReportForm
     if what=="_":
         if httprequest.method=="POST":
-            
+
             if "submit" not in httprequest.POST or "Download" not in httprequest.POST["submit"]:
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
             else:
                 form = form(httprequest.POST)
                 if form.is_valid():
-                    
+
                     if "pdf" in httprequest.POST["submit"]:
                         return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["report"],0]))
                     elif "xlsx" in httprequest.POST["submit"]:
@@ -494,7 +494,7 @@ def invreport(httprequest,what, extension):
         elif what=="allinc":
             title="All Items In Stock Including Open Report"
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
-        
+
         if what!="minstock":
             if what=="all":
                 body=[["Reagent", "Supplier", "Lot Number", "Stock Number", "Received",
@@ -505,7 +505,7 @@ def invreport(httprequest,what, extension):
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
-                              item.date_exp.strftime("%d/%m/%y"),                      
+                              item.date_exp.strftime("%d/%m/%y"),
                               ]]
 
             else:
@@ -521,7 +521,7 @@ def invreport(httprequest,what, extension):
                               item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                               item.op_user.username if item.op_user is not None else "",
                               item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
-                              item.val.val_run if item.val is not None else "",                       
+                              item.val.val_run if item.val is not None else "",
                               ]]
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels"
@@ -535,7 +535,7 @@ def invreport(httprequest,what, extension):
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
             table=report_gen(body,title,httpresponse,httprequest.user.username)
-            
+
         if extension=='1':
             workbook = openpyxl.Workbook()
             worksheet = workbook.active
@@ -729,8 +729,8 @@ def _cyto_context(httprequest, item, undo):
             style=["","","","",""]
             if use.sol is not None:
                 urls=[reverse("stock_web:item",args=[Inventory.objects.get(sol=use.sol).pk])]*5
-                
-                    
+
+
             if undo=="undo":
                 if use==item.last_usage:
                     if item.finished==True:
@@ -766,7 +766,7 @@ def useitem(httprequest,pk):
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
-            
+
             if form.is_valid():
                 Inventory.take_out(form.cleaned_data["vol_used"], int(pk), httprequest.user, form.cleaned_data["date_used"])
                 item.refresh_from_db()
@@ -778,10 +778,10 @@ def useitem(httprequest,pk):
                         make="ordered"
                     message+=["Current stock level for {} is {}µl. Minimun quantity is {}µl. Check if more needs to be {}".format(item.reagent.name,item.reagent.count_no,
                                                                                                                           item.reagent.min_count, make)]
-                    
-                    
+
+
                     if EMAIL==True:
-                        subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
+                        subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                         text="<p>Item {} has a stock level of {}µl.<br><br>".format(item.reagent.name,item.reagent.count_no)
                         text+="Minimum Stock level for this item is {}µl.<br><br>".format(item.reagent.min_count)
                         for user in User.objects.filter(is_staff=True):
@@ -794,7 +794,7 @@ def useitem(httprequest,pk):
                     message+=["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
                 if message!=[]:
                     messages.success(httprequest," ".join(message))
-                
+
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
         form=form(instance=item)
@@ -827,7 +827,7 @@ def openitem(httprequest, pk):
                                                                                                                                               item.reagent.min_count,
                                                                                                                                               make))
                         if EMAIL==True:
-                            subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
+                            subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                             text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
                             text+="Minimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
                             for user in User.objects.filter(is_staff=True):
@@ -843,7 +843,7 @@ def openitem(httprequest, pk):
     else:
         if item.is_op==True:
             return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-        form=form(instance=item)
+        form=form(instance=item,initial = {"date_op":datetime.datetime.now()})
     submiturl = reverse("stock_web:openitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
@@ -861,7 +861,7 @@ def valitem(httprequest,pk):
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
-            if form.is_valid():         
+            if form.is_valid():
                 Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)).reagent, Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
@@ -881,9 +881,9 @@ def finishitem(httprequest, pk):
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
-        else:          
+        else:
             if form.is_valid():
-                
+
                 Inventory.finish(form.cleaned_data, pk, httprequest.user)
                 if item.reagent.is_cyto==True or item.is_op==False:
                     if item.reagent.count_no<item.reagent.min_count:
@@ -897,7 +897,7 @@ def finishitem(httprequest, pk):
                                                                                                                                               item.reagent.min_count,
                                                                                                                                               make))
                         if EMAIL==True:
-                            subject="{} - Stock Level is below minimum level".format(item.reagent.name)    
+                            subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                             text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
                             text+="\n\nMinimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
                             for user in User.objects.filter(is_staff=True):
@@ -906,10 +906,10 @@ def finishitem(httprequest, pk):
                                         send(subject,text, user.email)
                                     except Exception as e:
                                         print(e)
-                
+
                 if item.val_id is None and item.is_op==True and item.sol is None:
                     if EMAIL==True:
-                        subject="{} - Discarded without validation".format(item.reagent.name)    
+                        subject="{} - Discarded without validation".format(item.reagent.name)
                         text="<p>Item {} ({}) has been discarded by {} without having validation data.<br><br>".format(item.reagent.name,item.internal.batch_number,httprequest.user.username)
                         text+="\n\nThe reason they entered was: '{}'<br><br>".format(form.cleaned_data["fin_text"] if form.cleaned_data["fin_text"]!=None else "NOT ENTERED")
                         for user in User.objects.filter(is_staff=True):
@@ -922,7 +922,7 @@ def finishitem(httprequest, pk):
     else:
         if Inventory.objects.get(pk=int(pk)).finished==True:
             return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-        if item.is_op==False: 
+        if item.is_op==False:
             messages.success(httprequest,"WARNING - ITEM HAS NOT BEEN OPENED")
         if item.val_id is None and item.is_op==True and item.sol is None:
             messages.success(httprequest,"WARNING - THIS ITEM HAS NOT BEEN VALIDATED")
@@ -947,7 +947,7 @@ def recipes(httprequest):
     headings = ["Recipe Name", "Number of Components", "Shelf Life (Months)", "Active"]
     items=Recipe.objects.all().order_by("name")
     body=[]
-    
+
     for item in items:
         values = [item.name,
                   item.length,
@@ -959,7 +959,7 @@ def recipes(httprequest):
               "",
               ]
         body.append((zip(values,urls), False))
-        
+
     context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest, active="Recipes")}
     return render(httprequest, "stock_web/list.html", context)
 
@@ -993,7 +993,7 @@ def newinv(httprequest, pk):
             else:
                 form = form(httprequest.POST)
                 if form.is_valid():
-                    if form.cleaned_data["reagent"].recipe is None:        
+                    if form.cleaned_data["reagent"].recipe is None:
                         return HttpResponseRedirect(reverse("stock_web:newinv", args=[form.cleaned_data["reagent"].pk]))
                     elif form.cleaned_data["reagent"].recipe is not None:
                         return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[form.cleaned_data["reagent"].recipe.pk]))
@@ -1083,7 +1083,7 @@ def createnewsol(httprequest, pk):
                 potentials=recipe.liststock()
                 potentials.sort(key=attrgetter("is_op"),reverse=True)
                 vols=zip(potentials,httprequest.POST.getlist("volume"))
-                
+
                 for vol in vols:
                     if vol[1]!="":
                         if str(vol[0].pk) not in httprequest.POST.getlist("requests"):
@@ -1114,7 +1114,7 @@ def createnewsol(httprequest, pk):
                     messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
             else:
-                witness=None                             
+                witness=None
             if len(Reagents_set)!=recipe.length():
                 if len(Reagents_set)==1:
                     grammar="item was"
@@ -1165,7 +1165,7 @@ def createnewsol(httprequest, pk):
             checked.append("")
             CYTO.append(cyto)
         context = { "headings": headings,
-                    "body": zip(values, inv_ids, checked, CYTO), 
+                    "body": zip(values, inv_ids, checked, CYTO),
                     "url": reverse("stock_web:createnewsol", args=[pk]),
                     "toolbar": _toolbar(httprequest),
                     "total":cyto,
@@ -1173,9 +1173,9 @@ def createnewsol(httprequest, pk):
                     "form":form,
                     "cancelurl": reverse("stock_web:newinv",args=["_"]),
                   }
-        return render(httprequest, "stock_web/populatesol.html", context)  
-        
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+        return render(httprequest, "stock_web/populatesol.html", context)
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def newreagent(httprequest):
     form=NewReagentForm
@@ -1194,7 +1194,7 @@ def newreagent(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/form.html", {"header":["New Reagent Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def newsup(httprequest):
     form=NewSupForm
@@ -1213,7 +1213,7 @@ def newsup(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/form.html", {"header":["New Supplier Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def newrecipe(httprequest):
     form=NewRecipeForm
@@ -1223,7 +1223,7 @@ def newrecipe(httprequest):
         else:
             form = form(httprequest.POST)
             if form.is_valid():
-                
+
                 Recipe.create(form.cleaned_data)
                 messages.info(httprequest, "{} Added".format(form.cleaned_data["name"]))
                 return HttpResponseRedirect(reverse("stock_web:newrecipe"))
@@ -1233,7 +1233,7 @@ def newrecipe(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/form.html", {"header":["New Recipe Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activsup(httprequest):
     header = ["Select Supplier To Toggle Active State - THIS WILL NOT AFFECT EXISTING ITEMS"]
@@ -1250,19 +1250,19 @@ def activsup(httprequest):
                 else:
                     form.cleaned_data["name"].is_active=True
                     message="Supplier {} Has Been Reactivated".format(form.cleaned_data["name"].name)
-                form.cleaned_data["name"].save()    
+                form.cleaned_data["name"].save()
                 messages.success(httprequest, message)
                 return HttpResponseRedirect(reverse("stock_web:activsup"))
     else:
         form = form()
-            
+
     submiturl = reverse("stock_web:activsup")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
-    
+
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activreag(httprequest):
     header = ["Select Reagent To Toggle Active State - THIS WILL NOT AFFECT EXISTING ITEMS"]
@@ -1283,19 +1283,19 @@ def activreag(httprequest):
                 else:
                     form.cleaned_data["name"].is_active=True
                     message="{} {} Has Been Reactivated".format(word, form.cleaned_data["name"].name)
-                form.cleaned_data["name"].save()    
+                form.cleaned_data["name"].save()
                 messages.success(httprequest, message)
                 return HttpResponseRedirect(reverse("stock_web:activreag"))
     else:
         form = form()
-            
+
     submiturl = reverse("stock_web:activreag")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
-    
+
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def changemin(httprequest, pk):
     submiturl = reverse("stock_web:changemin",args=[pk])
@@ -1332,10 +1332,10 @@ def changemin(httprequest, pk):
                     messages.success(httprequest, "Minimum Stock Number for {} has changed to {}{}".format(item,form.cleaned_data["number"], "µl" if item.is_cyto==True else ""))
                     return HttpResponseRedirect(reverse("stock_web:listinv"))
         else:
-            form = form(initial = {"old":item.min_count})    
+            form = form(initial = {"old":item.min_count})
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def changedef(httprequest, pk):
     submiturl = reverse("stock_web:changedef",args=[pk])
@@ -1347,7 +1347,7 @@ def changedef(httprequest, pk):
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
-            else: 
+            else:
                 form = form(httprequest.POST)
                 if form.is_valid():
                     return HttpResponseRedirect(reverse("stock_web:changedef", args=[form.cleaned_data["name"].pk]))
@@ -1370,12 +1370,12 @@ def changedef(httprequest, pk):
                     return HttpResponseRedirect(reverse("stock_web:listinv"))
         else:
             form = form(initial = {"supplier_def":item.supplier_def,
-                                   "old":item.supplier_def})    
+                                   "old":item.supplier_def})
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def removesup(httprequest):   
+def removesup(httprequest):
     header = "Select Supplier To Remove"
     form=RemoveSupForm
     if httprequest.method=="POST":
@@ -1393,8 +1393,8 @@ def removesup(httprequest):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
-    
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def editinv(httprequest, pk):
     submiturl = reverse("stock_web:editinv",args=[pk])
@@ -1422,14 +1422,14 @@ def editinv(httprequest, pk):
         else:
             return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "undo"))
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)        
+@user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def undoitem(httprequest, task, pk):
     item=Inventory.objects.get(pk=int(pk))
     submiturl = reverse("stock_web:undoitem",args=[task, pk])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
-   
+
     if task in ["delete", "unopen", "reopen","unuse"]:
         form = DeleteForm
         title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {} {}".format(task.upper(), item.internal, item.reagent,"({}µl use)".format(item.last_usage.used) if task=="unuse" else "")]
@@ -1437,7 +1437,7 @@ def undoitem(httprequest, task, pk):
             title+=["THIS WILL REMOVE ALL USES OF THIS REAGENT AND SET ITS VOLUME BACK TO ITS VOLUME RECEIVED"]
         #pdb.set_trace()
         if httprequest.method=="POST":
-            
+
             if "submit" not in httprequest.POST:
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
             else:
@@ -1495,7 +1495,7 @@ def undoitem(httprequest, task, pk):
                                     item.fin_user=None
                                     item.fin_text=None
                                 item.save()
-                                use.delete()                            
+                                use.delete()
                             if task=="delete":
                                 if item.reagent.is_cyto==False:
                                     item.reagent.count_no-=1
@@ -1515,8 +1515,8 @@ def undoitem(httprequest, task, pk):
                                                     comp.last_usage=uses[1]
                                                 except:
                                                     comp.last_usage=None
-                                            
-                                            
+
+
                                             comp.current_vol+=uses.get(sol=sol).used
                                             comp.reagent.count_no+=uses.get(sol=sol).used
                                             if comp.finished==True:
@@ -1527,7 +1527,7 @@ def undoitem(httprequest, task, pk):
                                             comp.save()
                                             comp.reagent.save()
                                             uses.get(sol=sol).delete()
-                                            
+
                                         message="ITEM DELETED AND VOLUMES OF COMPONENTS USED FOR SOLUTION HAVE BEEN REPLACED"
                                     else:
                                         message='Item {} has been deleted!'.format(item)
@@ -1536,9 +1536,9 @@ def undoitem(httprequest, task, pk):
                                     message='Item {} has been deleted!'.format(item)
                                 messages.success(httprequest,message)
                                 return HttpResponseRedirect(reverse("stock_web:listinv"))
-                            
-                            
-                            
+
+
+
                     return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
         else:
             form = form()
@@ -1548,12 +1548,12 @@ def undoitem(httprequest, task, pk):
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
-            else: 
+            else:
                 form = form(httprequest.POST)
                 form.fields["all_type"].choices = [(0,"NO"),
                                           (1,"YES - Only For This Reagent"),
                                           (2,"YES - All Items On {}, Regardless of Reagent".format(item.val))]
-               
+
                 if form.is_valid():
                     if form.cleaned_data["sure"]==True:
                         current_val_id=item.val_id
@@ -1579,4 +1579,3 @@ def undoitem(httprequest, task, pk):
                                           (1,"YES - Only For This Reagent"),
                                           (2,"YES - All Items On {}, Regardless of Reagent".format(item.val))]
     return render(httprequest, "stock_web/form.html", {"header":title, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
-    
