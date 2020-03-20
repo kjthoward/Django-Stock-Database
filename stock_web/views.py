@@ -797,7 +797,7 @@ def useitem(httprequest,pk):
 
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
-        form=form(instance=item)
+        form=form(instance=item,initial = {"date_used":datetime.datetime.now()})
     submiturl = reverse("stock_web:useitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
@@ -867,7 +867,7 @@ def valitem(httprequest,pk):
     else:
         if Inventory.objects.get(pk=int(pk)).val is not None:
             return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-        form=form(instance=item)
+        form=form(instance=item,initial = {"val_date":datetime.datetime.now()})
     submiturl = reverse("stock_web:valitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
@@ -926,7 +926,7 @@ def finishitem(httprequest, pk):
             messages.success(httprequest,"WARNING - ITEM HAS NOT BEEN OPENED")
         if item.val_id is None and item.is_op==True and item.sol is None:
             messages.success(httprequest,"WARNING - THIS ITEM HAS NOT BEEN VALIDATED")
-        form=form(instance=item)
+        form=form(instance=item,initial = {"date_fin":datetime.datetime.now()})
     submiturl = reverse("stock_web:finishitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})

@@ -84,7 +84,7 @@ class NewProbeForm(forms.ModelForm):
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
-    date_used = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)),initial=datetime.datetime.now(), label=u"Date Used")
+    date_used = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Used")
     class Meta:
         model = Inventory
         fields = ("current_vol","date_op", "last_usage")
@@ -117,7 +117,7 @@ class OpenItemForm(forms.ModelForm):
             self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
 
 class ValItemForm(forms.ModelForm):
-    val_date = forms.DateField(widget=MySelectDateWidget(years=range(datetime.date.today().year-1,datetime.datetime.today().year+5)),initial=datetime.datetime.now(), label="Validation Date")
+    val_date = forms.DateField(widget=MySelectDateWidget(years=range(datetime.date.today().year-1,datetime.datetime.today().year+5)), label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
     class Meta:
         model = Inventory
@@ -131,7 +131,7 @@ class ValItemForm(forms.ModelForm):
             self.add_error("val_date", forms.ValidationError("Date of validation run occurs in the future"))
 
 class FinishItemForm(forms.ModelForm):
-    date_fin = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)),initial=datetime.datetime.now(), label=u"Date Finished")
+    date_fin = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Finished")
     class Meta:
         model = Inventory
         fields = ("date_op","fin_text","is_op")
