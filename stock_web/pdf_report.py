@@ -2,16 +2,17 @@ import datetime
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import  BaseDocTemplate, Paragraph, Table, TableStyle, Frame, PageTemplate
+from .version import __version__
 
 def report_gen(body, title, httpresponse, user):
     styles = getSampleStyleSheet()
     styleNormal = styles['Normal']
     styleHeading = styles['Heading1']
     styleHeading.alignment = 1
-    
+
     def head_footer(canvas, doc):
         canvas.saveState()
-        P = Paragraph("Report Geneterated: {}    By: {} - Stock Database V0.1".format(datetime.datetime.today().strftime("%d/%m/%Y"), user),
+        P = Paragraph("Report Geneterated: {}    By: {} - Stock Database V{}".format(datetime.datetime.today().strftime("%d/%m/%Y"), user, __version__),
                       styleNormal)
         w, h = P.wrap(doc.width, doc.bottomMargin)
         P.drawOn(canvas, doc.leftMargin, h)
@@ -19,7 +20,7 @@ def report_gen(body, title, httpresponse, user):
                       styleNormal)
         w, h = P.wrap(doc.width, doc.bottomMargin)
         P.drawOn(canvas, doc.width+doc.leftMargin, h)
-        
+
         P = Paragraph("{}".format(title),styleHeading)
         w, h = P.wrap(doc.width, doc.topMargin)
         #P.drawOn(canvas, ((doc.width-stringWidth(title, "Times-Roman", 20))/2.0), doc.height + doc.topMargin)
