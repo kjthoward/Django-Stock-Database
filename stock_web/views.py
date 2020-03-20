@@ -285,37 +285,37 @@ def inventory(httprequest, search, what, sortby, page):
     else:
         sortquery="_"
     if what=="all":
-        title = "Invetory - All Items"
+        title = "Inventory - All Items"
         if sortby!="_":
             items=Inventory.objects.all().order_by(sortquery)
         else:
             items=Inventory.objects.all()
     if what=="instock":
-        title = "Invetory - Items In Stock"
+        title = "Inventory - Items In Stock"
         if sortby!="_":
             items=Inventory.objects.filter(finished=False).order_by(sortquery)
         else:
             items=Inventory.objects.filter(finished=False)
     elif what=="solutions":
-        title = "Invetory - Solutions"
+        title = "Inventory - Solutions"
         if sortby!="_":
             items=Inventory.objects.filter(sol_id__isnull=False, finished=False).order_by(sortquery)
         else:
             items=Inventory.objects.filter(sol_id__isnull=False, finished=False)
     elif what=="validated":
-        title = "Invetory - Validated Items"
+        title = "Inventory - Validated Items"
         if sortby!="_":
             items=Inventory.objects.filter(val_id__isnull=False, finished=False).order_by(sortquery)
         else:
             items=Inventory.objects.filter(val_id__isnull=False, finished=False)
     elif what=="notvalidated":
-        title = "Invetory - Items Not Validated"
+        title = "Inventory - Items Not Validated"
         if sortby!="_":
             items=Inventory.objects.filter(val_id__isnull=True, finished=False).order_by(sortquery)
         else:
             items=Inventory.objects.filter(val_id__isnull=True, finished=False)
     elif what=="expsoon":
-        title = "Invetory - Items Expiring Within 6 Weeks"
+        title = "Inventory - Items Expiring Within 6 Weeks"
         if sortby!="_":
             items=Inventory.objects.filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False).order_by(sortquery)
         else:
@@ -341,7 +341,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Recieved", "Expiry Date", "Date Opened", "Days till expired"]
+    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Days till expired"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -564,9 +564,9 @@ def _item_context(httprequest, item, undo):
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
-        headings = ["Date Created", "Created By", "Condition Recieved", "Expiry Date"]
+        headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
     else:
-        headings = ["Date Recieved", "Recieved By", "Condition Recieved", "Expiry Date"]
+        headings = ["Date Received", "Received By", "Condition Received", "Expiry Date"]
     values = [item.date_rec.strftime("%d/%m/%y"), item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
     urls = ["", "", "", ""]
     SKIP=False
@@ -651,9 +651,9 @@ def _cyto_context(httprequest, item, undo):
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
-        headings = ["Date Created", "Created By", "Condition Recieved", "Expiry Date"]
+        headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
     else:
-        headings = ["Date Recieved", "Recieved By", "Condition Recieved", "Expiry Date"]
+        headings = ["Date Received", "Received By", "Condition Received", "Expiry Date"]
     values = [item.date_rec.strftime("%d/%m/%y"), item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
     urls = ["", "", "", ""]
     SKIP=False
@@ -808,7 +808,7 @@ def useitem(httprequest,pk):
 def openitem(httprequest, pk):
     item=Inventory.objects.get(pk=int(pk))
     form=OpenItemForm
-    header=["Date Recieved: {}".format(item.date_rec.strftime("%d/%m/%y"))]
+    header=["Date Received: {}".format(item.date_rec.strftime("%d/%m/%y"))]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":

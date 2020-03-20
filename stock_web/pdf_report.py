@@ -12,7 +12,7 @@ def report_gen(body, title, httpresponse, user):
 
     def head_footer(canvas, doc):
         canvas.saveState()
-        P = Paragraph("Report Geneterated: {}    By: {} - Stock Database V{}".format(datetime.datetime.today().strftime("%d/%m/%Y"), user, __version__),
+        P = Paragraph("Report Generated: {}    By: {} - Stock Database V{}".format(datetime.datetime.today().strftime("%d/%m/%Y"), user, __version__),
                       styleNormal)
         w, h = P.wrap(doc.width, doc.bottomMargin)
         P.drawOn(canvas, doc.leftMargin, h)

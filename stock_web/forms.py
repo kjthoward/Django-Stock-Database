@@ -58,7 +58,7 @@ class NewInvForm(forms.ModelForm):
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
             self.add_error("date_exp", forms.ValidationError("Expiry date occurs before received date"))
         elif self.cleaned_data["date_rec"]>datetime.date.today():
-            self.add_error("date_rec", forms.ValidationError("Date recieved occurs in the future"))
+            self.add_error("date_rec", forms.ValidationError("Date received occurs in the future"))
     def __init__(self, *args, **kwargs):
         super(NewInvForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
@@ -77,7 +77,7 @@ class NewProbeForm(forms.ModelForm):
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
             self.add_error("date_exp", forms.ValidationError("Expiry date occurs before received date"))
         elif self.cleaned_data["date_rec"]>datetime.date.today():
-            self.add_error("date_rec", forms.ValidationError("Date recieved occurs in the future"))
+            self.add_error("date_rec", forms.ValidationError("Date received occurs in the future"))
     def __init__(self, *args, **kwargs):
         super(NewProbeForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
