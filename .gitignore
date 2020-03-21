@@ -6,3 +6,6 @@
 /static/
 __pycache__/
 migrations/
+*.docx
+*.png
+*.xlsx
