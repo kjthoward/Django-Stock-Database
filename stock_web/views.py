@@ -808,7 +808,8 @@ def useitem(httprequest,pk):
 def openitem(httprequest, pk):
     item=Inventory.objects.get(pk=int(pk))
     form=OpenItemForm
-    header=["Date Received: {}".format(item.date_rec.strftime("%d/%m/%y"))]
+    header=["Opening item {}".format(item)]
+    header+=["Date Received: {}".format(item.date_rec.strftime("%d/%m/%y"))]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -855,7 +856,8 @@ def valitem(httprequest,pk):
     form=ValItemForm
     if Inventory.objects.get(pk=int(pk)).is_op==False:
         return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-    header=["Date Open: {}".format(item.date_op.strftime("%d/%m/%y"))]
+    header=["Validating item {}".format(item)]
+    header+=["Date Open: {}".format(item.date_op.strftime("%d/%m/%y"))]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -877,6 +879,9 @@ def valitem(httprequest,pk):
 def finishitem(httprequest, pk):
     item=Inventory.objects.get(pk=int(pk))
     form=FinishItemForm
+    header=["Finishing item {}".format(item)]
+    header+=["Date Open: {}".format(item.date_op.strftime("%d/%m/%y") if item.is_op==True else "NOT OPEN")]
+    header+=["Date Validated: {}".format(item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "NOT VALIDATED")]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -929,7 +934,7 @@ def finishitem(httprequest, pk):
         form=form(instance=item,initial = {"date_fin":datetime.datetime.now()})
     submiturl = reverse("stock_web:finishitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
-    return render(httprequest, "stock_web/form.html", {"form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
+    return render(httprequest, "stock_web/form.html", {"header": header,"form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
