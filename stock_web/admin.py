@@ -56,6 +56,7 @@ UserAdmin.add_fieldsets = (
 admin.site.unregister(User)
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
+    list_display = ("username","email","first_name","last_name","is_staff","is_active")
     change_password_form = PWResetForm
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
