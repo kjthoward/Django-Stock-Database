@@ -74,7 +74,18 @@ class CustomUserAdmin(UserAdmin):
                 disabled_fields = {
                     'is_superuser',
                 }
-
+        if (
+            not is_superuser
+            and obj is not None
+            and obj == request.user
+        ):
+            disabled_fields |= {
+                'is_active',
+                'is_staff',
+                'is_superuser',
+                'groups',
+                'user_permissions',
+            }
         for f in disabled_fields:
             if f in form.base_fields:
                 form.base_fields[f].disabled = True
