@@ -784,7 +784,7 @@ def useitem(httprequest,pk):
                         subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                         text="<p>Item {} has a stock level of {}µl.<br><br>".format(item.reagent.name,item.reagent.count_no)
                         text+="Minimum Stock level for this item is {}µl.<br><br>".format(item.reagent.min_count)
-                        for user in User.objects.filter(is_staff=True):
+                        for user in User.objects.filter(is_staff=True, is_active=True):
                             if user.email!="":
                                 try:
                                     send(subject,text, user.email)
@@ -831,7 +831,7 @@ def openitem(httprequest, pk):
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                             text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
                             text+="Minimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
-                            for user in User.objects.filter(is_staff=True):
+                            for user in User.objects.filter(is_staff=True, is_active=True):
                                 if user.email!="":
                                     try:
                                         send(subject,text, user.email)
@@ -905,7 +905,7 @@ def finishitem(httprequest, pk):
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                             text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
                             text+="\n\nMinimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
-                            for user in User.objects.filter(is_staff=True):
+                            for user in User.objects.filter(is_staff=True, is_active=True):
                                 if user.email!="":
                                     try:
                                         send(subject,text, user.email)
@@ -917,7 +917,7 @@ def finishitem(httprequest, pk):
                         subject="{} - Discarded without validation".format(item.reagent.name)
                         text="<p>Item {} ({}) has been discarded by {} without having validation data.<br><br>".format(item.reagent.name,item.internal.batch_number,httprequest.user.username)
                         text+="\n\nThe reason they entered was: '{}'<br><br>".format(form.cleaned_data["fin_text"] if form.cleaned_data["fin_text"]!=None else "NOT ENTERED")
-                        for user in User.objects.filter(is_staff=True):
+                        for user in User.objects.filter(is_staff=True, is_active=True):
                             if user.email!="":
                                 try:
                                     send(subject,text, user.email)
