@@ -1006,6 +1006,8 @@ def newinv(httprequest, pk):
             form = form()
     else:
         item=Reagents.objects.get(pk=int(pk))
+        if item.recipe is not None:
+            return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[item.recipe_id]))
         title=["Enter Delivery Details - {}".format(item)]
         template="stock_web/form.html"
         if item.is_cyto==False:
