@@ -817,6 +817,7 @@ def openitem(httprequest, pk):
         else:
             if form.is_valid():
                 Inventory.open(form.cleaned_data, pk, httprequest.user)
+                item.refresh_from_db()
                 if item.reagent.is_cyto==False:
                     if item.reagent.count_no<item.reagent.min_count:
                         if item.sol is not None:
