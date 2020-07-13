@@ -58,6 +58,7 @@ admin.site.unregister(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ("username","email","first_name","last_name","is_staff","is_active")
     change_password_form = PWResetForm
+    add_form_template = 'admin/stock_web/add_form.html'
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         is_superuser = request.user.is_superuser
