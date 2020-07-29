@@ -245,7 +245,7 @@ def loginview(httprequest):
 def listinv(httprequest):
     title = "List of Reagents"
     headings = ["Reagent Name", "Number In Stock", "Minimum Stock Level"]
-    items=Reagents.objects.all().order_by("name")
+    items=Reagents.objects.all().exclude(is_active=False, count_no=0).order_by("name")
     body=[]
     for item in items:
         values = [item.name,
