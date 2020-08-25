@@ -1,4 +1,5 @@
 import datetime
+from dateutil.relativedelta import relativedelta
 from django import forms
 from django.db.models import F
 from django.contrib.auth.models import User
@@ -12,14 +13,9 @@ class LoginForm(forms.Form):
 #sets width of all Select2Widget search boxes
 Select2Widget=Select2Widget(attrs={"style": "width:12.5em"})
 
-#custom select date widget (based off of default), allows you to set a custom data range to display
-class MySelectDateWidget(forms.SelectDateWidget):
-    def get_context(self, name, value, attrs):
-        old_state = self.is_required
-        self.is_required = False
-        context = super(MySelectDateWidget, self).get_context(name, value, attrs)
-        self.is_required = old_state
-        return context
+class DateInput(forms.DateInput):
+    input_type = 'date'
+
 
 class ShowActiveModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
@@ -52,8 +48,8 @@ class NewInvForm(forms.ModelForm):
         fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp")
         widgets = {"supplier":Select2Widget,
                    "lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
-                   "date_rec":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+1)),
-                   "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
+                   "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
+                   "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
                    "vol_rec":forms.HiddenInput(),
                    "current_vol":forms.HiddenInput()}
@@ -72,8 +68,8 @@ class NewProbeForm(forms.ModelForm):
         model = Inventory
         fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec")
         widgets = {"lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
-                   "date_rec":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+1)),
-                   "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
+                   "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
+                   "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
                    "current_vol":forms.HiddenInput()}
 
@@ -89,7 +85,7 @@ class NewProbeForm(forms.ModelForm):
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
-    date_used = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Used")
+    date_used = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}))
     class Meta:
         model = Inventory
         fields = ("current_vol","date_op", "last_usage")
@@ -109,11 +105,12 @@ class UseItemForm(forms.ModelForm):
             self.add_error("date_used", forms.ValidationError("Date of use occurs in the future"))
 
 class OpenItemForm(forms.ModelForm):
-    date_op = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Open")
     class Meta:
         model = Inventory
-        fields = ("date_rec",)
-        widgets = {"date_rec":forms.HiddenInput}
+        fields = ("date_rec", "date_op")
+        widgets = {"date_rec":forms.HiddenInput,
+                   "date_op":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")})}
+        labels = {"date_op":"Date Open"}
     def clean(self):
         super(OpenItemForm, self).clean()
         if self.cleaned_data["date_op"]<datetime.datetime.strptime(self.data["date_rec"],"%Y-%m-%d").date():
@@ -122,7 +119,7 @@ class OpenItemForm(forms.ModelForm):
             self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
 
 class ValItemForm(forms.ModelForm):
-    val_date = forms.DateField(widget=MySelectDateWidget(years=range(datetime.date.today().year-1,datetime.datetime.today().year+5)), label="Validation Date")
+    val_date = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
     class Meta:
         model = Inventory
@@ -136,7 +133,7 @@ class ValItemForm(forms.ModelForm):
             self.add_error("val_date", forms.ValidationError("Date of validation run occurs in the future"))
 
 class FinishItemForm(forms.ModelForm):
-    date_fin = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Finished")
+    date_fin = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Date Finished")
     class Meta:
         model = Inventory
         fields = ("date_op","fin_text","is_op")
