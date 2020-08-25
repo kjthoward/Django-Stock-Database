@@ -330,7 +330,7 @@ class Inventory(models.Model):
             val=Validation.new(values["val_date"], values["val_run"].upper(), user)
             #bulk_update(updates.values(),[item.val_id=val])
             Inventory.objects.filter(reagent=reagent_id, lot_no=lot).update(val_id=val)
-
+            return Inventory.objects.filter(reagent=reagent_id, lot_no=lot, val_id=val)
             #for item in items:
             #    item.val_id=val
             #Inventory.objects.bulk_update(items,['val_id'])

@@ -616,7 +616,7 @@ def _item_context(httprequest, item, undo):
             headings+=["Action"]
             values+=["Un-open Item"]
             urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None:
+        elif item.sol_id is None and httprequest.user.is_staff:
             headings+=["Action"]
             values+=["Validate Item"]
             urls+=[reverse("stock_web:valitem",args=[item.id])]
@@ -710,7 +710,7 @@ def _cyto_context(httprequest, item, undo):
             headings+=["Action"]
             values+=["Un-open Item"]
             urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None and item.last_usage is not None:
+        elif item.sol_id is None and item.last_usage is not None and httprequest.user.is_staff:
             headings+=["Action"]
             values+=["Validate Item"]
             urls+=[reverse("stock_web:valitem",args=[item.id])]
@@ -893,7 +893,9 @@ def valitem(httprequest,pk):
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
             if form.is_valid():
-                Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)).reagent, Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
+                validated=Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)).reagent, Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
+                val_list=[x.internal.batch_number for x in validated]
+                messages.success(httprequest, "Validated: " + " ".join(val_list))
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
         if Inventory.objects.get(pk=int(pk)).val is not None:
