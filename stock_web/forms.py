@@ -136,17 +136,25 @@ class FinishItemForm(forms.ModelForm):
     date_fin = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Date Finished")
     class Meta:
         model = Inventory
-        fields = ("date_op","fin_text","is_op")
+        fields = ("date_op","date_rec", "fin_text","is_op", "date_fin")
         widgets = {"date_op":forms.HiddenInput,
+                   "date_rec":forms.HiddenInput,
                    "is_op":forms.HiddenInput,
-                   "fin_text":forms.Textarea(attrs={"style": "height:5em;"})}
+                   "fin_text":forms.Textarea(attrs={"style": "height:5em;"}),
+                   "date_fin":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")})}
+        labels = {"date_fin":"Date Finished"}
     def clean(self):
         super(FinishItemForm, self).clean()
+        fin_date=self.cleaned_data["date_fin"]
+        if fin_date<self.cleaned_data["date_rec"]:
+            self.add_error("date_fin", forms.ValidationError("Date occurs before the item was received"))
         if self.cleaned_data["is_op"]==True:
-            if self.cleaned_data["date_fin"]<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
-                self.add_error("date_fin", forms.ValidationError("Date finished occurs before item was opened"))
-        if self.cleaned_data["date_fin"]>datetime.date.today():
-            self.add_error("date_fin", forms.ValidationError("Date of disposal occurs in the future"))
+            if fin_date<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
+                self.add_error("date_fin", forms.ValidationError("Date occurs before item was opened"))
+        if fin_date>datetime.date.today():
+            self.add_error("date_fin", forms.ValidationError("Date occurs in the future"))
+
+
     def __init__(self, *args, **kwargs):
         super(FinishItemForm, self).__init__(*args, **kwargs)
         if self.initial["is_op"]==False:
