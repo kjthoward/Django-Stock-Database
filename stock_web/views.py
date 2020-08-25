@@ -233,6 +233,12 @@ def loginview(httprequest):
                         return HttpResponseRedirect(reverse("stock_web:change_password"))
                     else:
                         return HttpResponseRedirect(reverse("stock_web:listinv"))
+                else:
+                    try:
+                        User.objects.get(username=form.cleaned_data["username"])
+                        messages.success(httprequest, "Incorrect password entered")
+                    except:
+                        messages.success(httprequest, f'User {form.cleaned_data["username"]} does not exist')
             else:
                 pdb.set_trace()
 
