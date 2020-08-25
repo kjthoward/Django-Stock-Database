@@ -133,9 +133,13 @@ def change_password(httprequest):
             errors=[]
             for v in form.errors.values():
                 for error in v:
-                    errors+=[error]
+                    errors+=[error.replace("didn't", "do not")]
             messages.success(httprequest, (" ".join(errors)))
             form.errors.clear()
+            messages.info(httprequest, "Your password can't be too similar to your other personal information.")
+            messages.info(httprequest, "Your password must contain at least 8 characters.")
+            messages.info(httprequest, "Your password can't be a commonly used password.")
+            messages.info(httprequest, "Your password can't be entirely numeric.")
     else:
         form = PasswordChangeForm(httprequest.user)
         messages.info(httprequest, "Your password can't be too similar to your other personal information.")
