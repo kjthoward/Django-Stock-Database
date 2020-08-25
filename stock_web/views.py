@@ -634,9 +634,13 @@ def _item_context(httprequest, item, undo):
             values+=["Finish/Discard Item"]
             urls+=[reverse("stock_web:finishitem",args=[item.id])]
             SKIP=True
+
     if ((item.finished==False) and (undo!="undo")  and (SKIP==False)):
         headings+=["Action"]
-        values+=["Discard Item"]
+        if item.sol_id is not None:
+            values+=["Finish Item"]
+        else:
+            values+=["Discard Item"]
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
         if item.is_op==True:
@@ -916,9 +920,9 @@ def valitem(httprequest,pk):
 def finishitem(httprequest, pk):
     item=Inventory.objects.get(pk=int(pk))
     form=FinishItemForm
-    header=["Finishing item {}".format(item)]
+    header=["Finishing item {}".format(item if item.sol_id is None else ", ".join(str(item).split(',')[::2]))]
     header+=["Date Open: {}".format(item.date_op.strftime("%d/%m/%y") if item.is_op==True else "NOT OPEN")]
-    header+=["Date Validated: {}".format(item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "NOT VALIDATED")]
+    header+=["Date Validated: {}".format(item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "NOT REQUIRED" if item.sol_id is not None else "NOT VALIDATED")]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
