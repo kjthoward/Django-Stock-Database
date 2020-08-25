@@ -1011,7 +1011,7 @@ def newinv(httprequest, pk):
         template="stock_web/invform.html"
         form=NewInvForm1
         if httprequest.method=="POST":
-            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "book-in":
+            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "Book-in":
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
             else:
                 form = form(httprequest.POST)
