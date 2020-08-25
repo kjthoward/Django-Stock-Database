@@ -132,8 +132,10 @@ def change_password(httprequest):
         else:
             errors=[]
             for v in form.errors.values():
-                errors+=[str(v[0]).strip('<ul class="errorlist"><li><\lie></').replace("didn't", "do not")]
+                for error in v:
+                    errors+=[error]
             messages.success(httprequest, (" ".join(errors)))
+            form.errors.clear()
     else:
         form = PasswordChangeForm(httprequest.user)
         messages.info(httprequest, "Your password can't be too similar to your other personal information.")
