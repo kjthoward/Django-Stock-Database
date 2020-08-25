@@ -281,7 +281,7 @@ class Inventory(models.Model):
                 inventory.internal=Internal.create()
                 internals+=[inventory.internal.batch_number]
                 if inventory.lot_no=="":
-                    inventory.lot_no=inventory.internal.batch_number
+                    inventory.lot_no="N/A"
                 inventory.save()
             reagent=Reagents.objects.get(id=values["reagent"].id)
             if "vol_rec" in values.keys():
