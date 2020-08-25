@@ -277,7 +277,7 @@ class EditReagForm(forms.Form):
     name=ShowActiveModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
 
 class EditInvForm(forms.Form):
-    item=forms.CharField(label="Reagent Internal ID", max_length=4,widget=forms.TextInput(attrs={"autocomplete": "off"}))
+    item=forms.CharField(label="Stock Number", max_length=4,widget=forms.TextInput(attrs={"autocomplete": "off"}))
     def clean(self):
         super(EditInvForm, self).clean()
         try:
