@@ -2,7 +2,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User, Group
 from django.db.models import F, Q
@@ -23,7 +22,7 @@ from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recip
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, WitnessForm
+                   StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -137,6 +136,10 @@ def change_password(httprequest):
             messages.success(httprequest, (" ".join(errors)))
     else:
         form = PasswordChangeForm(httprequest.user)
+        messages.info(httprequest, "Your password can't be too similar to your other personal information.")
+        messages.info(httprequest, "Your password must contain at least 8 characters.")
+        messages.info(httprequest, "Your password can't be a commonly used password.")
+        messages.info(httprequest, "Your password can't be entirely numeric.")
     submiturl = reverse("stock_web:change_password")
     cancelurl = reverse("stock_web:listinv")
     context={"form": form, "heading":"Change Password for {}".format(httprequest.user),

@@ -4,6 +4,7 @@ from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
 from .models import Suppliers, Reagents, Internal, Recipe, Inventory
+from django.contrib.auth.forms import PasswordChangeForm
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}))
@@ -325,6 +326,10 @@ class PWResetForm(forms.Form):
                 self.add_error("user", forms.ValidationError("User {} does not have an email address entered.\nContact an Admin to reset you password".format(self.cleaned_data["user"])))
         except:
             self.add_error("user", forms.ValidationError("Username {} does not exist".format(self.cleaned_data["user"])))
+
+class PasswordChangeForm(PasswordChangeForm):
+    #Blanks help_text, as it messes up formatting/spacing of boxes, re-added using messages.info in views
+    PasswordChangeForm.base_fields["new_password1"].help_text=""
 
 class WitnessForm(forms.Form):
     name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).order_by("username"), widget=Select2Widget, label=u"Select Witness")
