@@ -639,7 +639,10 @@ def _item_context(httprequest, item, undo):
         values+=["Discard Item"]
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
-        headings+=["Date Finished", "Finished by"]
+        if item.is_op==True:
+            headings+=["Date Finished", "Finished by"]
+        else:
+            headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
         if undo=="undo":
@@ -733,7 +736,10 @@ def _cyto_context(httprequest, item, undo):
         values+=["Discard Item"]
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
-        headings+=["Date Finished", "Finished by"]
+        if item.is_op==True:
+            headings+=["Date Finished", "Finished by"]
+        else:
+            headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
     body = [(zip(values,urls, urls),stripe)]
