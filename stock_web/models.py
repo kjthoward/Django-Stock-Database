@@ -59,6 +59,12 @@ class Suppliers(models.Model):
     class Meta:
         verbose_name_plural = "Suppliers"
 
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
+
     @classmethod
     def create(cls, name):
         supplier = cls.objects.create(name=name)
@@ -93,6 +99,12 @@ class Reagents(models.Model):
             reagent=cls(**values)
             reagent.save()
             return reagent
+
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
 
 class Internal(models.Model):
     def __str__(self):
@@ -339,7 +351,7 @@ class Inventory(models.Model):
 
             elif reagent.is_cyto==False and invitem.is_op==True:
                 invitem.save()
-                
+
             elif reagent.is_cyto==True:
 
                 if invitem.current_vol!=0:

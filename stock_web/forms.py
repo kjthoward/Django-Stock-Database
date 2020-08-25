@@ -21,6 +21,10 @@ class MySelectDateWidget(forms.SelectDateWidget):
         self.is_required = old_state
         return context
 
+class ShowActiveModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.show_active()
+
 class NewInvForm1(forms.ModelForm):
     reagent=forms.ModelChoiceField(queryset = Reagents.objects.all().exclude(is_active=False).order_by("name"), label="Reagent", widget=Select2Widget)
 
@@ -259,7 +263,7 @@ class RemoveSupForm(forms.Form):
             self.add_error("supplier", forms.ValidationError("If you no longer need this supplier try using the '(De)Activate Supplier' Page"))
 
 class EditSupForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget, label=u"Supplier")
+    name=ShowActiveModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget, label=u"Supplier")
 
     def clean(self):
         super(EditSupForm, self).clean()
@@ -269,7 +273,7 @@ class EditSupForm(forms.Form):
                 self.add_error("name", forms.ValidationError(reagent))
 
 class EditReagForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
+    name=ShowActiveModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
 
 class EditInvForm(forms.Form):
     item=forms.CharField(label="Reagent Internal ID", max_length=4,widget=forms.TextInput(attrs={"autocomplete": "off"}))
