@@ -215,7 +215,7 @@ class Recipe(models.Model):
 
 class Inventory(models.Model):
     def __str__(self):
-        return "{}, Lot:{}, Batch:{}".format(self.reagent.name, self.lot_no, self.internal)
+        return "{}, Lot:{}, Stock Number:{}".format(self.reagent.name, self.lot_no, self.internal)
     class Meta:
         verbose_name_plural = "Inventory Items"
     reagent=models.ForeignKey(Reagents,on_delete=models.PROTECT)
