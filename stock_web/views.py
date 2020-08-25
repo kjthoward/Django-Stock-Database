@@ -357,7 +357,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Days till expired"]
+    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Days till expired"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -370,6 +370,8 @@ def inventory(httprequest, search, what, sortby, page):
                                                      if sortby=="order=date_exp" else "order=date_exp", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-date_op"
                                                      if sortby=="order=date_op" else "order=date_op",1]),
+                reverse("stock_web:inventory", args=[search, what,"order=-val_id__val_date"
+                                                     if sortby=="order=val_id__val_date" else "order=val_id__val_date",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-days_rem"
                                                      if sortquery=="days_rem" else "order=days_rem",1])]
     headings=zip(headings,headurls)
@@ -395,9 +397,11 @@ def inventory(httprequest, search, what, sortby, page):
                   item.date_rec.strftime("%d/%m/%y"),
                   item.date_exp.strftime("%d/%m/%y"),
                   item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
+                  item.val.val_date.strftime("%d/%m/%y") if item.val_id is not None else "",
                   item.days_remaining(),
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
+              "",
               "",
               "",
               "",
