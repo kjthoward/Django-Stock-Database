@@ -116,7 +116,7 @@ def change_password(httprequest):
         form = PasswordChangeForm(httprequest.user, httprequest.POST)
         if form.is_valid():
             if form.cleaned_data["old_password"]==form.cleaned_data["new_password1"]:
-                messages.success(httprequest, 'Your password new password cannot be your old password')
+                messages.success(httprequest, 'Your new password cannot be your old password')
                 return HttpResponseRedirect(reverse("stock_web:change_password"))
             user = form.save()
             update_session_auth_hash(httprequest, user)  # Important!
