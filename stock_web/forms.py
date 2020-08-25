@@ -147,6 +147,10 @@ class FinishItemForm(forms.ModelForm):
                 self.add_error("date_fin", forms.ValidationError("Date finished occurs before item was opened"))
         if self.cleaned_data["date_fin"]>datetime.date.today():
             self.add_error("date_fin", forms.ValidationError("Date of disposal occurs in the future"))
+    def __init__(self, *args, **kwargs):
+        super(FinishItemForm, self).__init__(*args, **kwargs)
+        if self.initial["is_op"]==False:
+            self.fields["fin_text"].required = True
 
 class NewSupForm(forms.ModelForm):
     class Meta:
