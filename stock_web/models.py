@@ -85,7 +85,7 @@ class Reagents(models.Model):
         ordering = ["name"]
     name = models.CharField(max_length=100, unique=True)
     cat_no = models.CharField(max_length=20, blank=True, null=True, verbose_name=u"Catalogue Number")
-    supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier")
+    supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier", blank=True, null=True)
     #storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
     count_no=models.PositiveIntegerField(default=0)
     min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")

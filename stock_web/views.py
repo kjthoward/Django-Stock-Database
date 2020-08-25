@@ -1304,9 +1304,12 @@ def activreag(httprequest):
                     word="Recipe"
                 if form.cleaned_data["name"].is_active==True:
                    form.cleaned_data["name"].is_active=False
+                   form.cleaned_data["name"].supplier_def_id=None
                    message="{} {} Has Been Deactivated".format(word, form.cleaned_data["name"].name)
                 else:
                     form.cleaned_data["name"].is_active=True
+                    if form.cleaned_data["name"].recipe_id is not None:
+                        form.cleaned_data["name"].supplier_def_id=Suppliers.objects.get(name="Internal")
                     message="{} {} Has Been Reactivated".format(word, form.cleaned_data["name"].name)
                 form.cleaned_data["name"].save()
                 messages.success(httprequest, message)

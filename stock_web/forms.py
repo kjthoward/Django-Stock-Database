@@ -174,6 +174,7 @@ class NewReagentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(NewReagentForm, self).__init__(*args, **kwargs)
         self.fields["supplier_def"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
+        self.fields["supplier_def"].required = True
 
     def clean(self):
         super(NewReagentForm, self).clean()
