@@ -578,7 +578,10 @@ def _item_context(httprequest, item, undo):
         title_url.append("")
     if item.sol is not None and undo!="undo":
         for comp in item.sol.list_comp():
-            title.append(comp)
+            if comp.val_id is not None:
+                title.append(comp)
+            else:
+                title.append(str(comp)+" - NOT VALIDATED")
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
@@ -665,7 +668,10 @@ def _cyto_context(httprequest, item, undo):
         title.append("Witnessed By - {}".format(item.witness))
         title_url.append("")
         for comp in item.sol.list_comp():
-            title.append(comp)
+            if comp.val_id is not None:
+                title.append(comp)
+            else:
+                title.append(str(comp)+" - NOT VALIDATED")
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
