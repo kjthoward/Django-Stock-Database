@@ -541,9 +541,11 @@ def invreport(httprequest,what, extension):
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels"
             items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
-            body=[["Reagent", "Number In Stock", "Minimum Stock Level"]]
+            body=[["Reagent", "Default Supplier", "Catalogue Number", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
+                        item.supplier_def.name,
+                        item.cat_no,
                          "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
                          "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]]
         if extension=='0':
