@@ -1,3 +1,4 @@
+from dateutil.relativedelta import relativedelta
 from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.contrib import messages
@@ -1065,6 +1066,8 @@ def newinv(httprequest, pk):
                         elif item.is_cyto==True:
                             messages.info(httprequest, "1x {}µl of {} added".format(form.data["vol_rec"],
                                                                               form.cleaned_data["reagent"]))
+                    if form.cleaned_data["date_exp"]<(form.cleaned_data["date_rec"] + relativedelta(months=+6)):
+                        message+=["ITEM EXPIRES WITHIN 6 MONTHS"]
                     if message!=[]:
                         messages.success(httprequest," ".join(message))
                     messages.info(httprequest, "STOCK NUMBERS:")
