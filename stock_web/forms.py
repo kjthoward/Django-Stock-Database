@@ -61,7 +61,7 @@ class NewInvForm(forms.ModelForm):
             errors+=[("date_exp", forms.ValidationError("Expiry date occurs before received date"))]
         elif self.cleaned_data["date_rec"]>datetime.date.today():
             errors+=[("date_rec", forms.ValidationError("Date received occurs in the future"))]
-        if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(180)) and (self.cleaned_data["accept_reason"] is None)):
+        if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(181)) and (self.cleaned_data["accept_reason"] is None)):
             errors+=[("accept_reason", forms.ValidationError("If an item expires within 6 months an Acceptance Reason must be given"))]
         if errors!=[]:
             for error in errors:
@@ -89,7 +89,7 @@ class NewProbeForm(forms.ModelForm):
             errors+=[("date_exp", forms.ValidationError("Expiry date occurs before received date"))]
         elif self.cleaned_data["date_rec"]>datetime.date.today():
             errors+=[("date_rec", forms.ValidationError("Date received occurs in the future"))]
-        if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(180)) and (self.cleaned_data["accept_reason"] is None)):
+        if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(181)) and (self.cleaned_data["accept_reason"] is None)):
             errors+=[("accept_reason", forms.ValidationError("If an item expires within 6 months an Acceptance Reason must be given"))]
         if errors!=[]:
             for error in errors:
