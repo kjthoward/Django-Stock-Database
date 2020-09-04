@@ -45,9 +45,9 @@ class NewInvForm(forms.ModelForm):
     num_rec=forms.IntegerField(min_value=1, label="Number Received")
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp")
+        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "num_rec", "accept_reason")
         widgets = {"supplier":Select2Widget,
-                   "lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
+                   "accept_reason":forms.Textarea(attrs={"style": "height:4em;"}),
                    "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
                    "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
@@ -56,18 +56,27 @@ class NewInvForm(forms.ModelForm):
 
     def clean(self):
         super(NewInvForm, self).clean()
+        errors=[]
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
-            self.add_error("date_exp", forms.ValidationError("Expiry date occurs before received date"))
+            errors+=[("date_exp", forms.ValidationError("Expiry date occurs before received date"))]
         elif self.cleaned_data["date_rec"]>datetime.date.today():
-            self.add_error("date_rec", forms.ValidationError("Date received occurs in the future"))
+            errors+=[("date_rec", forms.ValidationError("Date received occurs in the future"))]
+        if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(180)) and (self.cleaned_data["accept_reason"] is None)):
+            errors+=[("accept_reason", forms.ValidationError("If an item expires within 6 months an Acceptance Reason must be given"))]
+        if errors!=[]:
+            for error in errors:
+                self.add_error(error[0], error[1])
     def __init__(self, *args, **kwargs):
         super(NewInvForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
+        self.fields["accept_reason"].required= False
+
 class NewProbeForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec")
-        widgets = {"lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
+        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec", "accept_reason")
+        widgets = {"supplier":Select2Widget,
+                   "accept_reason":forms.Textarea(attrs={"style": "height:4em;"}),
                    "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
                    "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
@@ -75,13 +84,20 @@ class NewProbeForm(forms.ModelForm):
 
     def clean(self):
         super(NewProbeForm, self).clean()
+        errors=[]
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
-            self.add_error("date_exp", forms.ValidationError("Expiry date occurs before received date"))
+            errors+=[("date_exp", forms.ValidationError("Expiry date occurs before received date"))]
         elif self.cleaned_data["date_rec"]>datetime.date.today():
-            self.add_error("date_rec", forms.ValidationError("Date received occurs in the future"))
+            errors+=[("date_rec", forms.ValidationError("Date received occurs in the future"))]
+        if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(180)) and (self.cleaned_data["accept_reason"] is None)):
+            errors+=[("accept_reason", forms.ValidationError("If an item expires within 6 months an Acceptance Reason must be given"))]
+        if errors!=[]:
+            for error in errors:
+                self.add_error(error[0], error[1])
     def __init__(self, *args, **kwargs):
         super(NewProbeForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
+        self.fields["accept_reason"].required= False
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
@@ -103,7 +119,7 @@ class UseItemForm(forms.ModelForm):
                 self.add_error("date_used", forms.ValidationError("This Usage Date is before the most recent use"))
         if self.cleaned_data["date_used"]>datetime.date.today():
             self.add_error("date_used", forms.ValidationError("Date of use occurs in the future"))
-
+        
 class OpenItemForm(forms.ModelForm):
     class Meta:
         model = Inventory

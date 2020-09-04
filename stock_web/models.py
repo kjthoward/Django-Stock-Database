@@ -250,6 +250,7 @@ class Inventory(models.Model):
     current_vol=models.PositiveIntegerField(verbose_name=u"Current Volume (µl)", blank=True, null=True)
     last_usage=models.ForeignKey('CytoUsage', blank=True, null=True, on_delete=models.PROTECT)
     witness=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="4+", blank=True, null=True)
+    accept_reason=models.CharField(max_length=150, blank=True, null=True, verbose_name=u"Acceptance Reason")
     def days_remaining(self):
         return (self.date_exp-datetime.date.today()).days
 
