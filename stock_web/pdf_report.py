@@ -33,7 +33,7 @@ def report_gen(body, title, httpresponse, user):
 
     TABLE=Table(data=body, repeatRows=1)
     TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
-                               ('ALIGN', (0, 0), (-1, -1), "CENTER")]))
+                               ('ALIGN', (0, 0), (-1, -1), "LEFT")]))
     table=[]
     table.append(TABLE)
     doc = BaseDocTemplate(httpresponse, topMargin=12, bottomMargin=20, pagesize=landscape(A4))
