@@ -571,7 +571,7 @@ def invreport(httprequest,what, extension):
 def _item_context(httprequest, item, undo):
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
-             "Lot Number - {}".format(item.lot_no) if item.lot_no else "",
+             "Lot Number - {}".format(item.lot_no) if item.lot_no !="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number)]
     title_url=["","","",""]
     if undo=="undo":
@@ -669,7 +669,7 @@ def _cyto_context(httprequest, item, undo):
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
              "Purchase Order Number - {}".format(item.po),
-             "Lot Number - {}".format(item.lot_no) if item.lot_no else "",
+             "Lot Number - {}".format(item.lot_no) if item.lot_no!="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number),
              "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
              "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
