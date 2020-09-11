@@ -23,7 +23,7 @@ from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recip
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm
+                   StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, ValeDatesForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -93,12 +93,14 @@ def _toolbar(httprequest, active=""):
                         {"name":"Reagent", "url":reverse("stock_web:newreagent")},
                         {"name":"Recipe", "url":reverse("stock_web:newrecipe")}]
         toolbar.append(([{"name": "new", "glyphicon": "plus", "dropdown": new_dropdown}],"right"))
+        search_dropdown = [{"name": "Search", "url": reverse("stock_web:search")},
+                           {"name": "Validation Dates", "url": reverse("stock_web:valdates")}]
+        toolbar[1][0].append({"name": "Search", "glyphicon":"search", "dropdown": search_dropdown})
 
     else:
         toolbar.append(([{"name": "New Inventory Item", "glyphicon": "plus", "url":reverse("stock_web:newinv", args=["_"])}],"right"))
-
-
-    toolbar[1][0].append({"name": "search", "glyphicon": "search", "url": reverse("stock_web:search")})
+        toolbar[1][0].append({"name": "Search", "glyphicon": "search", "url": reverse("stock_web:search")})
+    
     toolbar[1][0].append({"name":"Account Settings", "glyphicon":"cog", "dropdown":[
                          {"name": "Logout "+str(httprequest.user), "url": reverse("stock_web:loginview")},
                          {"name":"Change Password", "url":reverse("stock_web:change_password")}]})
@@ -221,7 +223,7 @@ def search(httprequest):
         form = SearchForm(initial = {"in_stock":1})
     submiturl = reverse("stock_web:search")
     cancelurl = reverse("stock_web:listinv")
-    return render(httprequest, "stock_web/searchform.html", {"form": form, "heading":"Enter Search Query", "toolbar": _toolbar(httprequest, active="search"), "submiturl": submiturl, "cancelurl": cancelurl })
+    return render(httprequest, "stock_web/searchform.html", {"form": form, "heading":"Enter Search Query", "toolbar": _toolbar(httprequest, active="Search"), "submiturl": submiturl, "cancelurl": cancelurl })
 
 
 def loginview(httprequest):
@@ -255,6 +257,54 @@ def loginview(httprequest):
         else:
             form = LoginForm()
     return render(httprequest, "stock_web/login.html", {"form": form})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def valdates(httprequest):
+    submiturl = reverse("stock_web:valdates")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Search")
+    header = "Select Date Range to Search for"
+    form=ValeDatesForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or "Download" not in httprequest.POST["submit"]:
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                title="Items validated between {} and {} - Downloaded {}".format(form.cleaned_data["start_date"].strftime("%d-%m-%Y"), form.cleaned_data["end_date"].strftime("%d-%m-%Y"), datetime.datetime.today().date().strftime("%d-%m-%Y"))
+                # import pdb; pdb.set_trace()
+                items=Inventory.objects.filter(val_id__val_date__range=[form.cleaned_data["start_date"], form.cleaned_data["end_date"]])
+                body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
+                       "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
+                for item in items:
+                    body+= [[item.reagent.name,
+                              item.reagent.cat_no,
+                              item.supplier.name,
+                              item.lot_no,
+                              item.internal.batch_number,
+                              item.date_rec.strftime("%d/%m/%y"),
+                              item.date_exp.strftime("%d/%m/%y"),
+                              item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
+                              item.op_user.username if item.op_user is not None else "",
+                              item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
+                              item.val.val_run if item.val is not None else "",
+                              ]]
+                if "pdf" in httprequest.POST["submit"]:
+                    httpresponse = HttpResponse(content_type='application/pdf')
+                    httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
+                    table=report_gen(body,title,httpresponse,httprequest.user.username)
+                elif "xlsx" in httprequest.POST["submit"]:
+                    workbook = openpyxl.Workbook()
+                    worksheet = workbook.active
+                    for row in body:
+                        worksheet.append(row)
+                    httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
+                    httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
+                return httpresponse
+    else:
+        form = form()
+        return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -515,7 +565,9 @@ def invreport(httprequest,what, extension):
         elif what=="allinc":
             title="All Items In Stock Including Open Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
-
+        elif what=="finished":
+            title="All Finsihed Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True).order_by("reagent_id__name","-is_op","date_exp")
         if what!="minstock":
             if what=="all":
                 body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",

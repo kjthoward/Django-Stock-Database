@@ -264,6 +264,14 @@ class SearchForm(forms.Form):
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
 
+class ValeDatesForm(forms.Form):
+    start_date = forms.DateField(widget=DateInput(attrs={"max":(datetime.datetime.today().strftime("%Y-%m-%d"))}), label="Start Date")
+    end_date = forms.DateField(widget=DateInput(attrs={"max":(datetime.datetime.today().strftime("%Y-%m-%d"))}), label="End Date")
+
+    def clean(self):
+        super(ValeDatesForm,self).clean()
+        if self.cleaned_data["end_date"]<self.cleaned_data["start_date"]:
+            self.add_error("end_date",forms.ValidationError("End date cannot be before start date"))
 class ChangeDefForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
 
@@ -338,7 +346,8 @@ class InvReportForm(forms.Form):
                                       ("exp","Items Expiring Soon"),
                                       ("all","All In-Stock Items"),
                                       ("allinc","All In-Stock Items (Including Open Items)"),
-                                      ("minstock","All Items Below Minimum Stock Level")])
+                                      ("minstock","All Items Below Minimum Stock Level"),
+                                      ("finished","All Finished Items")])
     def clean(self):
         super(InvReportForm, self).clean()
         if self.cleaned_data["report"]=="minstock":
