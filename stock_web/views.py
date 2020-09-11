@@ -967,7 +967,7 @@ def valitem(httprequest,pk):
             if form.is_valid():
                 validated=Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)).reagent, Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
                 val_list=[x.internal.batch_number for x in validated]
-                messages.success(httprequest, "Validated: " + " ".join(val_list))
+                messages.success(httprequest, "Validated: " + " \n".join(val_list))
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
         if Inventory.objects.get(pk=int(pk)).val is not None:
@@ -999,7 +999,7 @@ def finishitem(httprequest, pk):
                             make="made"
                         else:
                             make="ordered"
-                        messages.success(httprequest, "Current stock level for {0} is {1}{2}. Minimum quantity is {3}{2}. Check if more needs to be {4}".format(item.reagent.name,
+                        messages.success(httprequest, "Current stock level for {0} is {1}{2}. \nMinimum quantity is {3}{2}. \nCheck if more needs to be {4}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
                                                                                                                                               "µl" if item.reagent.is_cyto else "",
                                                                                                                                               item.reagent.min_count,
@@ -1153,7 +1153,7 @@ def newinv(httprequest, pk):
                     if form.cleaned_data["date_exp"]<(form.cleaned_data["date_rec"] + relativedelta(months=+6)):
                         message+=["ITEM EXPIRES WITHIN 6 MONTHS"]
                     if message!=[]:
-                        messages.success(httprequest," ".join(message))
+                        messages.success(httprequest," \n".join(message))
                     messages.info(httprequest, "STOCK NUMBERS:")
                     for ID in ids:
                         messages.info(httprequest, ID)
@@ -1215,7 +1215,7 @@ def createnewsol(httprequest, pk):
                     if int(invitem.current_vol)-int(vol)<0:
                         errors+=["Reagent {} only has {}µl in the tube. Cannot take {}µl".format(invitem.reagent.name, invitem.current_vol, vol)]
                 if errors!=[]:
-                    messages.success(httprequest, " ".join(errors))
+                    messages.success(httprequest, " \n".join(errors))
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
                 vol_made=httprequest.POST.getlist("total_volume")[0]
                 if int(vol_made)<sum_vol:
@@ -1241,7 +1241,7 @@ def createnewsol(httprequest, pk):
                 if item.is_op==False:
                     un_open+=["Reagent {} was not previously open. It has now been marked as open on its date received".format(item)]
             if un_open!=[]:
-                messages.success(httprequest," ".join(un_open))
+                messages.success(httprequest," \n".join(un_open))
             sol=Solutions.create(recipe, [int(x) for x in httprequest.POST.getlist("requests") if x.isdigit()], vols_used, vol_made, httprequest.user, witness)
             pk=Inventory.objects.get(internal__batch_number=sol[0]).pk
             return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))

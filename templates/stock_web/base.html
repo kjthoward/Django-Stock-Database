@@ -33,7 +33,12 @@
   {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} <script>swal("Stock Database", "{{ message }}") </script> {% endif %}
+    
+	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} 
+    <script>
+      var span = document.createElement("span");
+      span.innerHTML='{{ message| linebreaks }}'
+      swal({title:"Stock Database", content:span}) </script> {% endif %}
     
 	{% if message.level == DEFAULT_MESSAGE_LEVELS.INFO %}<li>{{ message }}</li>{% endif %}
 		
