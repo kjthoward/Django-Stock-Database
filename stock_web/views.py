@@ -78,7 +78,7 @@ def _toolbar(httprequest, active=""):
 
     undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedef", args=["_"])},
                      {"name": "Edit Minimum Stock Levels", "url":reverse("stock_web:changemin",args=["_"])},
-                     {"name": "(De)Activate Reagents", "url":reverse("stock_web:activreag")},
+                     {"name": "(De)Activate Reagents/Recipies", "url":reverse("stock_web:activreag")},
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
@@ -1377,7 +1377,7 @@ def activsup(httprequest):
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activreag(httprequest):
-    header = ["Select Reagent To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
+    header = ["Select An Item To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
     form=EditReagForm
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
