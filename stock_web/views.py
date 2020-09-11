@@ -446,11 +446,12 @@ def stockreport(httprequest, pk, extension):
         title="{} - Stock Report - Downloaded {}".format(Reagents.objects.get(pk=int(pk)), datetime.datetime.today().date().strftime("%d-%m-%Y"))
         #gets items, with open items first, then sorted by expirey date
         items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
-        body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
+        body=[["Supplier Name", "Catalogue Number", "Lot Number", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
 
         for item in items:
             body+= [[ item.supplier.name,
+                      item.reagent.cat_no,
                       item.lot_no,
                       item.internal.batch_number,
                       item.date_rec.strftime("%d/%m/%y"),
@@ -517,10 +518,11 @@ def invreport(httprequest,what, extension):
 
         if what!="minstock":
             if what=="all":
-                body=[["Reagent", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry"]]
                 for item in items:
                     body+= [[item.reagent.name,
+                              item.reagent.cat_no,
                               item.supplier.name,
                               item.lot_no,
                               item.internal.batch_number,
@@ -529,10 +531,11 @@ def invreport(httprequest,what, extension):
                               ]]
 
             else:
-                body=[["Reagent", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
                 for item in items:
                     body+= [[item.reagent.name,
+                              item.reagent.cat_no,
                               item.supplier.name,
                               item.lot_no,
                               item.internal.batch_number,
@@ -546,11 +549,12 @@ def invreport(httprequest,what, extension):
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
-            body=[["Reagent", "Default Supplier", "Catalogue Number", "Number In Stock", "Minimum Stock Level"]]
+            body=[["Reagent", "Catalogue Number", "Default Supplier", "Catalogue Number", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
+                        item.reagent.cat_no,
                         item.supplier_def.name if item.supplier_def is not None else "",
-                        item.cat_no,
+                        item.reagent.cat_no,
                          "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
                          "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]]
         if extension=='0':
@@ -1055,7 +1059,7 @@ def newinv(httprequest, pk):
         item=Reagents.objects.get(pk=int(pk))
         if item.recipe is not None:
             return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[item.recipe_id]))
-        title=["Enter Delivery Details - {} - {}".format(item, item.cat_no)]
+        title=["Enter Delivery Details - {} - {}".format(item, item.reagent.cat_no)]
         template="stock_web/newinvform.html"
         if item.is_cyto==False:
             form=NewInvForm
