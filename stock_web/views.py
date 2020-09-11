@@ -1292,7 +1292,7 @@ def newrecipe(httprequest):
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activsup(httprequest):
-    header = ["Select Supplier To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
+    header = "Select Supplier To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"
     form=EditSupForm
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1316,12 +1316,12 @@ def activsup(httprequest):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 
-    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+    return render(httprequest, "stock_web/deactivateform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activreag(httprequest):
-    header = ["Select Reagent To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
+    header = "Select Reagent To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"
     form=EditReagForm
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1352,7 +1352,7 @@ def activreag(httprequest):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 
-    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+    return render(httprequest, "stock_web/deactivateform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
