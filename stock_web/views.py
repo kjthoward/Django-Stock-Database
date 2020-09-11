@@ -137,7 +137,7 @@ def change_password(httprequest):
             for v in form.errors.values():
                 for error in v:
                     errors+=[error.replace("didn't", "do not")]
-            messages.success(httprequest, (" ".join(errors)))
+            messages.success(httprequest, (" \n".join(errors)))
             form.errors.clear()
             messages.info(httprequest, "Your password can't be too similar to your other personal information.")
             messages.info(httprequest, "Your password must contain at least 8 characters.")
@@ -893,7 +893,7 @@ def useitem(httprequest,pk):
                 if int(item.current_vol)==0:
                     message+=["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
                 if message!=[]:
-                    messages.success(httprequest," ".join(message))
+                    messages.success(httprequest," \n".join(message))
 
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
@@ -1678,11 +1678,11 @@ def undoitem(httprequest, task, pk):
                             item.save()
                         elif int(form.cleaned_data["all_type"])==1:
                             items=Inventory.objects.filter(val_id=current_val_id, reagent_id=item.reagent_id)
-                            messages.success(httprequest, "UNVALIDATED: {}".format(", ".join(test.internal.batch_number for test in items)))
+                            messages.success(httprequest, "UNVALIDATED: {}".format(" \n".join(test.internal.batch_number for test in items)))
                             items.update(val_id=None)
                         elif int(form.cleaned_data["all_type"])==2:
                             items=Inventory.objects.filter(val_id=current_val_id)
-                            messages.success(httprequest, "UNVALIDATED: {}".format(", ".join(test.internal.batch_number for test in items)))
+                            messages.success(httprequest, "UNVALIDATED: {}".format(" \n".join(test.internal.batch_number for test in items)))
                             items.update(val_id=None)
                         if len(Inventory.objects.filter(val_id=current_val_id))==0:
                             Validation.objects.get(pk=current_val_id).delete()
