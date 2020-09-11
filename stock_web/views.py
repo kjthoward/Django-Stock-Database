@@ -218,7 +218,7 @@ def search(httprequest):
                         queries += ["{}={}".format(query, val)]
                 return HttpResponseRedirect(reverse("stock_web:inventory", args=["search", ";".join(queries),"_","1"]))
     else:
-        form = SearchForm()
+        form = SearchForm(initial = {"in_stock":1})
     submiturl = reverse("stock_web:search")
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/searchform.html", {"form": form, "heading":"Enter Search Query", "toolbar": _toolbar(httprequest, active="search"), "submiturl": submiturl, "cancelurl": cancelurl })
