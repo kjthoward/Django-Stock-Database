@@ -443,7 +443,7 @@ def stockreport(httprequest, pk, extension):
             form = form()
 
     else:
-        title="{} - Stock Report".format(Reagents.objects.get(pk=int(pk)))
+        title="{} - Stock Report - Downloaded {}".format(Reagents.objects.get(pk=int(pk)), datetime.datetime.today().date().strftime("%d-%m-%Y"))
         #gets items, with open items first, then sorted by expirey date
         items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
         body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
@@ -500,19 +500,19 @@ def invreport(httprequest,what, extension):
             form = form()
     else:
         if what=="unval":
-            title="All Unvalidated Items Report"
+            title="All Unvalidated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="val":
-            title="All Validated Items Report"
+            title="All Validated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="exp":
-            title="Items Expiring Soon Report"
+            title="Items Expiring Soon Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="all":
-            title="All Items In Stock Report"
+            title="All Items In Stock Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="allinc":
-            title="All Items In Stock Including Open Report"
+            title="All Items In Stock Including Open Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
 
         if what!="minstock":
@@ -544,12 +544,12 @@ def invreport(httprequest,what, extension):
                               item.val.val_run if item.val is not None else "",
                               ]]
         elif what=="minstock":
-            title="Items Below Their Minimum Stock Levels"
+            title="Items Below Their Minimum Stock Levels - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
             body=[["Reagent", "Default Supplier", "Catalogue Number", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
-                        item.supplier_def.name,
+                        item.supplier_def.name if item.supplier_def is not None else "",
                         item.cat_no,
                          "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
                          "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]]
