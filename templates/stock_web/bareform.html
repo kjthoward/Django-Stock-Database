@@ -1,4 +1,3 @@
-<body onload="hide_accept()">
 <div class="container-fluid">
 {% for head in header %}
 <h4>{{ head }}</h4>
@@ -22,7 +21,7 @@
     <form action="{{ submiturl }}" method="post">
       {% csrf_token %}
       <fieldset><legend>{{ heading }}</legend>
-          <table onchange="show_accept()">
+          <table>
             {{ form }}
           </table>
         <input type="submit" class="btn btn-success" name="submit" value="save" />
@@ -31,54 +30,3 @@
       </fieldset>
     </form>
 </div>
-</body>
-<script>
-  // Function to show "Acceptance Reason" box if expiry date is within 6 months of date received
-  // will also hide it if dates changed to has >6 months
-  // WILL CAUSE JS ERRORS ON PAGES WITHOUT DATE_EXP AND DATE_REC BOXES (Deemed ok as no impact to user, just makes messy console)
-function show_accept() {
-  var accept_box = document.getElementById("id_accept_reason");
-  var date_rec_box = document.getElementById("id_date_rec");
-  var date_exp_box = document.getElementById("id_date_exp");
-  var errors = document.getElementsByClassName("errorlist");
-  if ((date_exp_box.valueAsDate - date_rec_box.valueAsDate <= 15638400000) && (date_exp_box.value!="") && (date_rec_box.value!="")) {
-    if (accept_box.style.display === "none") {
-      accept_box.style.display = "block";
-      accept_box.labels[0].innerHTML = "Acceptance Reason";
-    } 
-  }
-  else {
-    accept_box.style.display = "none";
-    accept_box.labels[0].innerHTML = "";
-    accept_box.value = "";
-    // Hides error message if it exists
-    if (errors.length!=0){
-      var i;
-      for (i=0; i < errors.length; i++){
-        if (errors[i].children[0].innerText.includes("Acceptance")){
-          errors[i].remove()
-        }
-      }
-    }
-  }
-}
-
-function hide_accept() {
-  var accept_box = document.getElementById("id_accept_reason");
-  var errors = document.getElementsByClassName("errorlist");
-  // won't hide the box if there's an error on the Acceptance Reason box
-  var hide = true;
-  if (errors.length!=0){
-    var i;
-    for (i=0; i < errors.length; i++){
-      if (errors[i].children[0].innerText.includes("Acceptance")){
-        hide = false;
-      }
-    }
-  }
-  if (hide == true){
-    accept_box.style.display = "none";
-    accept_box.labels[0].innerHTML = "";
-  }
-}
-</script>

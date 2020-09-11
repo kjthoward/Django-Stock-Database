@@ -1056,7 +1056,7 @@ def newinv(httprequest, pk):
         if item.recipe is not None:
             return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[item.recipe_id]))
         title=["Enter Delivery Details - {}".format(item)]
-        template="stock_web/form.html"
+        template="stock_web/newinvform.html"
         if item.is_cyto==False:
             form=NewInvForm
         elif item.is_cyto==True:
@@ -1248,7 +1248,7 @@ def newreagent(httprequest):
         form = form()
     submiturl = reverse("stock_web:newreagent")
     cancelurl = reverse("stock_web:listinv")
-    return render(httprequest, "stock_web/form.html", {"header":["New Reagent Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+    return render(httprequest, "stock_web/form.html", {"header":"New Reagent Input", "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -1292,7 +1292,7 @@ def newrecipe(httprequest):
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activsup(httprequest):
-    header = "Select Supplier To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"
+    header = ["Select Supplier To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
     form=EditSupForm
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1316,12 +1316,12 @@ def activsup(httprequest):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 
-    return render(httprequest, "stock_web/deactivateform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def activreag(httprequest):
-    header = "Select Reagent To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"
+    header = ["Select Reagent To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
     form=EditReagForm
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1352,7 +1352,7 @@ def activreag(httprequest):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 
-    return render(httprequest, "stock_web/deactivateform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -1361,7 +1361,7 @@ def changemin(httprequest, pk):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     if pk=="_":
-        header = "Select Reagent to Change Minimum Stock Level"
+        header = ["Select Reagent to Change Minimum Stock Level"]
         form=ChangeMinForm1
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
@@ -1372,7 +1372,7 @@ def changemin(httprequest, pk):
                     return HttpResponseRedirect(reverse("stock_web:changemin", args=[form.cleaned_data["name"].pk]))
         else:
             form = form()
-        return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+        return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item=Reagents.objects.get(pk=int(pk))
         if item.is_cyto==True:
@@ -1401,7 +1401,7 @@ def changedef(httprequest, pk):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     if pk=="_":
-        header = "Select Reagent to Change Default Supplier - THIS WILL NOT AFFECT EXISTING ITEMS"
+        header = ["Select Reagent to Change Default Supplier - THIS WILL NOT AFFECT EXISTING ITEMS"]
         form=ChangeDefForm1
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
@@ -1412,7 +1412,7 @@ def changedef(httprequest, pk):
                     return HttpResponseRedirect(reverse("stock_web:changedef", args=[form.cleaned_data["name"].pk]))
         else:
             form = form()
-        return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+        return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item=Reagents.objects.get(pk=int(pk))
         header = ["Select New Default Supplier for {} - THIS WILL NOT AFFECT EXISTING ITEMS".format(item)]
@@ -1435,7 +1435,7 @@ def changedef(httprequest, pk):
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def removesup(httprequest):
-    header = "Select Supplier To Remove"
+    header = ["Select Supplier To Remove"]
     form=RemoveSupForm
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
@@ -1451,7 +1451,7 @@ def removesup(httprequest):
     submiturl = reverse("stock_web:removesup")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
-    return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
