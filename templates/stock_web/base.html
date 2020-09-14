@@ -1,4 +1,53 @@
 <!DOCTYPE html>
+<script>
+
+  // Fucntion to change the date by X years
+  function change_date(years){
+    var today = new Date().toISOString().substr(0,10);
+    year=today.split("-")[0];
+    month=today.split("-")[1];
+    day=today.split("-")[2];
+    return (Number(year)+ Number(years))+"-" + month + "-" + day;
+  }
+  // Checks if various date boxes exist and sets min/max values as needed
+  // This used to be done in forms attrs but forms get initialised on server boot, so dates based off of
+  // current date used server boot date not the actual "today"
+  function initiate_dates() {
+    var date_rec_box = document.getElementById("id_date_rec");
+    var date_use_box = document.getElementById("id_date_used");
+    var date_open_box = document.getElementById("id_date_op");
+    var date_val_box = document.getElementById("id_val_date");
+    var date_fin_box = document.getElementById("id_date_fin");
+    var date_start_box = document.getElementById("id_start_date");
+    var date_end_box = document.getElementById("id_end_date");
+    if (date_rec_box != null){
+      date_rec_box.min=change_date(-1);
+      date_rec_box.max=change_date(0);
+    }
+    if (date_use_box != null){
+      date_use_box.min=change_date(-1);
+      date_use_box.max=change_date(5);
+    }
+    if (date_open_box != null){
+      date_open_box.min=change_date(-1);
+      date_open_box.max=change_date(5);
+    }
+    if (date_val_box != null){
+      date_val_box.min=change_date(-1);
+      date_val_box.max=change_date(5);
+    }
+    if (date_fin_box != null){
+      date_fin_box.min=change_date(-1);
+      date_fin_box.max=change_date(5);
+    }
+    if (date_start_box != null){
+      date_start_box.max=change_date(0);
+    }
+    if (date_end_box != null){
+      date_end_box.max=change_date(0);
+    }
+  }
+</script>
 <html lang="en">
   <head>
 	{{ form.media.css }}
@@ -23,7 +72,7 @@
 
   </head>
 
-  <body>
+  <body onload="initiate_dates()">
 	{{ form.media.js }}
     {% block toolbar %}
     {% endblock toolbar %}
@@ -33,15 +82,15 @@
   {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-    
-	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} 
+
+	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
     <script>
       var span = document.createElement("span");
       span.innerHTML='{{ message| linebreaks }}'
       swal({title:"Stock Database", content:span}) </script> {% endif %}
-    
+
 	{% if message.level == DEFAULT_MESSAGE_LEVELS.INFO %}<li>{{ message }}</li>{% endif %}
-		
+
     {% endfor %}
 	{% endif %}
 </ul>

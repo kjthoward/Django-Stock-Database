@@ -48,7 +48,7 @@ class NewInvForm(forms.ModelForm):
         fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "num_rec", "accept_reason")
         widgets = {"supplier":Select2Widget,
                    "accept_reason":forms.Textarea(attrs={"style": "height:4em;"}),
-                   "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
+                   "date_rec":DateInput(),
                    "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
                    "vol_rec":forms.HiddenInput(),
@@ -77,7 +77,7 @@ class NewProbeForm(forms.ModelForm):
         fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec", "accept_reason")
         widgets = {"supplier":Select2Widget,
                    "accept_reason":forms.Textarea(attrs={"style": "height:4em;"}),
-                   "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
+                   "date_rec":DateInput(),
                    "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
                    "current_vol":forms.HiddenInput()}
@@ -101,7 +101,7 @@ class NewProbeForm(forms.ModelForm):
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
-    date_used = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}))
+    date_used = forms.DateField(widget=DateInput(), label=u"Date Used")
     class Meta:
         model = Inventory
         fields = ("current_vol","date_op", "last_usage")
@@ -119,13 +119,13 @@ class UseItemForm(forms.ModelForm):
                 self.add_error("date_used", forms.ValidationError("This Usage Date is before the most recent use"))
         if self.cleaned_data["date_used"]>datetime.date.today():
             self.add_error("date_used", forms.ValidationError("Date of use occurs in the future"))
-        
+
 class OpenItemForm(forms.ModelForm):
     class Meta:
         model = Inventory
         fields = ("date_rec", "date_op")
         widgets = {"date_rec":forms.HiddenInput,
-                   "date_op":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")})}
+                   "date_op":DateInput()}
         labels = {"date_op":"Date Open"}
     def clean(self):
         super(OpenItemForm, self).clean()
@@ -135,7 +135,7 @@ class OpenItemForm(forms.ModelForm):
             self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
 
 class ValItemForm(forms.ModelForm):
-    val_date = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Validation Date")
+    val_date = forms.DateField(widget=DateInput(), label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
     class Meta:
         model = Inventory
@@ -149,7 +149,6 @@ class ValItemForm(forms.ModelForm):
             self.add_error("val_date", forms.ValidationError("Date of validation run occurs in the future"))
 
 class FinishItemForm(forms.ModelForm):
-    date_fin = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Date Finished")
     class Meta:
         model = Inventory
         fields = ("date_op","date_rec", "fin_text","is_op", "date_fin")
@@ -157,7 +156,7 @@ class FinishItemForm(forms.ModelForm):
                    "date_rec":forms.HiddenInput,
                    "is_op":forms.HiddenInput,
                    "fin_text":forms.Textarea(attrs={"style": "height:5em;"}),
-                   "date_fin":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")})}
+                   "date_fin":DateInput()}
         labels = {"date_fin":"Date Finished"}
     def clean(self):
         super(FinishItemForm, self).clean()
@@ -265,8 +264,8 @@ class SearchForm(forms.Form):
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
 
 class ValeDatesForm(forms.Form):
-    start_date = forms.DateField(widget=DateInput(attrs={"max":(datetime.datetime.today().strftime("%Y-%m-%d"))}), label="Start Date")
-    end_date = forms.DateField(widget=DateInput(attrs={"max":(datetime.datetime.today().strftime("%Y-%m-%d"))}), label="End Date")
+    start_date = forms.DateField(widget=DateInput(), label="Start Date")
+    end_date = forms.DateField(widget=DateInput(), label="End Date")
 
     def clean(self):
         super(ValeDatesForm,self).clean()
