@@ -110,15 +110,19 @@ class UseItemForm(forms.ModelForm):
                   "last_usage":forms.HiddenInput}
     def clean(self):
         super(UseItemForm, self).clean()
+        errors=[]
         if self.cleaned_data["vol_used"]>self.cleaned_data["current_vol"]:
-            self.add_error("vol_used", forms.ValidationError("Volume Used Exceeds Current Volume in Tube"))
+            errors+=[("vol_used", forms.ValidationError("Volume Used Exceeds Current Volume in Tube"))]
         if self.cleaned_data["date_used"]<self.cleaned_data["date_op"]:
-            self.add_error("date_used", forms.ValidationError("Date Used is before Date Open"))
+            errors+=[("date_used", forms.ValidationError("Date Used is before Date Open"))]
         if self.cleaned_data["last_usage"] is not None:
             if self.cleaned_data["date_used"]<self.cleaned_data["last_usage"].date:
-                self.add_error("date_used", forms.ValidationError("This Usage Date is before the most recent use"))
+                errors+=[("date_used", forms.ValidationError("This Usage Date is before the most recent use"))]
         if self.cleaned_data["date_used"]>datetime.date.today():
-            self.add_error("date_used", forms.ValidationError("Date of use occurs in the future"))
+            errors+=[("date_used", forms.ValidationError("Date of use occurs in the future"))]
+        if errors!=[]:
+            for error in errors:
+                self.add_error(error[0], error[1])
 
 class OpenItemForm(forms.ModelForm):
     class Meta:
