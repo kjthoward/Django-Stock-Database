@@ -271,10 +271,6 @@ class ValeDatesForm(forms.Form):
     start_date = forms.DateField(widget=DateInput(), label="Start Date")
     end_date = forms.DateField(widget=DateInput(), label="End Date")
 
-    def clean(self):
-        super(ValeDatesForm,self).clean()
-        if self.cleaned_data["end_date"]<self.cleaned_data["start_date"]:
-            self.add_error("end_date",forms.ValidationError("End date cannot be before start date"))
 class ChangeDefForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
 
