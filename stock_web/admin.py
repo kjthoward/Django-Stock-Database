@@ -59,6 +59,15 @@ class CustomUserAdmin(UserAdmin):
     list_display = ("username","email","first_name","last_name","is_staff","is_active")
     change_password_form = PWResetForm
     add_form_template = 'admin/stock_web/add_form.html'
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
+        (_('Permissions'), {
+            'fields': ('is_active', 'is_superuser', 'groups'),
+        }),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+    )
+    # import pdb; pdb.set_trace()
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         is_superuser = request.user.is_superuser
@@ -66,7 +75,6 @@ class CustomUserAdmin(UserAdmin):
         #Only Superusers can change usernames or create super users, checks if form is add or change
         #as obviously you need to be able to add username...
         if not is_superuser:
-
             if "change" in request.path:
                 disabled_fields = {
                 'username',
@@ -83,10 +91,8 @@ class CustomUserAdmin(UserAdmin):
         ):
             disabled_fields |= {
                 'is_active',
-                'is_staff',
                 'is_superuser',
                 'groups',
-                'user_permissions',
             }
         for f in disabled_fields:
             if f in form.base_fields:
