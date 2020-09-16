@@ -240,6 +240,12 @@ def loginview(httprequest):
                 user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
                 if user is not None and user.is_active:
                     login(httprequest, user)
+                    #Autosets the staff status based on group
+                    if user.groups.filter(name="Senior_Admin").exists() or user.is_superuser:
+                        user.is_staff=True
+                    else:
+                        user.is_staff=False
+                    user.save()
                     if ForceReset.objects.get(user=httprequest.user.pk).force_password_change==True:
                         messages.success(httprequest,"You are required to change your password after resetting it")
                         return HttpResponseRedirect(reverse("stock_web:change_password"))
