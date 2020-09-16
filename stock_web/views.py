@@ -1310,7 +1310,7 @@ def newreagent(httprequest):
         form = form()
     submiturl = reverse("stock_web:newreagent")
     cancelurl = reverse("stock_web:listinv")
-    return render(httprequest, "stock_web/form.html", {"header":"New Reagent Input", "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+    return render(httprequest, "stock_web/form.html", {"header":["New Reagent Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
