@@ -39,7 +39,7 @@ def is_logged_in(user):
     return user.is_active
 #used in user_passes_test decorator to check if the account logged in is admin
 def is_admin(user):
-    return user.is_staff
+    return (user.is_staff or user.groups.filter(name="Admin").exists())
 #used in user_passes_test decorator to check if the account has a forced password reset active (decorate used as
 #even though after logging in with a reset password it prompts you to change, could go to any link manually to skip
 #decorator means you will always be brought back to change password
@@ -84,7 +84,7 @@ def _toolbar(httprequest, active=""):
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
 
 
-    if httprequest.user.is_staff:
+    if is_admin(httprequest.user):
         toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"]), "glyphicon":"list"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
