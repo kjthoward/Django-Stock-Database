@@ -87,7 +87,8 @@ def _toolbar(httprequest, active=""):
     if is_admin(httprequest.user):
         toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"]), "glyphicon":"list"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
-        toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
+        if httprequest.user.is_staff:
+            toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
                         {"name":"Reagent", "url":reverse("stock_web:newreagent")},
