@@ -100,7 +100,7 @@ def _toolbar(httprequest, active=""):
     else:
         toolbar.append(([{"name": "New Inventory Item", "glyphicon": "plus", "url":reverse("stock_web:newinv", args=["_"])}],"right"))
         toolbar[1][0].append({"name": "Search", "glyphicon": "search", "url": reverse("stock_web:search")})
-    
+
     toolbar[1][0].append({"name":"Account Settings", "glyphicon":"cog", "dropdown":[
                          {"name": "Logout "+str(httprequest.user), "url": reverse("stock_web:loginview")},
                          {"name":"Change Password", "url":reverse("stock_web:change_password")}]})
@@ -244,7 +244,7 @@ def loginview(httprequest):
                         messages.success(httprequest,"You are required to change your password after resetting it")
                         return HttpResponseRedirect(reverse("stock_web:change_password"))
                     else:
-                        return HttpResponseRedirect(reverse("stock_web:listinv"))
+                        return HttpResponseRedirect(httprequest.GET["next"] if "next" in httprequest.GET.keys() else reverse("stock_web:listinv"))
                 else:
                     try:
                         User.objects.get(username=form.cleaned_data["username"])
