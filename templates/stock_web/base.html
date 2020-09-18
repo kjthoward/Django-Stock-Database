@@ -47,6 +47,7 @@
       date_end_box.max=change_date(0);
     }
   }
+  window.onload=initiate_dates();
 </script>
 <html lang="en">
   <head>
@@ -72,7 +73,7 @@
 
   </head>
 
-  <body onload="initiate_dates()">
+  <body>
 	{{ form.media.js }}
     {% block toolbar %}
     {% endblock toolbar %}

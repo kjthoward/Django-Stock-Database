@@ -1,7 +1,7 @@
 {% extends "stock_web/stock.html" %}
 
 {% block content %}
-<body onload="hide_accept()">
+<body>
 <div class="container-fluid">
 {% for head in header %}
 <h4>{{ head }}</h4>
@@ -83,5 +83,7 @@ function hide_accept() {
     accept_box.labels[0].innerHTML = "";
   }
 }
+window.onload=hide_accept();
+window.onload=initiate_dates();
 </script>
 {% endblock content %}
