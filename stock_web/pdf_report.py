@@ -31,12 +31,15 @@ def fake_for_pages(body, title, httpresponse, user):
     for b in body:
         temp=[]
         for part in b:
-            if len(part)>40:
-                t=part.split(' ')
-                a=" ".join(t[0:round(len(t)/2)])
-                b=" ".join(t[len(t)-round(len(t)/2):])
-                temp+=["\n".join([a,b])]
-            else:
+            try:
+                if len(part)>40:
+                    t=part.split(' ')
+                    a=" ".join(t[0:round(len(t)/2)])
+                    b=" ".join(t[len(t)-round(len(t)/2):])
+                    temp+=["\n".join([a,b])]
+                else:
+                    temp+=[part]
+            except:
                 temp+=[part]
         new_body+=[temp]
     TABLE=Table(data=new_body, repeatRows=1)
@@ -82,12 +85,15 @@ def report_gen(body, title, httpresponse, user):
     for b in body:
         temp=[]
         for part in b:
-            if len(part)>40:
-                t=part.split(' ')
-                a=" ".join(t[0:round(len(t)/2)])
-                b=" ".join(t[len(t)-round(len(t)/2):])
-                temp+=["\n".join([a,b])]
-            else:
+            try:
+                if len(part)>40:
+                    t=part.split(' ')
+                    a=" ".join(t[0:round(len(t)/2)])
+                    b=" ".join(t[len(t)-round(len(t)/2):])
+                    temp+=["\n".join([a,b])]
+                else:
+                    temp+=[part]
+            except:
                 temp+=[part]
         new_body+=[temp]
     TABLE=Table(data=new_body, repeatRows=1)
