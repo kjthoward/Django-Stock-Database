@@ -12,7 +12,7 @@
                 {% endfor %}
                 <th></th>
             </tr>
-            {% for row, request_id, checked, cyto in body %}
+            {% for row, request_id, checked, vol in body %}
             <tr>
                 {% for entry in row %}
                 <td>
@@ -20,12 +20,15 @@
                 </td>
                 {% endfor %}
                 <td><input type="checkbox" name="requests" value="{{ request_id }}" {{ checked }} /></td>
-				{% if cyto %}<td><input type="number" name="volume"/></td>{% endif %}
+				{% if vol %}<td><input type="number" name="volume"/></td>{% endif %}
+        <!-- hidden text box for items that don't need an input volume, given 'a' value so can be ignored later -->
+        {% if not vol %}<td><input type="hidden" name="volume" value="a"/></td>{% endif %}
 				<td></td>
             </tr>
             {% endfor %}
         </table>
-		{% if total %}<p>{{ form }}</p>
+    <p>{{ form }}</p>
+    {% if total %}
 		<b>Total Volume Made (µl):</b>
 		<input type="number" name="total_volume"/>
 		<div class="row">

@@ -1191,28 +1191,46 @@ def createnewsol(httprequest, pk):
             Reagents_set=set(Reagents)
             vols_used={}
             vol_made=""
+            potentials=recipe.liststock()
+            potentials.sort(key=attrgetter("is_op"),reverse=True)
+            comp_vol=any(p.current_vol is not None for p in potentials)
+            witness=None
+            try:
+                witness=User.objects.get(pk=int(form.data["name"]))
+                if witness==httprequest.user:
+                    messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
+                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+            except ValueError:
+                witness=None
             if recipe.is_cyto==True:
+                vol_made=httprequest.POST.getlist("total_volume")[0]
                 if httprequest.POST.getlist("total_volume")==[""]:
                     messages.success(httprequest, "Total Volume Made Not Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+            if comp_vol==True:
                 if all(v=="" for v in httprequest.POST.getlist("volume")):
                     messages.success(httprequest, "No Volumes Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                potentials=recipe.liststock()
-                potentials.sort(key=attrgetter("is_op"),reverse=True)
+                #if the first item isn't a cyto, zip gives the first cyto (item #2) to item #1
+                #work around was to give everything that's not cyto a hidden 0, but then those all of those aren't checked so ERRORS
+                #find fix for allowing intended 0+ticked to be counted but not giving "volumes entered doesn't match tick boxes" error...?
                 vols=zip(potentials,httprequest.POST.getlist("volume"))
 
                 for vol in vols:
+                    #skips volumes with "a" as a is the value given to hidden volumes so the zip works properly
+                    if vol[1]=="a":
+                        continue
                     if vol[1]!="":
                         if str(vol[0].pk) not in httprequest.POST.getlist("requests"):
                             messages.success(httprequest, "Selected Checkmarks and Volume Used boxes do not match")
                             return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                        else:
+                        elif vol[1]!="0":
                             vols_used[str(vol[0].pk)]=vol[1]
                 for req in httprequest.POST.getlist("requests"):
-                    if req not in vols_used.keys():
+                    if req not in vols_used.keys() and Inventory.objects.get(pk=int(req)).current_vol is not None:
                         messages.success(httprequest, "Selected Checkmarks and Volume Used boxes do not match")
                         return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+
                 errors=[]
                 sum_vol=0
                 for item, vol in vols_used.items():
@@ -1221,18 +1239,15 @@ def createnewsol(httprequest, pk):
                     if int(invitem.current_vol)-int(vol)<0:
                         errors+=["Reagent {} only has {}µl in the tube. Cannot take {}µl".format(invitem.reagent.name, invitem.current_vol, vol)]
                 if errors!=[]:
-                    messages.success(httprequest, " \n".join(errors))
+                    messages.success(httprequest, " ".join(errors))
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                vol_made=httprequest.POST.getlist("total_volume")[0]
-                if int(vol_made)<sum_vol:
-                    messages.success(httprequest, "Total Volume of Reagents Used is {}µl. Total Volume made must be at least this volume".format(sum_vol))
-                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                witness=User.objects.get(pk=int(form.data["name"]))
-                if witness==httprequest.user:
-                    messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
-                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-            else:
-                witness=None
+                if recipe.is_cyto==True:
+                    if int(vol_made)<sum_vol:
+                        messages.success(httprequest, "Total Volume of Reagents Used is {}µl. Total Volume made must be at least this volume".format(sum_vol))
+                        return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+
+
+
             if len(Reagents_set)!=recipe.length():
                 if len(Reagents_set)==1:
                     grammar="item was"
@@ -1247,7 +1262,7 @@ def createnewsol(httprequest, pk):
                 if item.is_op==False:
                     un_open+=["Reagent {} was not previously open. It has now been marked as open on its date received".format(item)]
             if un_open!=[]:
-                messages.success(httprequest," \n".join(un_open))
+                messages.success(httprequest," ".join(un_open))
             sol=Solutions.create(recipe, [int(x) for x in httprequest.POST.getlist("requests") if x.isdigit()], vols_used, vol_made, httprequest.user, witness)
             pk=Inventory.objects.get(internal__batch_number=sol[0]).pk
             return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
@@ -1258,17 +1273,18 @@ def createnewsol(httprequest, pk):
         values=[]
         inv_ids = []
         checked = []
-        CYTO=[]
+        VOL=[]
         potentials=recipe.liststock()
         potentials.sort(key=attrgetter("is_op"),reverse=True)
-        if recipe.is_cyto==False:
-            cyto=False
-            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Validation Run", "Select"]
-        elif recipe.is_cyto==True:
-            cyto=True
-            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Current Volume", "Validation Run", "Select", "Volume used (µl)"]
+        comp_vol=any(p.current_vol is not None for p in potentials)
+        if comp_vol==False:
+            vol=False
+            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Validation Run", "Select", ""]
+        elif comp_vol==True:
+            vol=True
+            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Current Volume", "Validation Run", "Select", "Volume used (µl)", ""]
         for p in potentials:
-            #temp used so that can make array for that item, then insert if it's cyto
+            #temp used so that can make array for that item, then insert if it's a cyto reagent
             temp=[p.reagent.name,
                   p.supplier.name,
                   p.date_exp,
@@ -1276,22 +1292,23 @@ def createnewsol(httprequest, pk):
                   p.lot_no,
                   p.date_op if p.date_op is not None else "NOT OPEN",
                   p.val.val_run if p.val is not None else ""]
-            if cyto==True:
-                temp.insert(-1, "{}µl".format(p.current_vol))
+            if vol==True:
+                temp.insert(-1, "{}µl".format(p.current_vol) if p.current_vol is not None else "N/A")
             values.append(temp)
             inv_ids.append(p.id)
             checked.append("")
-            CYTO.append(cyto)
+            VOL.append(p.current_vol is not None)
         context = { "headings": headings,
-                    "body": zip(values, inv_ids, checked, CYTO),
+                    "body": zip(values, inv_ids, checked, VOL),
                     "url": reverse("stock_web:createnewsol", args=[pk]),
                     "toolbar": _toolbar(httprequest),
-                    "total":cyto,
+                    "total":recipe.is_cyto,
                     "identifier":title,
                     "form":form,
                     "cancelurl": reverse("stock_web:newinv",args=["_"]),
                   }
         return render(httprequest, "stock_web/populatesol.html", context)
+
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
