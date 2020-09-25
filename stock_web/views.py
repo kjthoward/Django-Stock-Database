@@ -71,7 +71,7 @@ def _toolbar(httprequest, active=""):
 
     toolbar = [([{"name":"Inventory", "dropdown":inventory_dropdown},
                  {"name":"Recipes", "url":reverse("stock_web:recipes"), "glyphicon":"folder-open"},
-                 {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"]),"glyphicon":"download"},
+                 {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_","_"]),"glyphicon":"download"},
                  ], "left")]
 
 
@@ -481,8 +481,8 @@ def inventory(httprequest, search, what, sortby, page):
 
 @user_passes_test(is_logged_in, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def stockreport(httprequest, pk, extension):
-    submiturl = reverse("stock_web:stockreport",args=[pk,extension])
+def stockreport(httprequest, fin, pk, extension):
+    submiturl = reverse("stock_web:stockreport",args=[fin,pk,extension])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Stock Reports")
     header = "Select Reagent to Generate Stock Report For"
@@ -495,19 +495,21 @@ def stockreport(httprequest, pk, extension):
                 form = form(httprequest.POST)
                 if form.is_valid():
                     if "pdf" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["name"].pk,0]))
+                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["in_stock"], form.cleaned_data["name"].pk,0]))
                     elif "xlsx" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["name"].pk,1]))
+                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["in_stock"], form.cleaned_data["name"].pk,1]))
         else:
-            form = form()
+            form = form(initial = {"in_stock":1})
 
     else:
         title="{} - Stock Report - Downloaded {}".format(Reagents.objects.get(pk=int(pk)), datetime.datetime.today().date().strftime("%d-%m-%Y"))
         #gets items, with open items first, then sorted by expirey date
-        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
+        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished__lte=fin).order_by("-is_op","date_exp")
         body=[["Supplier Name", "Catalogue Number", "Lot Number", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
-
+        if fin=="1":
+            body[-1].append("Date Finised")
+            body[-1].append("Finished By")
         for item in items:
             body+= [[ item.supplier.name,
                       item.reagent.cat_no,
@@ -520,6 +522,8 @@ def stockreport(httprequest, pk, extension):
                       item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
                       item.val.val_run if item.val is not None else "",
                       ]]
+            body[-1].append(item.date_fin.strftime("%d/%m/%y") if item.date_fin is not None else "")
+            body[-1].append(item.fin_user.username if item.fin_user is not None else "")
         if extension=='0':
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
