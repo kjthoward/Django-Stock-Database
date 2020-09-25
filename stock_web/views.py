@@ -840,9 +840,9 @@ def _cyto_context(httprequest, item, undo):
         uses=sorted(uses, key = lambda use:use.date)
         cyto_body=[]
         for use in uses:
-            values=[use.start,
-                    use.end,
-                    use.used,
+            values=["{}µl".format(use.start),
+                    "{}µl".format(use.end),
+                    "{}µl".format(use.used),
                     use.date,
                     use.user]
             urls=["","","","",""]
