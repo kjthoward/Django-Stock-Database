@@ -1151,16 +1151,16 @@ def newinv(httprequest, pk):
                         else:
                              message+=["THIS ITEM IS NOT VALIDATED"]
                         if item.is_cyto==False:
-                            messages.info(httprequest, "{}x {} added".format(form.data["num_rec"],
+                            messages.error(httprequest, "{}x {} added".format(form.data["num_rec"],
                                                                               form.cleaned_data["reagent"]))
                         elif item.is_cyto==True:
-                            messages.info(httprequest, "1x {}µl of {} added".format(form.data["vol_rec"],
+                            messages.error(httprequest, "1x {}µl of {} added".format(form.data["vol_rec"],
                                                                               form.cleaned_data["reagent"]))
                     if form.cleaned_data["date_exp"]<(form.cleaned_data["date_rec"] + relativedelta(months=+6)):
                         message+=["ITEM EXPIRES WITHIN 6 MONTHS"]
                     if message!=[]:
                         messages.success(httprequest," \n".join(message))
-                    messages.info(httprequest, "STOCK NUMBERS:")
+                    messages.error(httprequest, "STOCK NUMBERS:")
                     for ID in ids:
                         messages.info(httprequest, ID)
                     return HttpResponseRedirect(reverse("stock_web:newinv",args=["_"]))
