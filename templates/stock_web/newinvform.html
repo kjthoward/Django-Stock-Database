@@ -43,6 +43,7 @@ function show_accept() {
   var date_rec_box = document.getElementById("id_date_rec");
   var date_exp_box = document.getElementById("id_date_exp");
   var errors = document.getElementsByClassName("errorlist");
+  date_exp_box.min=date_rec_box.value;
   if ((date_exp_box.valueAsDate - date_rec_box.valueAsDate <= 15638400000) && (date_exp_box.value!="") && (date_rec_box.value!="")) {
     if (accept_box.style.display === "none") {
       accept_box.style.display = "block";
