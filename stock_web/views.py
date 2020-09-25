@@ -85,7 +85,9 @@ def _toolbar(httprequest, active=""):
 
 
     if is_admin(httprequest.user):
-        toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"]), "glyphicon":"list"})
+        reports_dropdown = [{"name": "Molecular Reagents", "url":reverse("stock_web:invreport", args=["M","_","_"])},
+                            {"name": "Cytogenetics Reagents", "url":reverse("stock_web:invreport", args=["C","_","_"])},]
+        toolbar[0][0].append({"name":"Inventory Reports", "dropdown":reports_dropdown, "glyphicon":"list"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         if httprequest.user.is_staff:
             toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
@@ -535,12 +537,20 @@ def stockreport(httprequest, pk, extension):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def invreport(httprequest,what, extension):
-    submiturl = reverse("stock_web:invreport",args=[what,extension])
+def invreport(httprequest, type, what, extension):
+    submiturl = reverse("stock_web:invreport",args=[type,what,extension])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Inventory Reports")
-    header = "Select Inventory Report To Generate"
     form=InvReportForm
+    if type!="M" and type!="C":
+        messages.success(httprequest, "Invalid URL provided")
+        return HttpResponseRedirect(reverse("stock_web:listinv"))
+    elif type=="M":
+        header = "Select Molecular Inventory Report To Generate"
+        cyto=False
+    elif type=="C":
+        header = "Select Cytogenetics Inventory Report To Generate"
+        cyto=True
     if what=="_":
         if httprequest.method=="POST":
 
@@ -551,30 +561,30 @@ def invreport(httprequest,what, extension):
                 if form.is_valid():
 
                     if "pdf" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["report"],0]))
+                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[type, form.cleaned_data["report"],0]))
                     elif "xlsx" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["report"],1]))
+                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[type, form.cleaned_data["report"],1]))
         else:
             form = form()
     else:
         if what=="unval":
             title="All Unvalidated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="val":
             title="All Validated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="exp":
             title="Items Expiring Soon Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="all":
             title="All Items In Stock Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="allinc":
             title="All Items In Stock Including Open Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="finished":
             title="All Finsihed Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
         if what!="minstock":
             if what=="all":
                 body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
@@ -607,7 +617,7 @@ def invreport(httprequest,what, extension):
                               ]]
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
+            items=Reagents.objects.filter(count_no__lt=F("min_count"), is_cyto=cyto).order_by("name")
             body=[["Reagent", "Catalogue Number", "Default Supplier", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
