@@ -57,10 +57,6 @@ class NewInvForm(forms.ModelForm):
     def clean(self):
         super(NewInvForm, self).clean()
         errors=[]
-        if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
-            errors+=[("date_exp", forms.ValidationError("Expiry date occurs before received date"))]
-        elif self.cleaned_data["date_rec"]>datetime.date.today():
-            errors+=[("date_rec", forms.ValidationError("Date received occurs in the future"))]
         if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(181)) and (self.cleaned_data["accept_reason"] is None)):
             errors+=[("accept_reason", forms.ValidationError("If an item expires within 6 months an Acceptance Reason must be given"))]
         if errors!=[]:
@@ -85,10 +81,6 @@ class NewProbeForm(forms.ModelForm):
     def clean(self):
         super(NewProbeForm, self).clean()
         errors=[]
-        if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
-            errors+=[("date_exp", forms.ValidationError("Expiry date occurs before received date"))]
-        elif self.cleaned_data["date_rec"]>datetime.date.today():
-            errors+=[("date_rec", forms.ValidationError("Date received occurs in the future"))]
         if (((self.cleaned_data["date_exp"]-self.cleaned_data["date_rec"])<=datetime.timedelta(181)) and (self.cleaned_data["accept_reason"] is None)):
             errors+=[("accept_reason", forms.ValidationError("If an item expires within 6 months an Acceptance Reason must be given"))]
         if errors!=[]:
@@ -118,8 +110,6 @@ class UseItemForm(forms.ModelForm):
         if self.cleaned_data["last_usage"] is not None:
             if self.cleaned_data["date_used"]<self.cleaned_data["last_usage"].date:
                 errors+=[("date_used", forms.ValidationError("This Usage Date is before the most recent use"))]
-        if self.cleaned_data["date_used"]>datetime.date.today():
-            errors+=[("date_used", forms.ValidationError("Date of use occurs in the future"))]
         if errors!=[]:
             for error in errors:
                 self.add_error(error[0], error[1])
@@ -135,8 +125,6 @@ class OpenItemForm(forms.ModelForm):
         super(OpenItemForm, self).clean()
         if self.cleaned_data["date_op"]<datetime.datetime.strptime(self.data["date_rec"],"%Y-%m-%d").date():
             self.add_error("date_op", forms.ValidationError("Date open occurs before received date"))
-        elif self.cleaned_data["date_op"]>datetime.date.today():
-            self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
 
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=DateInput(), label="Validation Date")
@@ -149,8 +137,7 @@ class ValItemForm(forms.ModelForm):
         super(ValItemForm, self).clean()
         if self.cleaned_data["val_date"]<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
             self.add_error("val_date", forms.ValidationError("Date validated occurs before date opened"))
-        elif self.cleaned_data["val_date"]>datetime.date.today():
-            self.add_error("val_date", forms.ValidationError("Date of validation run occurs in the future"))
+
 
 class FinishItemForm(forms.ModelForm):
     class Meta:
@@ -170,8 +157,6 @@ class FinishItemForm(forms.ModelForm):
         if self.cleaned_data["is_op"]==True:
             if fin_date<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
                 self.add_error("date_fin", forms.ValidationError("Date occurs before item was opened"))
-        if fin_date>datetime.date.today():
-            self.add_error("date_fin", forms.ValidationError("Date occurs in the future"))
 
 
     def __init__(self, *args, **kwargs):
