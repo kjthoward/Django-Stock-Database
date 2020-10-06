@@ -4,20 +4,14 @@
 <script>
   function minus_year(element,years){
     today = new Date().toISOString().substr(0,10);
-    d=today.split("-");
-    year = Number(d[0])-years;
-    month = d[1];
-    day = d[2];
-    new_date=year + "-" + month + "-" + day + " - " + today;
+    var OneYearAgo = moment().subtract(years, 'years');
+    new_date=OneYearAgo.format("YYYY-MM-DD") + " - " + today;
     document.getElementById(element.id).value=new_date;
   }
   function minus_month(element,months){
     today = new Date().toISOString().substr(0,10);
-    d=today.split("-");
-    year = d[0];
-    month = Number(d[1])-months;
-    day = d[2];
-    new_date=year + "-" + month + "-" + day + " - " + today;
+    var MonthsAgo = moment().subtract(months, 'months');
+    new_date=MonthsAgo.format("YYYY-MM-DD") + " - " + today;
     document.getElementById(element.id).value=new_date;
   }
 </script>
@@ -31,6 +25,7 @@
             <th>
               <label for="id_{{ field.name }}">{{ field.label }}{% if field.field.required %}<span class="required" style="color:red">*</span>{% endif %}:</label>
             </th>
+
             <td>
               {{ field }}
               {% if "range" in field.html_name %}
