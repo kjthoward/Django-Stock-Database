@@ -363,6 +363,10 @@ class ChangeMinForm(forms.Form):
 
 class StockReportForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).exclude(is_active=False, count_no__lt=1).order_by("name"), label="Reagent", widget=Select2Widget)
+    rec_range = fields.DateRangeField(required=False, label=u"Received Between", input_formats=['%Y-%m-%d'], widget=widgets.DateRangeWidget(format="%Y-%m-%d", attrs={"style": "width:15em"}))
+    open_range = fields.DateRangeField(required=False, label=u"Opened Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
+    val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
+    fin_range = fields.DateRangeField(required=False, label=u"Finished Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
 
 class InvReportForm(forms.Form):
@@ -374,11 +378,17 @@ class InvReportForm(forms.Form):
                                       ("allinc","All In-Stock Items (Including Open Items)"),
                                       ("minstock","All Items Below Minimum Stock Level"),
                                       ("finished","All Finished Items")])
+    rec_range = fields.DateRangeField(required=False, label=u"Received Between", input_formats=['%Y-%m-%d'], widget=widgets.DateRangeWidget(format="%Y-%m-%d", attrs={"style": "width:15em"}))
+    open_range = fields.DateRangeField(required=False, label=u"Opened Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
+    val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
+    fin_range = fields.DateRangeField(required=False, label=u"Finished Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
     team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=False)
     def clean(self):
         super(InvReportForm, self).clean()
         if self.cleaned_data["report"]=="minstock":
-            queryset=Reagents.objects.filter(team_def=self.cleaned_data["team"]).filter(count_no__lt=F("min_count"))
+            queryset=Reagents.objects.filter(count_no__lt=F("min_count"))
+            if self.cleaned_data["team"] is not None:
+                queryset.filter(team_def=self.cleaned_data["team"])
             if len(queryset)==0:
                 self.add_error("report", forms.ValidationError("There are no items with stock levels below their minimum"))
 

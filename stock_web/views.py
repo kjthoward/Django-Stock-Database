@@ -71,7 +71,7 @@ def _toolbar(httprequest, active=""):
 
     toolbar = [([{"name":"Inventory", "dropdown":inventory_dropdown},
                  {"name":"Recipes", "url":reverse("stock_web:recipes"), "glyphicon":"folder-open"},
-                 {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_","_"]),"glyphicon":"download"},
+                 {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_","_","_"]),"glyphicon":"download"},
                  ], "left")]
 
 
@@ -87,7 +87,7 @@ def _toolbar(httprequest, active=""):
 
 
     if is_admin(httprequest.user):
-        toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport", args=["_","_","_"]), "glyphicon":"list"})
+        toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport", args=["_","_","_","_"]), "glyphicon":"list"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         if httprequest.user.is_staff:
             toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
@@ -495,8 +495,8 @@ def inventory(httprequest, search, what, sortby, page):
 
 @user_passes_test(is_logged_in, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def stockreport(httprequest, fin, pk, extension):
-    submiturl = reverse("stock_web:stockreport",args=[fin,pk,extension])
+def stockreport(httprequest, fin, filters, pk, extension):
+    submiturl = reverse("stock_web:stockreport",args=[fin, filters, pk,extension])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Stock Reports")
     header = "Select Reagent to Generate Stock Report For"
@@ -508,10 +508,22 @@ def stockreport(httprequest, fin, pk, extension):
             else:
                 form = form(httprequest.POST)
                 if form.is_valid():
+                    queries = []
+                    for key, query in [( "rec_range","date_rec__range"), ("open_range","date_op__range"),
+                                       ("val_range","val_id__val_date__range"), ("fin_range","date_fin__range"),
+                                      ]:
+                        val = form.cleaned_data[key]
+                        if val:
+                            if val[0]!=None:
+                                if "range" in query:
+                                    val=(val[0].strftime("%Y-%m-%d"), val[1].strftime("%Y-%m-%d"))
+                                queries += ["{}={}".format(query, val)]
+                    if queries==[]:
+                        queries="_"
                     if "pdf" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["in_stock"], form.cleaned_data["name"].pk,0]))
+                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["in_stock"], ";".join(queries), form.cleaned_data["name"].pk,0]))
                     elif "xlsx" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["in_stock"], form.cleaned_data["name"].pk,1]))
+                        return HttpResponseRedirect(reverse("stock_web:stockreport", args=[form.cleaned_data["in_stock"], ";".join(queries), form.cleaned_data["name"].pk,1]))
         else:
             form = form(initial = {"in_stock":1})
 
@@ -519,6 +531,14 @@ def stockreport(httprequest, fin, pk, extension):
         title="{} - Stock Report - Downloaded {}".format(Reagents.objects.get(pk=int(pk)), datetime.datetime.today().date().strftime("%d-%m-%Y"))
         #gets items, with open items first, then sorted by expirey date
         items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user", "team").filter(reagent_id=int(pk),finished__lte=fin).order_by("-is_op","date_exp")
+        if filters!="_":
+            query = dict([q.split("=") for q in filters.split(";")])
+            for key, value in query.items():
+                query[key]=value.strip("()").replace("'","").replace(" ","").split(",")
+            items = items.filter(**query)
+        if len(items)==0:
+            messages.success(httprequest, "No inventory items fit the search criteria")
+            return HttpResponseRedirect(reverse("stock_web:stockreport", args=["_","_","_","_"]))
         body=[["Supplier Name", "Catalogue Number", "Lot Number", "Stock Number","Team", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
         if fin=="1":
@@ -556,8 +576,8 @@ def stockreport(httprequest, fin, pk, extension):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def invreport(httprequest, team, what, extension):
-    submiturl = reverse("stock_web:invreport",args=[type,what,extension])
+def invreport(httprequest, team, filters, what, extension):
+    submiturl = reverse("stock_web:invreport",args=[type, filters, what,extension])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Inventory Reports")
     form=InvReportForm
@@ -570,14 +590,29 @@ def invreport(httprequest, team, what, extension):
             else:
                 form = form(httprequest.POST)
                 if form.is_valid():
-
+                    queries = []
+                    for key, query in [( "rec_range","date_rec__range"), ("open_range","date_op__range"),
+                                       ("val_range","val_id__val_date__range"), ("fin_range","date_fin__range"),
+                                      ]:
+                        val = form.cleaned_data[key]
+                        if val:
+                            if val[0]!=None:
+                                if "range" in query:
+                                    val=(val[0].strftime("%Y-%m-%d"), val[1].strftime("%Y-%m-%d"))
+                                queries += ["{}={}".format(query, val)]
+                    if queries==[]:
+                        queries="_"
                     if "pdf" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["team"].id if form.cleaned_data["team"] is not None else "ALL", form.cleaned_data["report"],0]))
+                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["team"].id if form.cleaned_data["team"] is not None else "ALL", ";".join(queries), form.cleaned_data["report"],0]))
                     elif "xlsx" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["team"].id if form.cleaned_data["team"] is not None else "ALL", form.cleaned_data["report"],1]))
+                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["team"].id if form.cleaned_data["team"] is not None else "ALL", ";".join(queries), form.cleaned_data["report"],1]))
         else:
             form = form()
     else:
+        if filters!="_":
+            query = dict([q.split("=") for q in filters.split(";")])
+            for key, value in query.items():
+                query[key]=value.strip("()").replace("'","").replace(" ","").split(",")
         if what=="unval":
             title="All Unvalidated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
@@ -596,9 +631,14 @@ def invreport(httprequest, team, what, extension):
         elif what=="finished":
             title="All Finsihed Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True).order_by("reagent_id__name","-is_op","date_exp")
-        if team!="ALL":
-            items=items.filter(team=team)
         if what!="minstock":
+            if team!="ALL":
+                items=items.filter(team=team)
+            if filters!="_":
+                items=items.filter(**query)
+            if len(items)==0:
+                messages.success(httprequest, "No inventory items fit the search criteria")
+                return HttpResponseRedirect(reverse("stock_web:invreport", args=["_","_","_","_"]))
             if what=="all":
                 body=[["Reagent", "Catalogue Number", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry"]]
@@ -633,7 +673,12 @@ def invreport(httprequest, team, what, extension):
                               ]]
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items=Reagents.objects.filter(count_no__lt=F("min_count"), team_def=team).order_by("name")
+            items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
+            if team!="ALL":
+                items=items.filter(team_def=team)
+            if len(items)==0:
+                messages.success(httprequest, "No inventory items fit the search criteria")
+                return HttpResponseRedirect(reverse("stock_web:invreport", args=["_","_","_","_"]))
             body=[["Reagent", "Catalogue Number", "Default Team", "Default Supplier", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
