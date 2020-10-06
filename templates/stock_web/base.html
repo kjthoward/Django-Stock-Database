@@ -20,6 +20,46 @@
     var date_fin_box = document.getElementById("id_date_fin");
     var date_start_box = document.getElementById("id_start_date");
     var date_end_box = document.getElementById("id_end_date");
+    var rec_range_box= document.getElementById("id_rec_range");
+    var open_range_box= document.getElementById("id_open_range");
+    var val_range_box= document.getElementById("id_val_range");
+    var fin_range_box= document.getElementById("id_fin_range");
+    if (rec_range_box != null){
+      $('#id_rec_range').daterangepicker({"locale": {"format": "YYYY-MM-DD", "cancelLabel": "Clear"}, "autoUpdateInput": false, 'maxDate':change_date(0)});
+      $('#id_rec_range').on('apply.daterangepicker', function(ev, picker) {
+                    $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+            });
+            $('#id_rec_range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+    }
+    if (open_range_box != null){
+      $('#id_open_range').daterangepicker({"locale": {"format": "YYYY-MM-DD", "cancelLabel": "Clear"}, "autoUpdateInput": false, 'maxDate':change_date(0)});
+      $('#id_open_range').on('apply.daterangepicker', function(ev, picker) {
+                    $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+            });
+            $('#id_open_range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+    }
+    if (val_range_box != null){
+      $('#id_val_range').daterangepicker({"locale": {"format": "YYYY-MM-DD", "cancelLabel": "Clear"}, "autoUpdateInput": false, 'maxDate':change_date(0)});
+      $('#id_val_range').on('apply.daterangepicker', function(ev, picker) {
+                    $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+            });
+            $('#id_val_range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+    }
+    if (fin_range_box != null){
+      $('#id_fin_range').daterangepicker({"locale": {"format": "YYYY-MM-DD", "cancelLabel": "Clear"}, "autoUpdateInput": false, 'maxDate':change_date(0)});
+      $('#id_fin_range').on('apply.daterangepicker', function(ev, picker) {
+                    $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+            });
+            $('#id_fin_range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+    }
     if (date_rec_box != null){
       date_rec_box.min=change_date(-1);
       date_rec_box.max=change_date(0);
@@ -40,14 +80,10 @@
       date_fin_box.min=change_date(-1);
       date_fin_box.max=change_date(0);
     }
-    if (date_start_box != null){
-      date_start_box.max=change_date(0);
-    }
-    if (date_end_box != null){
-      date_end_box.max=change_date(0);
-    }
   }
-  window.onload=initiate_dates();
+  window.onload= function(){
+    initiate_dates();
+  }
 </script>
 <html lang="en">
   <head>
@@ -63,6 +99,11 @@
 	{% load staticfiles %}
     <!-- JQuery -->
     <script src="{% static 'base/jquery.min.js' %}"></script>
+
+  <!-- Moment (for date ranges)   -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 	<!-- Alert Script -->
 	<script src="{% static 'base/sweetalert.min.js' %}"></script>
     <!-- Bootstrap -->
@@ -89,7 +130,7 @@
       var span = document.createElement("span");
       span.innerHTML='{{ message| linebreaks }}'
       swal({title:"Stock Database", content:span}) </script> {% endif %}
-      
+
   {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}</ul>{{ message }}<ul>{% endif %}
 	{% if message.level == DEFAULT_MESSAGE_LEVELS.INFO %}<li>{{ message }}</li>{% endif %}
 

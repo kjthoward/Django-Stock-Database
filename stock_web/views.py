@@ -216,11 +216,15 @@ def search(httprequest):
                 queries = []
                 for key, query in [("reagent", "reagent__name__icontains"), ("supplier", "supplier__name__icontains"),
                                    ("lot_no", "lot_no__icontains"), ("int_id","internal__batch_number__exact"),
-                                   ("in_stock","finished__lte"),
+                                   ("in_stock","finished__lte"),( "rec_range","date_rec__range"), ("open_range","date_op__range"),
+                                   ("val_range","val_id__val_date__range"), ("fin_range","date_fin__range"),
                                   ]:
                     val = form.cleaned_data[key]
                     if val:
-                        queries += ["{}={}".format(query, val)]
+                        if val[0]!=None:
+                            if "range" in query:
+                                val=(val[0].strftime("%Y-%m-%d"), val[1].strftime("%Y-%m-%d"))
+                            queries += ["{}={}".format(query, val)]
                 return HttpResponseRedirect(reverse("stock_web:inventory", args=["search", ";".join(queries),"_","1"]))
     else:
         form = SearchForm(initial = {"in_stock":1})
@@ -281,9 +285,9 @@ def valdates(httprequest):
         else:
             form = form(httprequest.POST)
             if form.is_valid():
-                title="Items validated between {} and {} - Downloaded {}".format(form.cleaned_data["start_date"].strftime("%d-%m-%Y"), form.cleaned_data["end_date"].strftime("%d-%m-%Y"), datetime.datetime.today().date().strftime("%d-%m-%Y"))
-                # import pdb; pdb.set_trace()
-                items=Inventory.objects.filter(val_id__val_date__range=[form.cleaned_data["start_date"], form.cleaned_data["end_date"]])
+                start, end = form.cleaned_data["val_range"]
+                title="Items validated between {} and {} - Downloaded {}".format(start.strftime("%d-%m-%Y"), end.strftime("%d-%m-%Y"), datetime.datetime.today().date().strftime("%d-%m-%Y"))
+                items=Inventory.objects.select_related("supplier","reagent","internal","val", "op_user").filter(val_id__val_date__range=[start, end])
                 body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
                 for item in items:
@@ -362,50 +366,54 @@ def inventory(httprequest, search, what, sortby, page):
     if what=="all":
         title = "Inventory - All Items"
         if sortby!="_":
-            items=Inventory.objects.all().order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").all().order_by(sortquery)
         else:
-            items=Inventory.objects.all()
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").all()
     if what=="instock":
         title = "Inventory - Items In Stock"
         if sortby!="_":
-            items=Inventory.objects.filter(finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.filter(finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(finished=False)
     elif what=="solutions":
         title = "Inventory - Solutions"
         if sortby!="_":
-            items=Inventory.objects.filter(sol_id__isnull=False, finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(sol_id__isnull=False, finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.filter(sol_id__isnull=False, finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(sol_id__isnull=False, finished=False)
     elif what=="validated":
         title = "Inventory - Validated Items"
         if sortby!="_":
-            items=Inventory.objects.filter(val_id__isnull=False, finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=False, finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.filter(val_id__isnull=False, finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=False, finished=False)
     elif what=="notvalidated":
         title = "Inventory - Items Not Validated"
         if sortby!="_":
-            items=Inventory.objects.filter(val_id__isnull=True, finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=True, finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.filter(val_id__isnull=True, finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=True, finished=False)
     elif what=="expsoon":
         title = "Inventory - Items Expiring Within 6 Weeks"
         if sortby!="_":
-            items=Inventory.objects.filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False)
+
     elif search=="search" or search=="filter":
         query = dict([q.split("=") for q in what.split(";")])
         if search=="search":
+            for key, value in query.items():
+                if "range" in key:
+                    query[key]=value.strip("()").replace("'","").replace(" ","").split(",")
+
             title="Search Results"
         elif search=="filter" and "reagent__name__iexact" in query.keys():
             title=query['reagent__name__iexact']
-
         if sortby!="_":
-            items=Inventory.objects.filter(**query).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(**query).order_by(sortquery)
         else:
-            items=Inventory.objects.filter(**query)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(**query)
         if len(items)==1:
             return HttpResponseRedirect(reverse("stock_web:item",args=[items[0].id]))
     items=items.select_related("supplier","reagent","internal")
@@ -416,7 +424,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Days till expired"]
+    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Days till expired", "Team"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -432,7 +440,9 @@ def inventory(httprequest, search, what, sortby, page):
                 reverse("stock_web:inventory", args=[search, what,"order=-val_id__val_date"
                                                      if sortby=="order=val_id__val_date" else "order=val_id__val_date",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-days_rem"
-                                                     if sortquery=="days_rem" else "order=days_rem",1])]
+                                                     if sortquery=="days_rem" else "order=days_rem",1]),
+                reverse("stock_web:inventory", args=[search, what,"order=-reagent__is_cyto"
+                                                     if sortquery=="reagent__is_cyto" else "order=reagent__is_cyto",1])]
     headings=zip(headings,headurls)
     body=[]
 
@@ -458,8 +468,10 @@ def inventory(httprequest, search, what, sortby, page):
                   item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                   item.val.val_date.strftime("%d/%m/%y") if item.val_id is not None else "",
                   item.days_remaining(),
+                  "CYTO" if item.reagent.is_cyto else "DNA",
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
+              "",
               "",
               "",
               "",

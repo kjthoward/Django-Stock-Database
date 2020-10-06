@@ -4,6 +4,7 @@ from django import forms
 from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
+from bootstrap_daterangepicker import widgets, fields
 from .models import Suppliers, Reagents, Internal, Recipe, Inventory
 from django.contrib.auth.forms import PasswordChangeForm
 
@@ -245,7 +246,22 @@ class NewRecipeForm(forms.ModelForm):
         if errors:
             raise forms.ValidationError(errors)
 
+from bootstrap_datepicker_plus import DatePickerInput, TimePickerInput
+# class SearchForm(forms.ModelForm):
+#     class Meta:
+#         model = Inventory
+#         fields = ['name', 'start_date', 'end_date', 'start_time', 'end_time']
+#         widgets = {
+#             'start_date':DatePickerInput().start_of('event days'),
+#             'end_date':DatePickerInput().end_of('event days'),
+#             'start_time':TimePickerInput().start_of('party time'),
+#             'end_time':TimePickerInput().end_of('party time'),
+#         }
 class SearchForm(forms.Form):
+    rec_range = fields.DateRangeField(required=False, label=u"Received Between", input_formats=['%Y-%m-%d'], widget=widgets.DateRangeWidget(format="%Y-%m-%d", attrs={"style": "width:15em"}))
+    open_range = fields.DateRangeField(required=False, label=u"Opened Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
+    val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
+    fin_range = fields.DateRangeField(required=False, label=u"Finished Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
     reagent=forms.CharField(label="Reagent Name", max_length=30, required=False)
     supplier=forms.CharField(label="Supplier Name", max_length=25, required=False)
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
@@ -253,8 +269,7 @@ class SearchForm(forms.Form):
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
 
 class ValeDatesForm(forms.Form):
-    start_date = forms.DateField(widget=DateInput(), label="Start Date")
-    end_date = forms.DateField(widget=DateInput(), label="End Date")
+    val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
 
 class ChangeDefForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'stock_web.apps.StockWebConfig',
     'django_select2',
     'debug_toolbar',
+    'bootstrap_daterangepicker',
     #'django_extensions',
 ]
 
