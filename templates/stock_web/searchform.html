@@ -1,12 +1,48 @@
 {% extends "stock_web/stock.html" %}
 
 {% block content %}
+<script>
+  function minus_year(element,years){
+    today = new Date().toISOString().substr(0,10);
+    d=today.split("-");
+    year = Number(d[0])-years;
+    month = d[1];
+    day = d[2];
+    new_date=year + "-" + month + "-" + day + " - " + today;
+    document.getElementById(element.id).value=new_date;
+  }
+  function minus_month(element,months){
+    today = new Date().toISOString().substr(0,10);
+    d=today.split("-");
+    year = d[0];
+    month = Number(d[1])-months;
+    day = d[2];
+    new_date=year + "-" + month + "-" + day + " - " + today;
+    document.getElementById(element.id).value=new_date;
+  }
+</script>
     <form action="{{ url }}" method="post">
       {% csrf_token %}
       <fieldset><legend>{{ heading }}</legend>
           <table>
-            {{ form }}
-          </table>
+            {% for field in form.visible_fields %}
+                <tr{% if field.errors %} class="errors" {% endif%}>
+                <th>
+                  <label for="id_{{ field.name }}">{{ field.label }}{% if field.field.required %}<span class="required" style="color:red">*</span>{% endif %}:</label>
+                </th>
+                  <td>
+                    {{ field }}
+                    {% if "range" in field.html_name %}
+                      </td> <td> <input type="button" onclick="minus_month({{field.id_for_label}},1)" value="Today -1 Month"></td>
+                        <td> <input type="button" onclick="minus_month({{field.id_for_label}},6)" value="Today -6 Months"></td>
+                        <td> <input type="button" onclick="minus_year({{field.id_for_label}},1)" value="Today -1 Year">
+                    {% endif %}
+                  </td>
+                  {% if field.errors %}{{ field.errors }}{% endif %}
+
+              </tr>
+              {% endfor %}
+            </table>
         <input type="submit" class="btn btn-success" name="submit" value="search" />
         <input type="submit" class="btn btn-danger" name="submit" value="cancel" />
       </fieldset>
