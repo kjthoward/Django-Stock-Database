@@ -19,11 +19,11 @@ import string
 from .prime import PRIME
 from .email import send, EMAIL
 from .pdf_report import report_gen
-from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, CytoUsage
+from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
-                   NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
-                   EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, ValeDatesForm
+                   NewSupForm, NewTeamForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefSupForm1, ChangeDefSupForm, ChangeDefTeamForm1, \
+                   ChangeDefTeamForm, RemoveSupForm, EditSupForm, EditTeamForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, \
+                   ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, ValeDatesForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -76,23 +76,24 @@ def _toolbar(httprequest, active=""):
 
 
 
-    undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedef", args=["_"])},
+    undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedefsup", args=["_"])},
+                     {"name": "Change Default Team", "url":reverse("stock_web:changedefteam", args=["_"])},
                      {"name": "Edit Minimum Stock Levels", "url":reverse("stock_web:changemin",args=["_"])},
                      {"name": "(De)Activate Reagents/Recipies", "url":reverse("stock_web:activreag")},
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
+                     {"name": "(De)Activate Team", "url":reverse("stock_web:activteam")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
 
 
     if is_admin(httprequest.user):
-        reports_dropdown = [{"name": "Molecular Reagents", "url":reverse("stock_web:invreport", args=["M","_","_"])},
-                            {"name": "Cytogenetics Reagents", "url":reverse("stock_web:invreport", args=["C","_","_"])},]
-        toolbar[0][0].append({"name":"Inventory Reports", "dropdown":reports_dropdown, "glyphicon":"list"})
+        toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport", args=["_","_","_"]), "glyphicon":"list"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         if httprequest.user.is_staff:
             toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
+                        {"name":"Team", "url":reverse("stock_web:newteam")},
                         {"name":"Reagent", "url":reverse("stock_web:newreagent")},
                         {"name":"Recipe", "url":reverse("stock_web:newrecipe")}]
         toolbar.append(([{"name": "new", "glyphicon": "plus", "dropdown": new_dropdown}],"right"))
@@ -217,9 +218,11 @@ def search(httprequest):
                 for key, query in [("reagent", "reagent__name__icontains"), ("supplier", "supplier__name__icontains"),
                                    ("lot_no", "lot_no__icontains"), ("int_id","internal__batch_number__exact"),
                                    ("in_stock","finished__lte"),( "rec_range","date_rec__range"), ("open_range","date_op__range"),
-                                   ("val_range","val_id__val_date__range"), ("fin_range","date_fin__range"),
+                                   ("val_range","val_id__val_date__range"), ("fin_range","date_fin__range"), ("team", "team__exact")
                                   ]:
                     val = form.cleaned_data[key]
+                    if key=="team" and val is not None:
+                        val=str(val.id)
                     if val:
                         if val[0]!=None:
                             if "range" in query:
@@ -328,8 +331,8 @@ def listinv(httprequest):
     body=[]
     for item in items:
         values = [item.name,
-                  "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
-                  "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]
+                  "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
+                  "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]
         urls=[reverse("stock_web:inventory",args=["filter","reagent__name__iexact={};finished__lte=0".format(item.name),"_",1]),
               "",
               "",
@@ -366,39 +369,39 @@ def inventory(httprequest, search, what, sortby, page):
     if what=="all":
         title = "Inventory - All Items"
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").all().order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").all().order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").all()
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").all()
     if what=="instock":
         title = "Inventory - Items In Stock"
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(finished=False)
     elif what=="solutions":
         title = "Inventory - Solutions"
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(sol_id__isnull=False, finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(sol_id__isnull=False, finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(sol_id__isnull=False, finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(sol_id__isnull=False, finished=False)
     elif what=="validated":
         title = "Inventory - Validated Items"
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=False, finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(val_id__isnull=False, finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=False, finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(val_id__isnull=False, finished=False)
     elif what=="notvalidated":
         title = "Inventory - Items Not Validated"
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=True, finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(val_id__isnull=True, finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(val_id__isnull=True, finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(val_id__isnull=True, finished=False)
     elif what=="expsoon":
         title = "Inventory - Items Expiring Within 6 Weeks"
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False).order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42), finished=False)
 
     elif search=="search" or search=="filter":
         query = dict([q.split("=") for q in what.split(";")])
@@ -411,12 +414,11 @@ def inventory(httprequest, search, what, sortby, page):
         elif search=="filter" and "reagent__name__iexact" in query.keys():
             title=query['reagent__name__iexact']
         if sortby!="_":
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(**query).order_by(sortquery)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(**query).order_by(sortquery)
         else:
-            items=Inventory.objects.select_related("supplier","reagent","internal","val").filter(**query)
+            items=Inventory.objects.select_related("supplier","reagent","internal","val", "team").filter(**query)
         if len(items)==1:
             return HttpResponseRedirect(reverse("stock_web:item",args=[items[0].id]))
-    items=items.select_related("supplier","reagent","internal")
     pages=[]
     if len(items)>200:
         for i in range(1, math.ceil(len(items)/200)+1):
@@ -441,8 +443,8 @@ def inventory(httprequest, search, what, sortby, page):
                                                      if sortby=="order=val_id__val_date" else "order=val_id__val_date",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-days_rem"
                                                      if sortquery=="days_rem" else "order=days_rem",1]),
-                reverse("stock_web:inventory", args=[search, what,"order=-reagent__is_cyto"
-                                                     if sortquery=="reagent__is_cyto" else "order=reagent__is_cyto",1])]
+                reverse("stock_web:inventory", args=[search, what,"order=-team"
+                                                     if sortquery=="team" else "order=team",1])]
     headings=zip(headings,headurls)
     body=[]
 
@@ -468,7 +470,7 @@ def inventory(httprequest, search, what, sortby, page):
                   item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                   item.val.val_date.strftime("%d/%m/%y") if item.val_id is not None else "",
                   item.days_remaining(),
-                  "CYTO" if item.reagent.is_cyto else "DNA",
+                  item.team,
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
               "",
@@ -516,8 +518,8 @@ def stockreport(httprequest, fin, pk, extension):
     else:
         title="{} - Stock Report - Downloaded {}".format(Reagents.objects.get(pk=int(pk)), datetime.datetime.today().date().strftime("%d-%m-%Y"))
         #gets items, with open items first, then sorted by expirey date
-        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished__lte=fin).order_by("-is_op","date_exp")
-        body=[["Supplier Name", "Catalogue Number", "Lot Number", "Stock Number", "Date Received",
+        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user", "team").filter(reagent_id=int(pk),finished__lte=fin).order_by("-is_op","date_exp")
+        body=[["Supplier Name", "Catalogue Number", "Lot Number", "Stock Number","Team", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
         if fin=="1":
             body[-1].append("Date Finised")
@@ -527,6 +529,7 @@ def stockreport(httprequest, fin, pk, extension):
                       item.reagent.cat_no,
                       item.lot_no,
                       item.internal.batch_number,
+                      item.team.name,
                       item.date_rec.strftime("%d/%m/%y"),
                       item.date_exp.strftime("%d/%m/%y"),
                       item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
@@ -553,20 +556,12 @@ def stockreport(httprequest, fin, pk, extension):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def invreport(httprequest, type, what, extension):
+def invreport(httprequest, team, what, extension):
     submiturl = reverse("stock_web:invreport",args=[type,what,extension])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Inventory Reports")
     form=InvReportForm
-    if type!="M" and type!="C":
-        messages.success(httprequest, "Invalid URL provided")
-        return HttpResponseRedirect(reverse("stock_web:listinv"))
-    elif type=="M":
-        header = "Select Molecular Inventory Report To Generate"
-        cyto=False
-    elif type=="C":
-        header = "Select Cytogenetics Inventory Report To Generate"
-        cyto=True
+    header = "Select Inventory Report To Generate"
     if what=="_":
         if httprequest.method=="POST":
 
@@ -577,50 +572,55 @@ def invreport(httprequest, type, what, extension):
                 if form.is_valid():
 
                     if "pdf" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[type, form.cleaned_data["report"],0]))
+                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["team"].id if form.cleaned_data["team"] is not None else "ALL", form.cleaned_data["report"],0]))
                     elif "xlsx" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[type, form.cleaned_data["report"],1]))
+                        return HttpResponseRedirect(reverse("stock_web:invreport", args=[form.cleaned_data["team"].id if form.cleaned_data["team"] is not None else "ALL", form.cleaned_data["report"],1]))
         else:
             form = form()
     else:
         if what=="unval":
             title="All Unvalidated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="val":
             title="All Validated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="exp":
             title="Items Expiring Soon Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="all":
             title="All Items In Stock Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="allinc":
             title="All Items In Stock Including Open Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="finished":
             title="All Finsihed Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True,reagent__is_cyto=cyto).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True).order_by("reagent_id__name","-is_op","date_exp")
+        if team!="ALL":
+            items=items.filter(team=team)
         if what!="minstock":
             if what=="all":
-                body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Catalogue Number", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.reagent.cat_no,
+                              item.team.name,
                               item.supplier.name,
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
                               item.date_exp.strftime("%d/%m/%y"),
+
                               ]]
 
             else:
-                body=[["Reagent", "Catalogue Number", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Catalogue Number", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.reagent.cat_no,
+                              item.team.name,
                               item.supplier.name,
                               item.lot_no,
                               item.internal.batch_number,
@@ -633,14 +633,15 @@ def invreport(httprequest, type, what, extension):
                               ]]
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items=Reagents.objects.filter(count_no__lt=F("min_count"), is_cyto=cyto).order_by("name")
-            body=[["Reagent", "Catalogue Number", "Default Supplier", "Number In Stock", "Minimum Stock Level"]]
+            items=Reagents.objects.filter(count_no__lt=F("min_count"), team_def=team).order_by("name")
+            body=[["Reagent", "Catalogue Number", "Default Team", "Default Supplier", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
                         item.cat_no,
+                        item.team_def.name if item.team_def.name is not None else "",
                         item.supplier_def.name if item.supplier_def is not None else "",
-                         "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
-                         "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]]
+                         "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
+                         "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]]
         if extension=='0':
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
@@ -659,6 +660,7 @@ def invreport(httprequest, type, what, extension):
 def _item_context(httprequest, item, undo):
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
+             "Team - {}".format(item.team.name),
              "Lot Number - {}".format(item.lot_no) if item.lot_no !="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number)]
     title_url=["","","",""]
@@ -752,10 +754,11 @@ def _item_context(httprequest, item, undo):
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def _cyto_context(httprequest, item, undo):
+def _vol_context(httprequest, item, undo):
     stripe=False
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
+             "Team - {}".format(item.team.name),
              "Purchase Order Number - {}".format(item.po),
              "Lot Number - {}".format(item.lot_no) if item.lot_no!="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number),
@@ -848,7 +851,7 @@ def _cyto_context(httprequest, item, undo):
         cyto_headings=["Volume at Start", "Volume at End", "Volume Used", "Date", "User"]
         if undo=="undo":
             cyto_headings+=["Action"]
-        uses=CytoUsage.objects.filter(item=item.pk)
+        uses=VolUsage.objects.filter(item=item.pk)
         uses=sorted(uses, key = lambda use:use.date)
         cyto_body=[]
         for use in uses:
@@ -888,7 +891,7 @@ def useitem(httprequest,pk):
     item=Inventory.objects.get(pk=int(pk))
     if item.is_op==False:
         return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-    uses=CytoUsage.objects.filter(item=item)
+    uses=VolUsage.objects.filter(item=item)
     if item.is_op==True and item.val is None and len(uses)>0 and item.sol is None:
         messages.success(httprequest, "WARNING - ITEM IS NOT VALIDATED")
     form=UseItemForm
@@ -950,7 +953,7 @@ def openitem(httprequest, pk):
             if form.is_valid():
                 Inventory.open(form.cleaned_data, pk, httprequest.user)
                 item.refresh_from_db()
-                if item.reagent.is_cyto==False:
+                if item.reagent.track_vol==False:
                     if item.reagent.count_no<item.reagent.min_count:
                         if item.sol is not None:
                             make="made"
@@ -1025,7 +1028,7 @@ def finishitem(httprequest, pk):
             if form.is_valid():
 
                 Inventory.finish(form.cleaned_data, pk, httprequest.user)
-                if item.reagent.is_cyto==True or item.is_op==False:
+                if item.reagent.track_vol==True or item.is_op==False:
                     if item.reagent.count_no<item.reagent.min_count:
                         if item.sol is not None:
                             make="made"
@@ -1033,7 +1036,7 @@ def finishitem(httprequest, pk):
                             make="ordered"
                         messages.success(httprequest, "Current stock level for {0} is {1}{2}. \nMinimum quantity is {3}{2}. \nCheck if more needs to be {4}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
-                                                                                                                                              "µl" if item.reagent.is_cyto else "",
+                                                                                                                                              "µl" if item.reagent.track_vol else "",
                                                                                                                                               item.reagent.min_count,
                                                                                                                                               make))
                         if EMAIL==True:
@@ -1075,10 +1078,10 @@ def finishitem(httprequest, pk):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
     item = Inventory.objects.select_related("supplier","reagent","internal","val").get(pk=int(pk))
-    if item.reagent.is_cyto==False:
+    if item.reagent.track_vol==False:
         return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "_"))
     else:
-        return render(httprequest, "stock_web/list_item.html", _cyto_context(httprequest, item, "_"))
+        return render(httprequest, "stock_web/list_item.html", _vol_context(httprequest, item, "_"))
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -1112,7 +1115,7 @@ def recipe(httprequest, pk):
     body=[]
     for i in range(1, item.length()+1):
         values = [eval('item.comp{}.name'.format(i)),
-                  "{}µl".format(eval('item.comp{}.count_no'.format(i))) if eval('item.comp{}.is_cyto'.format(i))==True else eval('item.comp{}.count_no'.format(i)),
+                  "{}µl".format(eval('item.comp{}.count_no'.format(i))) if eval('item.comp{}.track_vol'.format(i))==True else eval('item.comp{}.count_no'.format(i)),
                   ]
         urls= ["",
                ""]
@@ -1145,9 +1148,9 @@ def newinv(httprequest, pk):
             return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[item.recipe_id]))
         title=["Enter Delivery Details - {} {}".format(item, "- " + item.cat_no if item.cat_no is not None else "")]
         template="stock_web/newinvform.html"
-        if item.is_cyto==False:
+        if item.track_vol==False:
             form=NewInvForm
-        elif item.is_cyto==True:
+        elif item.track_vol==True:
             form=NewProbeForm
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1157,9 +1160,9 @@ def newinv(httprequest, pk):
                 if form.is_valid():
                     ids=Inventory.create(form.cleaned_data, httprequest.user)
                     message=[]
-                    if item.is_cyto==False:
+                    if item.track_vol==False:
                         quant=form.cleaned_data["reagent"].count_no+int(form.data["num_rec"])
-                    elif item.is_cyto==True:
+                    elif item.track_vol==True:
                         quant=form.cleaned_data["reagent"].count_no+int(form.data["vol_rec"])
                     if quant<form.cleaned_data["reagent"].min_count:
                         if form.cleaned_data["reagent"].recipe is not None:
@@ -1176,10 +1179,10 @@ def newinv(httprequest, pk):
                              message+=["THIS ITEM IS VALIDATED. RUN {}".format(items[0].val.val_run)]
                         else:
                              message+=["THIS ITEM IS NOT VALIDATED"]
-                        if item.is_cyto==False:
+                        if item.track_vol==False:
                             messages.error(httprequest, "{}x {} added".format(form.data["num_rec"],
                                                                               form.cleaned_data["reagent"]))
-                        elif item.is_cyto==True:
+                        elif item.track_vol==True:
                             messages.error(httprequest, "1x {}µl of {} added".format(form.data["vol_rec"],
                                                                               form.cleaned_data["reagent"]))
                     if form.cleaned_data["date_exp"]<(form.cleaned_data["date_rec"] + relativedelta(months=+6)):
@@ -1192,6 +1195,7 @@ def newinv(httprequest, pk):
                     return HttpResponseRedirect(reverse("stock_web:newinv",args=["_"]))
         else:
             form = form(initial = {"supplier":item.supplier_def,
+                                   "team":item.team_def,
                                    "reagent":item})
     submiturl = reverse("stock_web:newinv",args=[pk])
     cancelurl = reverse("stock_web:listinv")
@@ -1228,7 +1232,7 @@ def createnewsol(httprequest, pk):
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
             except ValueError:
                 witness=None
-            if recipe.is_cyto==True:
+            if recipe.track_vol==True:
                 vol_made=httprequest.POST.getlist("total_volume")[0]
                 if httprequest.POST.getlist("total_volume")==[""]:
                     messages.success(httprequest, "Total Volume Made Not Entered")
@@ -1267,7 +1271,7 @@ def createnewsol(httprequest, pk):
                 if errors!=[]:
                     messages.success(httprequest, " ".join(errors))
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                if recipe.is_cyto==True:
+                if recipe.track_vol==True:
                     if int(vol_made)<sum_vol:
                         messages.success(httprequest, "Total Volume of Reagents Used is {}µl. Total Volume made must be at least this volume".format(sum_vol))
                         return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
@@ -1328,7 +1332,7 @@ def createnewsol(httprequest, pk):
                     "body": zip(values, inv_ids, checked, VOL),
                     "url": reverse("stock_web:createnewsol", args=[pk]),
                     "toolbar": _toolbar(httprequest),
-                    "total":recipe.is_cyto,
+                    "total":recipe.track_vol,
                     "identifier":title,
                     "form":form,
                     "cancelurl": reverse("stock_web:newinv",args=["_"]),
@@ -1376,6 +1380,25 @@ def newsup(httprequest):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def newteam(httprequest):
+    form=NewTeamForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                Teams.create(form.cleaned_data["name"])
+                messages.info(httprequest, "{} Added".format(form.cleaned_data["name"]))
+                return HttpResponseRedirect(reverse("stock_web:newteam"))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:newteam")
+    cancelurl = reverse("stock_web:listinv")
+    return render(httprequest, "stock_web/form.html", {"header":["New Team Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def newrecipe(httprequest):
     form=NewRecipeForm
     if httprequest.method=="POST":
@@ -1418,6 +1441,35 @@ def activsup(httprequest):
         form = form()
 
     submiturl = reverse("stock_web:activsup")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def activteam(httprequest):
+    header = ["Select Team To (De)Activate - THIS WILL NOT AFFECT EXISTING ITEMS"]
+    form=EditTeamForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                if form.cleaned_data["name"].is_active==True:
+                   form.cleaned_data["name"].is_active=False
+                   message="Team {} Has Been Deactivated".format(form.cleaned_data["name"].name)
+                else:
+                    form.cleaned_data["name"].is_active=True
+                    message="Team {} Has Been Reactivated".format(form.cleaned_data["name"].name)
+                form.cleaned_data["name"].save()
+                messages.success(httprequest, message)
+                return HttpResponseRedirect(reverse("stock_web:activteam"))
+    else:
+        form = form()
+
+    submiturl = reverse("stock_web:activteam")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 
@@ -1480,20 +1532,20 @@ def changemin(httprequest, pk):
         return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item=Reagents.objects.get(pk=int(pk))
-        if item.is_cyto==True:
+        if item.track_vol==True:
             header = ["Select New Default Minimum Stock Level (in µl) for {}".format(item)]
         else:
             header = ["Select New Default Minimum Stock Level for {}".format(item)]
         form=ChangeMinForm
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
-                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:changedef", args=["_"]))
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:changedefsup", args=["_"]))
             else:
                 form = form(httprequest.POST, initial = {"old":item.min_count})
                 if form.is_valid():
                     item.min_count=form.cleaned_data["number"]
                     item.save()
-                    messages.success(httprequest, "Minimum Stock Number for {} has changed to {}{}".format(item,form.cleaned_data["number"], "µl" if item.is_cyto==True else ""))
+                    messages.success(httprequest, "Minimum Stock Number for {} has changed to {}{}".format(item,form.cleaned_data["number"], "µl" if item.track_vol==True else ""))
                     return HttpResponseRedirect(reverse("stock_web:listinv"))
         else:
             form = form(initial = {"old":item.min_count})
@@ -1501,30 +1553,30 @@ def changemin(httprequest, pk):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def changedef(httprequest, pk):
-    submiturl = reverse("stock_web:changedef",args=[pk])
+def changedefsup(httprequest, pk):
+    submiturl = reverse("stock_web:changedefsup",args=[pk])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     if pk=="_":
         header = ["Select Reagent to Change Default Supplier - THIS WILL NOT AFFECT EXISTING ITEMS"]
-        form=ChangeDefForm1
+        form=ChangeDefSupForm1
         if httprequest.method=="POST":
-            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
+            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
             else:
                 form = form(httprequest.POST)
                 if form.is_valid():
-                    return HttpResponseRedirect(reverse("stock_web:changedef", args=[form.cleaned_data["name"].pk]))
+                    return HttpResponseRedirect(reverse("stock_web:changedefsup", args=[form.cleaned_data["name"].pk]))
         else:
             form = form()
         return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item=Reagents.objects.get(pk=int(pk))
         header = ["Select New Default Supplier for {} - THIS WILL NOT AFFECT EXISTING ITEMS".format(item)]
-        form=ChangeDefForm
+        form=ChangeDefSupForm
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
-                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:changedef", args=["_"]))
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:changedefsup", args=["_"]))
             else:
                 form = form(httprequest.POST, initial = {"old":item.supplier_def})
                 if form.is_valid():
@@ -1535,6 +1587,44 @@ def changedef(httprequest, pk):
         else:
             form = form(initial = {"supplier_def":item.supplier_def,
                                    "old":item.supplier_def})
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def changedefteam(httprequest, pk):
+    submiturl = reverse("stock_web:changedefteam",args=[pk])
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+    if pk=="_":
+        header = ["Select Reagent to Change Default Team - THIS WILL NOT AFFECT EXISTING ITEMS"]
+        form=ChangeDefTeamForm1
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    return HttpResponseRedirect(reverse("stock_web:changedefteam", args=[form.cleaned_data["name"].pk]))
+        else:
+            form = form()
+        return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+    else:
+        item=Reagents.objects.get(pk=int(pk))
+        header = ["Select New Default Team for {} - THIS WILL NOT AFFECT EXISTING ITEMS".format(item)]
+        form=ChangeDefTeamForm
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:changedefteam", args=["_"]))
+            else:
+                form = form(httprequest.POST, initial = {"old":item.team_def})
+                if form.is_valid():
+                    item.team_def=form.cleaned_data["team_def"]
+                    item.save()
+                    messages.success(httprequest, "Default Team for {} has changed to {}".format(item,form.cleaned_data["team_def"].name))
+                    return HttpResponseRedirect(reverse("stock_web:listinv"))
+        else:
+            form = form(initial = {"team_def":item.team_def,
+                                   "old":item.team_def})
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
@@ -1579,10 +1669,10 @@ def editinv(httprequest, pk):
         return render(httprequest, "stock_web/undoform.html", {"header":title, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item = Inventory.objects.get(pk=int(pk))
-        if item.reagent.is_cyto==True:
+        if item.reagent.track_vol==True:
 ##            messages.success(httprequest, "It is currently not possible to undo actions done to cytogenetics reagents using this form. Please contact an Administrator")
 ##            return HttpResponseRedirect(reverse("stock_web:item",args=[item.pk]))
-            return render(httprequest, "stock_web/list_item.html", _cyto_context(httprequest, item, "undo"))
+            return render(httprequest, "stock_web/list_item.html", _vol_context(httprequest, item, "undo"))
         else:
             return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "undo"))
 
@@ -1597,7 +1687,7 @@ def undoitem(httprequest, task, pk):
     if task in ["delete", "unopen", "reopen","unuse"]:
         form = DeleteForm
         title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {} {}".format(task.upper(), item.internal, item.reagent,"({}µl use)".format(item.last_usage.used) if task=="unuse" else "")]
-        if task=="unopen" and item.reagent.is_cyto==True and item.current_vol!=item.vol_rec:
+        if task=="unopen" and item.reagent.track_vol==True and item.current_vol!=item.vol_rec:
             title+=["THIS WILL REMOVE ALL USES OF THIS REAGENT AND SET ITS VOLUME BACK TO ITS VOLUME RECEIVED"]
         #pdb.set_trace()
         if httprequest.method=="POST":
@@ -1629,19 +1719,19 @@ def undoitem(httprequest, task, pk):
                                 item.date_op=None
                                 item.is_op=0
                                 item.op_user_id=None
-                                if item.reagent.is_cyto:
-                                    item.reagent.count_no+=sum([x.used for x in CytoUsage.objects.filter(item=item)])
+                                if item.reagent.track_vol:
+                                    item.reagent.count_no+=sum([x.used for x in VolUsage.objects.filter(item=item)])
                                     item.reagent.save()
                                     item.last_usage=None
                                     item.current_vol=item.vol_rec
                                     item.save()
-                                    CytoUsage.objects.filter(item=item).delete()
+                                    VolUsage.objects.filter(item=item).delete()
                                 else:
                                     item.reagent.count_no+=1
                                     item.reagent.save()
                                 item.save()
-                            if task=="unuse" and item.reagent.is_cyto==True:
-                                uses=CytoUsage.objects.filter(item=item).order_by("id").reverse()
+                            if task=="unuse" and item.reagent.track_vol==True:
+                                uses=VolUsage.objects.filter(item=item).order_by("id").reverse()
                                 use=item.last_usage
                                 if use.sol is not None:
                                     messages.success(httprequest, "You cannot undo this usage as it was part of solution {}. PLEASE EDIT THIS SOLUTION TO UNDO THIS USAGE".format(Inventory.objects.get(sol=use.sol)))
@@ -1661,7 +1751,7 @@ def undoitem(httprequest, task, pk):
                                 item.save()
                                 use.delete()
                             if task=="delete":
-                                if item.reagent.is_cyto==False:
+                                if item.reagent.track_vol==False:
                                     item.reagent.count_no-=1
                                 else:
                                     item.reagent.count_no-=item.current_vol
@@ -1669,10 +1759,10 @@ def undoitem(httprequest, task, pk):
                                 item.delete()
                                 if item.sol is not None:
                                     sol=item.sol
-                                    if item.reagent.is_cyto==True:
+                                    if item.reagent.track_vol==True:
                                         for i in range(sol.recipe.length()):
                                             comp=eval('sol.comp{}'.format(i+1))
-                                            uses=CytoUsage.objects.filter(item=comp).order_by("id").reverse()
+                                            uses=VolUsage.objects.filter(item=comp).order_by("id").reverse()
                                             last_use=comp.last_usage
                                             if last_use==uses.get(sol=sol):
                                                 try:

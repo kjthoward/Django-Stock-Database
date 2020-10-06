@@ -70,6 +70,26 @@ class Suppliers(models.Model):
         supplier = cls.objects.create(name=name)
         return supplier
 
+class Teams(models.Model):
+    def __str__(self):
+        return self.name
+    name = models.CharField(max_length=50, unique=True)
+    is_active=models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = "Teams"
+
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
+
+    @classmethod
+    def create(cls, name):
+        team = cls.objects.create(name=name)
+        return team
+
 ##class Storage(models.Model):
 ##    def __str__(self):
 ##        return self.name
@@ -86,11 +106,12 @@ class Reagents(models.Model):
     name = models.CharField(max_length=100, unique=True)
     cat_no = models.CharField(max_length=20, blank=True, null=True, verbose_name=u"Catalogue Number")
     supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier", blank=True, null=True)
+    team_def = models.ForeignKey(Teams, on_delete=models.PROTECT, verbose_name=u"Default Team")
     #storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
     count_no=models.PositiveIntegerField(default=0)
     min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")
     recipe=models.ForeignKey("Recipe", on_delete=models.PROTECT, blank=True, null=True)
-    is_cyto=models.BooleanField(default=False, verbose_name=u"Tick if this is a FISH/CYTO Probe")
+    track_vol=models.BooleanField(default=False, verbose_name=u"Tick if this reagent should have it's volume tracked (e.g FISH probe)")
     is_active=models.BooleanField(default=True)
 
     @classmethod
@@ -168,7 +189,7 @@ class Recipe(models.Model):
     comp10=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"component 10", related_name="component10")
     reagent=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"Reagent ID", related_name="Reagent_ID")
     shelf_life=models.PositiveIntegerField(verbose_name=u"Shelf Life (Months)")
-    is_cyto=models.BooleanField(default=False, verbose_name=u"Tick if this is a FISH/CYTO Probe Mix")
+    track_vol=models.BooleanField(default=False, verbose_name=u"Tick if this reagent should have it's volume tracked (e.g FISH probe)")
 
     @classmethod
     def create(cls, values):
@@ -182,14 +203,14 @@ class Recipe(models.Model):
                         "supplier_def":Suppliers.objects.get(name="Internal"),
                         "recipe":recipe,
                         "min_count":minstock,
-                        "is_cyto":values["is_cyto"],
+                        "track_vol":values["track_vol"],
                         }
             except:
                 values={"name":values["name"],
                         "supplier_def":Suppliers.create(name="Internal"),
                         "recipe":recipe,
                         "min_count":minstock,
-                        "is_cyto":values["is_cyto"],
+                        "track_vol":values["track_vol"],
                         }
             recipe.reagent=(Reagents.create(values))
             recipe.save()
@@ -231,6 +252,7 @@ class Inventory(models.Model):
         ]
     internal=models.ForeignKey(Internal, on_delete=models.PROTECT)
     supplier=models.ForeignKey(Suppliers, on_delete=models.PROTECT)
+    team=models.ForeignKey(Teams, on_delete=models.PROTECT)
     lot_no=models.CharField(max_length=50, verbose_name=u"Lot Number")
     sol=models.ForeignKey("Solutions", on_delete=models.PROTECT, blank=True, null=True)
     po=models.CharField(max_length=20, verbose_name=u"Purchase Order")
@@ -248,7 +270,7 @@ class Inventory(models.Model):
     fin_text = models.CharField(max_length=100, blank=True, null=True, verbose_name=u"Finished Reason")
     vol_rec=models.PositiveIntegerField(verbose_name=u"Volume Received (µl)", blank=True, null=True)
     current_vol=models.PositiveIntegerField(verbose_name=u"Current Volume (µl)", blank=True, null=True)
-    last_usage=models.ForeignKey('CytoUsage', blank=True, null=True, on_delete=models.PROTECT)
+    last_usage=models.ForeignKey('VolUsage', blank=True, null=True, on_delete=models.PROTECT)
     witness=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="4+", blank=True, null=True)
     accept_reason=models.CharField(max_length=150, blank=True, null=True, verbose_name=u"Acceptance Reason")
     def days_remaining(self):
@@ -296,7 +318,7 @@ class Inventory(models.Model):
     def open(cls, values, item, user):
         with transaction.atomic():
             reagent=Inventory.objects.get(id=item).reagent
-            if reagent.is_cyto==False:
+            if reagent.track_vol==False:
                 reagent.count_no=F("count_no")-1
                 reagent.save()
             invitem=Inventory.objects.get(id=item)
@@ -322,7 +344,7 @@ class Inventory(models.Model):
                 reagent=Reagents.objects.get(pk=invitem.reagent_id)
                 reagent.count_no=F("count_no")-vol
                 reagent.save()
-            CytoUsage.use(item, start_vol,invitem.current_vol, vol,
+            VolUsage.use(item, start_vol,invitem.current_vol, vol,
                         user, sol, date)
     @classmethod
     def validate(cls, values, reagent_id, lot, user):
@@ -345,18 +367,18 @@ class Inventory(models.Model):
             invitem.finished=True
 
             reagent=Inventory.objects.get(id=item).reagent
-            if reagent.is_cyto==False and invitem.is_op==False:
+            if reagent.track_vol==False and invitem.is_op==False:
                 reagent.count_no=F("count_no")-1
                 invitem.save()
                 reagent.save()
 
-            elif reagent.is_cyto==False and invitem.is_op==True:
+            elif reagent.track_vol==False and invitem.is_op==True:
                 invitem.save()
 
-            elif reagent.is_cyto==True:
+            elif reagent.track_vol==True:
 
                 if invitem.current_vol!=0:
-                    use=CytoUsage.use(item,invitem.current_vol,0,invitem.current_vol,user,None,values["date_fin"])
+                    use=VolUsage.use(item,invitem.current_vol,0,invitem.current_vol,user,None,values["date_fin"])
                     invitem.last_usage=use
                 if "vol" in values.keys():
                     reagent.count_no=F("count_no")-values["vol"]
@@ -367,9 +389,9 @@ class Inventory(models.Model):
                 invitem.save()
 
 
-class CytoUsage(models.Model):
+class VolUsage(models.Model):
     class Meta:
-        verbose_name_plural = "Cyto Reagent Usage"
+        verbose_name_plural = "Volume Usage"
     item=models.ForeignKey(Inventory, blank=True, null=True, on_delete=models.PROTECT)
     start=models.PositiveIntegerField()
     end=models.PositiveIntegerField()
@@ -381,7 +403,7 @@ class CytoUsage(models.Model):
     @classmethod
     def use(cls, item, start_vol, end_vol, volume, user, sol, date=datetime.datetime.now().date()):
         invitem=Inventory.objects.get(pk=int(item))
-        use=CytoUsage.objects.create(item=invitem, start=start_vol,
+        use=VolUsage.objects.create(item=invitem, start=start_vol,
                                     end=end_vol, used=volume,
                                     date=date, user=user, sol=sol)
         invitem.last_usage=use

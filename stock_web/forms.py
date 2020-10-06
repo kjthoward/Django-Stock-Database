@@ -5,7 +5,7 @@ from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
 from bootstrap_daterangepicker import widgets, fields
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory
+from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams
 from django.contrib.auth.forms import PasswordChangeForm
 
 class LoginForm(forms.Form):
@@ -46,8 +46,9 @@ class NewInvForm(forms.ModelForm):
     num_rec=forms.IntegerField(min_value=1, label="Number Received")
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "num_rec", "accept_reason")
+        fields = ("reagent", "supplier", "team", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "num_rec", "accept_reason")
         widgets = {"supplier":Select2Widget,
+                   "team":Select2Widget,
                    "accept_reason":forms.Textarea(attrs={"style": "height:4em;"}),
                    "date_rec":DateInput(),
                    "date_exp":DateInput(),
@@ -175,6 +176,16 @@ class NewSupForm(forms.ModelForm):
         if Suppliers.objects.filter(name=self.cleaned_data["name"]).exists():
             self.add_error("name", forms.ValidationError("A Supplier with the name {} already exists".format(self.cleaned_data["name"])))
 
+class NewTeamForm(forms.ModelForm):
+    class Meta:
+        model = Teams
+        fields = "__all__"
+        widgets = {"is_active":forms.HiddenInput}
+    def clean(self):
+        super(NewTeamForm, self).clean()
+        if Teams.objects.filter(name=self.cleaned_data["name"]).exists():
+            self.add_error("name", forms.ValidationError("A Team with the name {} already exists".format(self.cleaned_data["name"])))
+
 class NewReagentForm(forms.ModelForm):
     class Meta:
         model = Reagents
@@ -183,12 +194,15 @@ class NewReagentForm(forms.ModelForm):
         widgets = {"count_no":forms.HiddenInput,
                    "recipe":forms.HiddenInput,
                    "supplier_def":Select2Widget,
+                   "team_def": Select2Widget,
                    "storage":forms.HiddenInput,
                    "is_active":forms.HiddenInput}
     def __init__(self, *args, **kwargs):
         super(NewReagentForm, self).__init__(*args, **kwargs)
         self.fields["supplier_def"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
         self.fields["supplier_def"].required = True
+        self.fields["team_def"].queryset=Teams.objects.exclude(is_active=False)
+        self.fields["team_def"].required = True
 
     def clean(self):
         super(NewReagentForm, self).clean()
@@ -247,16 +261,6 @@ class NewRecipeForm(forms.ModelForm):
             raise forms.ValidationError(errors)
 
 from bootstrap_datepicker_plus import DatePickerInput, TimePickerInput
-# class SearchForm(forms.ModelForm):
-#     class Meta:
-#         model = Inventory
-#         fields = ['name', 'start_date', 'end_date', 'start_time', 'end_time']
-#         widgets = {
-#             'start_date':DatePickerInput().start_of('event days'),
-#             'end_date':DatePickerInput().end_of('event days'),
-#             'start_time':TimePickerInput().start_of('party time'),
-#             'end_time':TimePickerInput().end_of('party time'),
-#         }
 class SearchForm(forms.Form):
     rec_range = fields.DateRangeField(required=False, label=u"Received Between", input_formats=['%Y-%m-%d'], widget=widgets.DateRangeWidget(format="%Y-%m-%d", attrs={"style": "width:15em"}))
     open_range = fields.DateRangeField(required=False, label=u"Opened Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
@@ -266,21 +270,33 @@ class SearchForm(forms.Form):
     supplier=forms.CharField(label="Supplier Name", max_length=25, required=False)
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
+    team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
 
 class ValeDatesForm(forms.Form):
     val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
 
-class ChangeDefForm1(forms.Form):
+class ChangeDefSupForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
 
-class ChangeDefForm(forms.Form):
+class ChangeDefSupForm(forms.Form):
     supplier_def=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").exclude(is_active=False).order_by("name"), label=u"Select New Supplier", widget=Select2Widget)
     old=forms.ModelChoiceField(queryset = Suppliers.objects.all().order_by("name"), widget=forms.HiddenInput())
     def clean(self):
-        super(ChangeDefForm, self).clean()
+        super(ChangeDefSupForm, self).clean()
         if self.cleaned_data["old"]==self.cleaned_data["supplier_def"]:
             self.add_error("supplier_def", forms.ValidationError("Previous Supplier Selected. Item Not Changed"))
+
+class ChangeDefTeamForm1(forms.Form):
+    name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
+
+class ChangeDefTeamForm(forms.Form):
+    team_def=forms.ModelChoiceField(queryset = Teams.objects.all().exclude(is_active=False).order_by("name"), label=u"Select New Team", widget=Select2Widget)
+    old=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), widget=forms.HiddenInput())
+    def clean(self):
+        super(ChangeDefTeamForm, self).clean()
+        if self.cleaned_data["old"]==self.cleaned_data["team_def"]:
+            self.add_error("team_def", forms.ValidationError("Previous Team Selected. Item Not Changed"))
 
 class RemoveSupForm(forms.Form):
     supplier=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget)
@@ -303,6 +319,16 @@ class EditSupForm(forms.Form):
         if len(Reagents.objects.filter(supplier_def=self.cleaned_data["name"]))>0 and Suppliers.objects.get(name=self.cleaned_data["name"]).is_active==True:
             self.add_error("name", forms.ValidationError("Unable to Deactivate Supplier: {}. The Following Items Have This Supplier as Their Default Supplier:".format(self.cleaned_data["name"])))
             for reagent in Reagents.objects.filter(supplier_def=self.data["name"]):
+                self.add_error("name", forms.ValidationError(reagent))
+
+class EditTeamForm(forms.Form):
+    name=ShowActiveModelChoiceField(queryset = Teams.objects.all().order_by("name"), widget=Select2Widget, label=u"Team")
+
+    def clean(self):
+        super(EditTeamForm, self).clean()
+        if len(Reagents.objects.filter(team_def=self.cleaned_data["name"]))>0 and Teams.objects.get(name=self.cleaned_data["name"]).is_active==True:
+            self.add_error("name", forms.ValidationError("Unable to Deactivate Team: {}. The Following Items Have This Team as Their Default Team:".format(self.cleaned_data["name"])))
+            for reagent in Reagents.objects.filter(team_def=self.data["name"]):
                 self.add_error("name", forms.ValidationError(reagent))
 
 class EditReagForm(forms.Form):
@@ -338,6 +364,7 @@ class ChangeMinForm(forms.Form):
 class StockReportForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).exclude(is_active=False, count_no__lt=1).order_by("name"), label="Reagent", widget=Select2Widget)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
+
 class InvReportForm(forms.Form):
     report=forms.ChoiceField(label="Select Report To Generate",
                              choices=[("unval","All Unvalidated Items"),
@@ -347,10 +374,11 @@ class InvReportForm(forms.Form):
                                       ("allinc","All In-Stock Items (Including Open Items)"),
                                       ("minstock","All Items Below Minimum Stock Level"),
                                       ("finished","All Finished Items")])
+    team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=False)
     def clean(self):
         super(InvReportForm, self).clean()
         if self.cleaned_data["report"]=="minstock":
-            queryset=Reagents.objects.filter(count_no__lt=F("min_count"))
+            queryset=Reagents.objects.filter(team_def=self.cleaned_data["team"]).filter(count_no__lt=F("min_count"))
             if len(queryset)==0:
                 self.add_error("report", forms.ValidationError("There are no items with stock levels below their minimum"))
 
