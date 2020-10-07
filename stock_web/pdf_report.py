@@ -45,7 +45,7 @@ def fake_for_pages(body, title, httpresponse, user):
         new_body+=[temp]
     TABLE=Table(data=new_body, repeatRows=1)
     TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
-                               ('LINEBELOW', (0,0), (-1,-1), 0.25, colors.red), 
+                               ('LINEBELOW', (0,0), (-1,-1), 0.25, colors.grey),
                                ('ALIGN', (0, 0), (-1, -1), "LEFT")]))
     table=[]
     table.append(TABLE)
@@ -100,7 +100,7 @@ def report_gen(body, title, httpresponse, user):
         new_body+=[temp]
     TABLE=Table(data=new_body, repeatRows=1)
     TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
-                               ('LINEBELOW', (0,0), (-1,-1), 0.25, colors.red),
+                               ('LINEBELOW', (0,0), (-1,-1), 0.25, colors.grey),
                                ('ALIGN', (0, 0), (-1, -1), "LEFT")]))
     table=[]
     table.append(TABLE)
