@@ -265,7 +265,6 @@ class NewRecipeForm(forms.ModelForm):
         if errors:
             raise forms.ValidationError(errors)
 
-from bootstrap_datepicker_plus import DatePickerInput, TimePickerInput
 class SearchForm(forms.Form):
     rec_range = fields.DateRangeField(required=False, label=u"Received Between", input_formats=['%Y-%m-%d'], widget=widgets.DateRangeWidget(format="%Y-%m-%d", attrs={"style": "width:15em"}))
     open_range = fields.DateRangeField(required=False, label=u"Opened Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
