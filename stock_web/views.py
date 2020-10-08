@@ -756,7 +756,7 @@ def _item_context(httprequest, item, undo):
             headings+=["Action"]
             values+=["Un-open Item"]
             urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None and httprequest.user.groups.filter(name="Admin").exists():
+        elif item.sol_id is None and (httprequest.user.groups.filter(name="Admin").exists() or httprequest.user.is_staff):
             headings+=["Action"]
             values+=["Validate Item"]
             urls+=[reverse("stock_web:valitem",args=[item.id])]
@@ -861,7 +861,7 @@ def _vol_context(httprequest, item, undo):
             headings+=["Action"]
             values+=["Un-open Item"]
             urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None and item.last_usage is not None and httprequest.user.groups.filter(name="Admin").exists():
+        elif item.sol_id is None and item.last_usage is not None and (httprequest.user.groups.filter(name="Admin").exists() or httprequest.user.is_staff):
             headings+=["Action"]
             values+=["Validate Item"]
             urls+=[reverse("stock_web:valitem",args=[item.id])]
