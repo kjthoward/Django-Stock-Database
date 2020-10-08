@@ -972,6 +972,8 @@ def useitem(httprequest,pk):
                                     print(e)
                 if int(item.current_vol)==0:
                     message+=["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
+                if form.cleaned_data["date_used"]>=item.date_exp:
+                    message+=["WARNING - ITEM USED AFTER EXPIRY DATE"]
                 if message!=[]:
                     messages.success(httprequest," \n".join(message))
 
@@ -998,16 +1000,17 @@ def openitem(httprequest, pk):
             if form.is_valid():
                 Inventory.open(form.cleaned_data, pk, httprequest.user)
                 item.refresh_from_db()
+                messages_to_show=[]
                 if item.reagent.track_vol==False:
                     if item.reagent.count_no<item.reagent.min_count:
                         if item.sol is not None:
                             make="made"
                         else:
                             make="ordered"
-                        messages.success(httprequest, "Current stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(item.reagent.name,
+                        messages_to_show+=["Current stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
                                                                                                                                               item.reagent.min_count,
-                                                                                                                                              make))
+                                                                                                                                              make)]
                         if EMAIL==True:
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)
                             text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
@@ -1020,7 +1023,9 @@ def openitem(httprequest, pk):
                                         print(e)
                 #Shows a warning if the item is opened after it's expiry date
                 if form.cleaned_data["date_op"]>=item.date_exp:
-                    messages.success(httprequest,"WARNING - ITEM OPEN AFTER EXPIRY DATE")
+                    messages_to_show+=["WARNING - ITEM OPEN AFTER EXPIRY DATE"]
+                if messages_to_show!=[]:
+                    messages.success(httprequest,"\n".join(messages_to_show))
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
         if item.is_op==True:
