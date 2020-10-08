@@ -412,5 +412,5 @@ class PasswordChangeForm(PasswordChangeForm):
     PasswordChangeForm.base_fields["new_password1"].help_text=""
 
 class WitnessForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).order_by("username"), widget=Select2Widget, label=u"Select Witness")
+    name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).exclude(username="Admin").order_by("username"), widget=Select2Widget, label=u"Select Witness")
     team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=True)
