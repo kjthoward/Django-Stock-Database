@@ -68,12 +68,14 @@ class NewInvForm(forms.ModelForm):
         super(NewInvForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
         self.fields["accept_reason"].required= False
+        self.fields["team"].queryset=Teams.objects.exclude(is_active=False)
 
 class NewProbeForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec", "accept_reason")
+        fields = ("reagent", "supplier", "team", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec", "accept_reason")
         widgets = {"supplier":Select2Widget,
+                   "team":Select2Widget,
                    "accept_reason":forms.Textarea(attrs={"style": "height:4em;"}),
                    "date_rec":DateInput(),
                    "date_exp":DateInput(),
@@ -92,6 +94,7 @@ class NewProbeForm(forms.ModelForm):
         super(NewProbeForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
         self.fields["accept_reason"].required= False
+        self.fields["team"].queryset=Teams.objects.exclude(is_active=False)
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
@@ -211,6 +214,7 @@ class NewReagentForm(forms.ModelForm):
 
 class NewRecipeForm(forms.ModelForm):
     number=forms.IntegerField(min_value=1, label=u"Minimum Stock Level")
+    team_def=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Default Team", widget=Select2Widget, required=True)
     class Meta:
         model = Recipe
         fields = "__all__"
@@ -226,8 +230,9 @@ class NewRecipeForm(forms.ModelForm):
                    "comp9":Select2Widget,
                    "comp10":Select2Widget}
         #Hides Mixes from Reagent lists
-##    def __init__(self, *args, **kwargs):
-##        super(NewRecipeForm, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(NewRecipeForm, self).__init__(*args, **kwargs)
+        self.fields["team_def"].queryset=Teams.objects.exclude(is_active=False)
 ##        for i in range(1,11):
 ##            self.fields["comp{}".format(i)].queryset=Reagents.objects.filter(recipe_id=None)
 
@@ -409,3 +414,4 @@ class PasswordChangeForm(PasswordChangeForm):
 
 class WitnessForm(forms.Form):
     name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).order_by("username"), widget=Select2Widget, label=u"Select Witness")
+    team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=True)

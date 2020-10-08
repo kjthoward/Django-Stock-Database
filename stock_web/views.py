@@ -809,7 +809,7 @@ def _vol_context(httprequest, item, undo):
              "Stock Number - {}".format(item.internal.batch_number),
              "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
              "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
-    title_url=["","","","","","",""]
+    title_url=["","","","","","","",""]
     skip=False
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
@@ -1270,6 +1270,7 @@ def createnewsol(httprequest, pk):
             potentials.sort(key=attrgetter("is_op"),reverse=True)
             comp_vol=any(p.current_vol is not None for p in potentials)
             witness=None
+            team=form.data["team"]
             try:
                 witness=User.objects.get(pk=int(form.data["name"]))
                 if witness==httprequest.user:
@@ -1332,19 +1333,21 @@ def createnewsol(httprequest, pk):
                                                                                                           grammar,
                                                                                                           recipe.length()))
                 return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-            un_open=[]
+            messages_to_show=[]
             for item in [Inventory.objects.get(pk=int(x)) for x in httprequest.POST.getlist("requests")]:
                 if item.is_op==False:
-                    un_open+=["Reagent {} was not previously open. It has now been marked as open on its date received".format(item)]
-            if un_open!=[]:
-                messages.success(httprequest," ".join(un_open))
-            sol=Solutions.create(recipe, [int(x) for x in httprequest.POST.getlist("requests") if x.isdigit()], vols_used, vol_made, httprequest.user, witness)
+                    messages_to_show+=["Reagent {} was not previously open. It has now been marked as open on its date received".format(item)]
+            sol, changed, EXP_DATE=Solutions.create(recipe, [int(x) for x in httprequest.POST.getlist("requests") if x.isdigit()], vols_used, vol_made, httprequest.user, witness, team)
+            if changed==True:
+                messages_to_show+=["A component has an expiry date earlier than the shelf life of this solution. New expiry date is {}".format(EXP_DATE.strftime("%d/%m/%y"))]
+            if messages_to_show!=[]:
+                messages.success(httprequest,"\n".join(messages_to_show))
             pk=Inventory.objects.get(internal__batch_number=sol[0]).pk
             return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
         else:
             HttpResponseRedirect(reverse("stock_web:listinv"))
     else:
-        form=form()
+        form = form(initial = {"team":recipe.reagent.team_def})
         values=[]
         inv_ids = []
         checked = []

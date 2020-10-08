@@ -196,6 +196,8 @@ class Recipe(models.Model):
         with transaction.atomic():
             minstock=values["number"]
             del(values["number"])
+            def_team=values["team_def"]
+            del(values["team_def"])
             recipe=cls(**values)
             recipe.save()
             try:
@@ -204,6 +206,7 @@ class Recipe(models.Model):
                         "recipe":recipe,
                         "min_count":minstock,
                         "track_vol":values["track_vol"],
+                        "team_def":def_team,
                         }
             except:
                 values={"name":values["name"],
@@ -211,6 +214,7 @@ class Recipe(models.Model):
                         "recipe":recipe,
                         "min_count":minstock,
                         "track_vol":values["track_vol"],
+                        "team_def":def_team,
                         }
             recipe.reagent=(Reagents.create(values))
             recipe.save()
@@ -427,18 +431,18 @@ class Solutions(models.Model):
     date_created=models.DateField(default=datetime.date.today)
 
     @classmethod
-    def create(cls, rec, comp_ids, vols_used, vol_made, user, witness):
+    def create(cls, rec, comp_ids, vols_used, vol_made, user, witness, team):
         with transaction.atomic():
             ids=set(comp_ids)
             comps = apps.get_model("stock_web", "Inventory").objects.filter(id__in=ids)
             comps_dict={}
             for i, comp in enumerate(comps, start=1):
+
                 comps_dict["comp{}".format(i)]=comp
                 if comp.is_op==False:
                     values={"date_op":comp.date_rec,
                           }
                     comp.open(values, comp.pk, user)
-
             solution=cls.objects.create(recipe=rec, creator_user=user, date_created=datetime.datetime.today(),**comps_dict)
             solution.save()
             #Shelf life/Expiry calculations
@@ -461,6 +465,14 @@ class Solutions(models.Model):
                     start_year+=1
                     start_month-=12
             EXP_DATE=datetime.datetime.strptime("{}/{}/{}".format(start_day,start_month,start_year),"%d/%m/%Y")
+            #gets earliest expiry date from components lists
+            EARLIEST_EXP=min([x.date_exp for x in comps_dict.values()])
+            changed=False
+            #if the earliest expiry date is before the shelf life expiry date, set expiry date to that earliest date
+            #also sets changed to True so a message can be displayed to the user
+            if EARLIEST_EXP<EXP_DATE.date():
+                changed=True
+                EXP_DATE=EARLIEST_EXP
             values={"date_rec":datetime.datetime.today(),
                     "cond_rec":"NA",
                     "date_exp":EXP_DATE,
@@ -469,6 +481,7 @@ class Solutions(models.Model):
                     "reagent":rec.reagent,
                     "supplier":Suppliers.objects.get(name="Internal"),
                     "witness":witness,
+                    "team":Teams.objects.get(pk=int(team)),
                     }
             if vol_made=="":
                 values["num_rec"]=1
@@ -476,7 +489,7 @@ class Solutions(models.Model):
                 values["vol_rec"]=vol_made
                 for item, vol in vols_used.items():
                     Inventory.take_out(vol,item,user,sol=solution)
-            return Inventory.create(values,user)
+            return Inventory.create(values,user), changed, EXP_DATE
     def list_comp(self):
         comps=[]
         for i in range(1,11):
