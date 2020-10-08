@@ -730,7 +730,7 @@ def _item_context(httprequest, item, undo):
         headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
     else:
         headings = ["Date Received", "Received By", "Condition Received", "Expiry Date"]
-    values = [item.date_rec.strftime("%d/%m/%Y"), item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
+    values = [item.date_rec, item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
     urls = ["", "", "", ""]
     SKIP=False
     if item.date_op is not None:
@@ -831,7 +831,7 @@ def _vol_context(httprequest, item, undo):
         headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
     else:
         headings = ["Date Received", "Received By", "Condition Received", "Expiry Date"]
-    values = [item.date_rec.strftime("%d/%m/%Y"), item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
+    values = [item.date_rec, item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
     urls = ["", "", "", ""]
     SKIP=False
     if item.date_op is not None:
@@ -989,7 +989,7 @@ def openitem(httprequest, pk):
     item=Inventory.objects.get(pk=int(pk))
     form=OpenItemForm
     header=["Opening item {}".format(item)]
-    header+=["Date Received: {}".format(item.date_rec.strftime("%d/%m/%Y"))]
+    header+=["Date Received: {}".format(item.date_rec)]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1038,7 +1038,7 @@ def valitem(httprequest,pk):
     if Inventory.objects.get(pk=int(pk)).is_op==False:
         return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     header=["Validating item {}".format(item)]
-    header+=["Date Open: {}".format(item.date_op.strftime("%d/%m/%Y"))]
+    header+=["Date Open: {}".format(item.date_op)]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1063,8 +1063,8 @@ def finishitem(httprequest, pk):
     item=Inventory.objects.get(pk=int(pk))
     form=FinishItemForm
     header=["Finishing item {}".format(item if item.sol_id is None else ", ".join(str(item).split(',')[::2]))]
-    header+=["Date Open: {}".format(item.date_op.strftime("%d/%m/%Y") if item.is_op==True else "NOT OPEN")]
-    header+=["Date Validated: {}".format(item.val.val_date.strftime("%d/%m/%Y") if item.val is not None else "NOT REQUIRED" if item.sol_id is not None else "NOT VALIDATED")]
+    header+=["Date Open: {}".format(item.date_op if item.is_op==True else "NOT OPEN")]
+    header+=["Date Validated: {}".format(item.val.val_date if item.val is not None else "NOT REQUIRED" if item.sol_id is not None else "NOT VALIDATED")]
     if httprequest.method=="POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
