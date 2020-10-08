@@ -640,11 +640,12 @@ def invreport(httprequest, team, filters, what, extension):
                 messages.success(httprequest, "No inventory items fit the search criteria")
                 return HttpResponseRedirect(reverse("stock_web:invreport", args=["_","_","_","_"]))
             if what=="all":
-                body=[["Reagent", "Catalogue Number", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.reagent.cat_no,
+                              "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
                               item.team.name,
                               item.supplier.name,
                               item.lot_no,
@@ -655,11 +656,12 @@ def invreport(httprequest, team, filters, what, extension):
                               ]]
 
             else:
-                body=[["Reagent", "Catalogue Number", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.reagent.cat_no,
+                              "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
                               item.team.name,
                               item.supplier.name,
                               item.lot_no,
