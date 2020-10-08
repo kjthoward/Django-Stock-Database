@@ -126,6 +126,11 @@ class Reagents(models.Model):
             return self.name
         else:
             return "{} - D/A".format(self.name)
+first=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+second=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+third=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+fourth=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+potentials=[x for x in itertools.product(first,second,third,fourth)]
 
 class Internal(models.Model):
     def __str__(self):
@@ -133,30 +138,10 @@ class Internal(models.Model):
     class Meta:
         verbose_name_plural = "Stock Numbers"
     batch_number = models.CharField(max_length=4, unique=True)
-    @classmethod
-    def create(cls):
-        internal_id=cls.objects.create(batch_number="".join(next(possibles)))
-        return internal_id
 
-#Ordered (for dev so can see increments)
-first=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-second=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-third=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-fourth=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-#Random for production so doesn't appear sequenctial
-# first=['J', 'F', 'G', 'U', 'M', 'A', 'Y', 'R', 'E', 'H', 'B', 'K', 'N', 'W', 'C', 'V', 'Z', 'P', 'S', 'X', 'D', 'L', 'T', 'Q']
-# second=['1', 'K', '6', 'U', 'W', '8', 'J', '9', 'F', 'C', 'N', 'B', '0', 'L', '2', '4', 'Z', 'X', 'M', 'G', '3', 'R', '7', 'E', '5', 'D', 'S', 'H', 'V', 'P', 'T', 'Y', 'A', 'Q']
-# third=['9', 'A', 'B', 'P', 'Q', 'G', 'V', '3', 'C', '5', 'T', 'J', 'D', 'K', '1', 'H', '6', 'W', 'E', 'S', '2', 'M', 'Z', 'X', 'R', 'U', 'Y', '7', '4', 'F', '8', '0', 'N', 'L']
-# fourth=['X', 'R', 'W', '7', '4', 'B', 'Y', '0', 'D', '8', 'Z', 'Q', 'N', 'C', 'E', 'J', 'V', '1', '5', 'S', '6', 'F', 'P', 'T', 'G', 'M', '2', '3', 'L', 'H', 'A', '9', 'K', 'U']
-#max number of items is 943,296, will break after this point, then would need to either reset or add digit
-#adding digit would require change to model max_length
-possibles=itertools.product(first,second,third,fourth)
-try:
-    new_id=Internal.objects.last().id
-except:
-    new_id=0
-for _ in range(new_id):
-    next(possibles)
+    @classmethod
+    def create(cls, number):
+        return cls.objects.create(batch_number="".join(potentials[number]))
 
 class Validation(models.Model):
     def __str__ (self):
@@ -305,7 +290,11 @@ class Inventory(models.Model):
             internals=[]
             for _ in range(amount):
                 inventory=cls(**values)
-                inventory.internal=Internal.create()
+                try:
+                    internal_number=Internal.create(Inventory.objects.last().id)
+                except:
+                    internal_number=Internal.create(0)
+                inventory.internal=internal_number
                 internals+=[inventory.internal.batch_number]
                 if inventory.lot_no=="":
                     inventory.lot_no="N/A"
