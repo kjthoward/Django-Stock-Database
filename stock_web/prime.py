@@ -48,7 +48,6 @@ def PRIME():
         teams=["DNA", "CYTO"]
         for team in teams:
             Teams.create(team)
-        import pdb; pdb.set_trace()
         for name, cata, sup, minimum, vol, team in (('High Sensitivity D1000 ScreenTape [112 reactions]~','5067-5584','Agilent Technologies','2',False, "DNA"),
                                                ('Genomic DNA ScreenTape [112 reactions]~','5067-5365','Agilent Technologies','0',False, "DNA"),
                                                ('Genomic DNA Reagents [1 kit]~','5067-5366','Agilent Technologies','0',False, "DNA"),
