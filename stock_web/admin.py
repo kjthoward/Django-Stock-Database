@@ -77,11 +77,18 @@ last.allow_tags = True
 last.admin_order_field = "last_login"
 last.short_description = "Last Login"
 
+def pw_reset(self):
+    url="./{}/password/".format(self.id)
+    text = "Reset"
+    return mark_safe('<a href="{}">{}</a>'.format(url,text))
+pw_reset.allow_tags = True
+pw_reset.short_description = "Reset PW"
+
 #Replaces default Admin site with custom version (which is altered default)
 admin.site.unregister(User)
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username","email","first_name","last_name","is_active", SU, roles, last)
+    list_display = ("username","email","first_name","last_name","is_active", SU, roles, last, pw_reset)
     change_password_form = PWResetForm
     add_form_template = 'admin/stock_web/add_form.html'
     fieldsets = (
