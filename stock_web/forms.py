@@ -200,6 +200,7 @@ class NewReagentForm(forms.ModelForm):
                    "team_def": Select2Widget,
                    "storage":forms.HiddenInput,
                    "is_active":forms.HiddenInput}
+        labels = {"track_vol":"Tick if this reagent should have it's volume tracked (e.g FISH probe)"}
     def __init__(self, *args, **kwargs):
         super(NewReagentForm, self).__init__(*args, **kwargs)
         self.fields["supplier_def"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
@@ -229,7 +230,7 @@ class NewRecipeForm(forms.ModelForm):
                    "comp8":Select2Widget,
                    "comp9":Select2Widget,
                    "comp10":Select2Widget}
-        #Hides Mixes from Reagent lists
+        labels = {"track_vol":"Tick if this reagent should have it's volume tracked (e.g FISH probe)"}          
     def __init__(self, *args, **kwargs):
         super(NewRecipeForm, self).__init__(*args, **kwargs)
         self.fields["team_def"].queryset=Teams.objects.exclude(is_active=False)

@@ -2,6 +2,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib import admin, messages
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.utils import unquote
+from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
@@ -15,16 +16,91 @@ from django.template.response import TemplateResponse
 from django import forms
 import pdb
 from .models import Suppliers, Teams, Reagents, VolUsage, Internal, Validation, Recipe, Inventory, Solutions, ForceReset
+
+#Modify admin view pages to include things like search
+class Supplier_Admin(admin.ModelAdmin):
+    list_display = ("name","is_active")
+    search_fields = ("name",)
+    
+class Team_Admin(admin.ModelAdmin):
+    list_display = ("name","is_active")
+    search_fields = ("name",) 
+    
+class Reagent_Admin(admin.ModelAdmin):
+    def amount_in_stock(self, obj):
+        if obj.track_vol==True:
+            return "{}µl".format(obj.count_no)
+        else:
+            return obj.count_no
+    amount_in_stock.short_description = "Amount in Stock"
+    list_display = ("name", "supplier_def", "cat_no", "team_def", "amount_in_stock", "track_vol", "is_active")
+    search_fields = ("name", "cat_no", "supplier_def__name", "team_def__name")  
+    
+class Usage_Admin(admin.ModelAdmin):
+    list_display = ("item", "start", "end", "used", "date", "user")
+    search_fields = ("item__reagent__name", "item__internal__batch_number", "date", "user__username")  
+    
+class Validation_Admin(admin.ModelAdmin):
+    list_display = ("val_run", "val_date", "val_user")    
+    search_fields = ("val_run", "val_date", "val_user__username") 
+    
+class Recipe_Admin(admin.ModelAdmin):
+    def list_comp_recipe(self, obj):
+        link_list=[]
+        for comp in obj.list_comp():
+            link="../reagents/{}/change".format(comp.id)
+            text=comp.name
+            link_list+=['<a href="{}">{}</a>'.format(link,text)]
+        return mark_safe(", ".join(link_list))
+    list_comp_recipe.short_description = "Components"
+    list_display = ("name", "Default_Team", "shelf_life", "track_vol", "list_comp_recipe") 
+    search_fields = ("name", "reagent__team_def__name", "comp1__name", "comp2__name", \
+                     "comp3__name", "comp4__name", "comp5__name", "comp6__name", \
+                     "comp7__name", "comp8__name", "comp9__name", "comp10__name")
+
+class Inventory_Admin(admin.ModelAdmin):
+    def val_links(self, obj):
+        if obj.val is not None:
+            link="../validation/{}/change/".format(obj.val.id)
+            return mark_safe('<a href="{}">{}</a>'.format(link,obj.val))
+        else:
+            return "-"
+    val_links.short_description = "Validation"
+    list_display = ("reagent", "internal", "supplier", "po", "lot_no", "team", "date_rec", "rec_user",\
+                     "date_exp", "date_op", "op_user", "val_links", "date_fin", "fin_user")
+    search_fields = ("reagent__name", "internal__batch_number", "po", "team__name", "rec_user__username", \
+                     "op_user__username", "fin_user__username", "val__val_run")
+        
+        
+class Solution_Admin(admin.ModelAdmin):
+    def list_comp_soltuion(self, obj):
+        link_list=[]
+        for comp in obj.list_comp():
+            link="../inventory/{}/change".format(comp.id)
+            text=comp.reagent.name
+            link_list+=['<a href="{}">{}</a>'.format(link,text)]
+        return mark_safe(", ".join(link_list))
+    def current_vol(self, obj):
+        if Inventory.objects.get(sol=obj.id).reagent.track_vol==True:
+            return "{}µl".format(Inventory.objects.get(sol=obj.id).current_vol)
+        else:
+            return "N/A"
+    current_vol.short_description = "Current Volume"
+    list_display = ("recipe", "Stock_Number", "current_vol", "creator_user", "date_created", "list_comp_soltuion")
+    search_fields = ("recipe__name", "inventory__internal__batch_number", "creator_user__username", "comp1__reagent__name", "comp2__reagent__name", \
+                     "comp3__reagent__name", "comp4__reagent__name", "comp5__reagent__name", "comp6__reagent__name", \
+                     "comp7__reagent__name", "comp8__reagent__name", "comp9__reagent__name", "comp10__reagent__name")
+    # list_select_related = ("recipe", "comp1", "comp2", "comp3", "comp4", "comp5", "comp6", "comp7", "comp8", "comp9", "comp10", "creator_user")
 #Registers models so they can be interacted with in Admin site
-admin.site.register(Suppliers)
-admin.site.register(Teams)
-admin.site.register(Reagents)
+admin.site.register(Suppliers, Supplier_Admin)
+admin.site.register(Teams, Team_Admin)
+admin.site.register(Reagents, Reagent_Admin)
 admin.site.register(Internal)
-admin.site.register(VolUsage)
-admin.site.register(Validation)
-admin.site.register(Recipe)
-admin.site.register(Inventory)
-admin.site.register(Solutions)
+admin.site.register(VolUsage, Usage_Admin)
+admin.site.register(Validation, Validation_Admin)
+admin.site.register(Recipe, Recipe_Admin)
+admin.site.register(Inventory, Inventory_Admin)
+admin.site.register(Solutions, Solution_Admin)
 admin.site.register(ForceReset)
 #Changes titles on Admin Site
 admin.site.site_header="Stock (Web) Database Admin Page"

@@ -54,7 +54,7 @@ class Suppliers(models.Model):
     def __str__(self):
         return self.name
     name = models.CharField(max_length=50, unique=True)
-    is_active=models.BooleanField(default=True)
+    is_active=models.BooleanField(default=True, verbose_name=u"Active")
 
     class Meta:
         verbose_name_plural = "Suppliers"
@@ -74,7 +74,7 @@ class Teams(models.Model):
     def __str__(self):
         return self.name
     name = models.CharField(max_length=50, unique=True)
-    is_active=models.BooleanField(default=True)
+    is_active=models.BooleanField(default=True, verbose_name=u"Active")
 
     class Meta:
         verbose_name_plural = "Teams"
@@ -108,10 +108,10 @@ class Reagents(models.Model):
     supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier", blank=True, null=True)
     team_def = models.ForeignKey(Teams, on_delete=models.PROTECT, verbose_name=u"Default Team")
     #storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
-    count_no=models.PositiveIntegerField(default=0)
+    count_no=models.PositiveIntegerField(default=0, verbose_name=u"Amount in Stock")
     min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")
     recipe=models.ForeignKey("Recipe", on_delete=models.PROTECT, blank=True, null=True)
-    track_vol=models.BooleanField(default=False, verbose_name=u"Tick if this reagent should have it's volume tracked (e.g FISH probe)")
+    track_vol=models.BooleanField(default=False, verbose_name=u"Volume Tracked")
     is_active=models.BooleanField(default=True)
 
     @classmethod
@@ -146,9 +146,9 @@ class Internal(models.Model):
 class Validation(models.Model):
     def __str__ (self):
         return "{} {}".format(self.val_run, self.val_date.strftime("%d/%m/%y"))
-    val_date=models.DateField(null=True, blank=True)
-    val_run=models.CharField(max_length=25)
-    val_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT)
+    val_date=models.DateField(null=True, blank=True, verbose_name = "Date")
+    val_run=models.CharField(max_length=25, verbose_name = u"Run Name")
+    val_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, verbose_name = u"User")
 
     @classmethod
     def new(cls, date, run, user):
@@ -174,7 +174,7 @@ class Recipe(models.Model):
     comp10=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"component 10", related_name="component10")
     reagent=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"Reagent ID", related_name="Reagent_ID")
     shelf_life=models.PositiveIntegerField(verbose_name=u"Shelf Life (Months)")
-    track_vol=models.BooleanField(default=False, verbose_name=u"Tick if this reagent should have it's volume tracked (e.g FISH probe)")
+    track_vol=models.BooleanField(default=False, verbose_name=u"Volume Tracked")
 
     @classmethod
     def create(cls, values):
@@ -221,8 +221,17 @@ class Recipe(models.Model):
                 for stock in in_stock:
                     possibles+=[stock]
         return possibles
-
-
+    #function to list components, used in admin view    
+    def list_comp(self):
+        comps=[]
+        for i in range(1,11):
+            if eval("self.comp{}".format(i)) is not None:
+                comps+=[eval("self.comp{}".format(i))]
+        return comps
+    #Function to display default team (which is stored in reagent record, not recipe), used in Admin view
+    def Default_Team(self):
+        team=Reagents.objects.get(recipe=self.id)
+        return str(team.team_def)
 class Inventory(models.Model):
     def __str__(self):
         return "{}, Lot:{}, Stock Number:{}".format(self.reagent.name, self.lot_no, self.internal)
@@ -239,7 +248,7 @@ class Inventory(models.Model):
         (DAMAGED_OK,"Damaged - Usable"),
         (UNUSABLE,"Damaged - Not Usable"),
         ]
-    internal=models.ForeignKey(Internal, on_delete=models.PROTECT)
+    internal=models.ForeignKey(Internal, on_delete=models.PROTECT, verbose_name = u"Stock Number")
     supplier=models.ForeignKey(Suppliers, on_delete=models.PROTECT)
     team=models.ForeignKey(Teams, on_delete=models.PROTECT)
     lot_no=models.CharField(max_length=50, verbose_name=u"Lot Number")
@@ -251,11 +260,11 @@ class Inventory(models.Model):
     date_exp=models.DateField(verbose_name=u"Expiry Date")
     date_op=models.DateField(null=True, blank=True)
     is_op=models.BooleanField(default=False)
-    op_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="2+", blank=True, null=True)
-    val=models.ForeignKey(Validation, null=True, blank=True, on_delete=models.PROTECT)
+    op_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="2+", blank=True, null=True, verbose_name = u"Opened by")
+    val=models.ForeignKey(Validation, null=True, blank=True, on_delete=models.PROTECT, verbose_name = u"Validation Run")
     date_fin=models.DateField(null=True, blank=True, verbose_name=u"Date Finished")
     finished=models.BooleanField(default=False)
-    fin_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="3+", blank=True, null=True)
+    fin_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="3+", blank=True, null=True, verbose_name = u"Finished By")
     fin_text = models.CharField(max_length=100, blank=True, null=True, verbose_name=u"Finished Reason")
     vol_rec=models.PositiveIntegerField(verbose_name=u"Volume Received (µl)", blank=True, null=True)
     current_vol=models.PositiveIntegerField(verbose_name=u"Current Volume (µl)", blank=True, null=True)
@@ -405,7 +414,7 @@ class VolUsage(models.Model):
 class Solutions(models.Model):
     class Meta:
         verbose_name_plural = "Solutions"
-    recipe=models.ForeignKey(Recipe, limit_choices_to={"is_active":True}, on_delete=models.PROTECT)
+    recipe=models.ForeignKey(Recipe, on_delete=models.PROTECT, verbose_name = u"Recipe Name")
     comp1=models.ForeignKey(Inventory, blank=True, null=True, limit_choices_to={"finished":False}, on_delete=models.PROTECT, related_name="comp1")
     comp2=models.ForeignKey(Inventory, blank=True, null=True, limit_choices_to={"finished":False}, on_delete=models.PROTECT, related_name="comp2")
     comp3=models.ForeignKey(Inventory, blank=True, null=True, limit_choices_to={"finished":False}, on_delete=models.PROTECT, related_name="comp3")
@@ -416,7 +425,7 @@ class Solutions(models.Model):
     comp8=models.ForeignKey(Inventory, blank=True, null=True, limit_choices_to={"finished":False}, on_delete=models.PROTECT, related_name="comp8")
     comp9=models.ForeignKey(Inventory, blank=True, null=True, limit_choices_to={"finished":False}, on_delete=models.PROTECT, related_name="comp9")
     comp10=models.ForeignKey(Inventory, blank=True, null=True, limit_choices_to={"finished":False}, on_delete=models.PROTECT, related_name="comp10")
-    creator_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT)
+    creator_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, verbose_name = u"Created By")
     date_created=models.DateField(default=datetime.date.today)
 
     @classmethod
@@ -485,3 +494,8 @@ class Solutions(models.Model):
             if eval("self.comp{}".format(i)) is not None:
                 comps+=[eval("self.comp{}".format(i))]
         return comps
+
+    #Function to display stock number (which is stored in inventory record, not solution), used in Admin view
+    def Stock_Number(self):
+        stock_number=Inventory.objects.get(sol=self.id)
+        return str(stock_number.internal.batch_number)        
