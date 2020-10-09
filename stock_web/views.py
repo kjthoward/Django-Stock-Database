@@ -40,6 +40,9 @@ def is_logged_in(user):
 #used in user_passes_test decorator to check if the account logged in is admin
 def is_admin(user):
     return (user.is_staff or user.groups.filter(name="Admin").exists())
+    
+def is_super_admin(user):
+    return user.is_staff
 #used in user_passes_test decorator to check if the account has a forced password reset active (decorate used as
 #even though after logging in with a reset password it prompts you to change, could go to any link manually to skip
 #decorator means you will always be brought back to change password
@@ -82,8 +85,8 @@ def _toolbar(httprequest, active=""):
                      {"name": "(De)Activate Reagents/Recipies", "url":reverse("stock_web:activreag")},
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
                      {"name": "(De)Activate Team", "url":reverse("stock_web:activteam")},
-                     {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
-                     {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
+                     {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")}]
+                     
 
 
     if is_admin(httprequest.user):
@@ -91,6 +94,7 @@ def _toolbar(httprequest, active=""):
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         if httprequest.user.is_staff:
             toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
+            toolbar[0][0][-2]["dropdown"].append({"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
                         {"name":"Team", "url":reverse("stock_web:newteam")},
@@ -1703,7 +1707,7 @@ def removesup(httprequest):
     toolbar = _toolbar(httprequest, active="Edit Data")
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(is_super_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def editinv(httprequest, pk):
     submiturl = reverse("stock_web:editinv",args=[pk])
