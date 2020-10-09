@@ -1576,7 +1576,7 @@ def changemin(httprequest, pk):
         header = ["Select Reagent to Change Minimum Stock Level"]
         form=ChangeMinForm1
         if httprequest.method=="POST":
-            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
+            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
             else:
                 form = form(httprequest.POST)
@@ -1688,7 +1688,7 @@ def removesup(httprequest):
     header = ["Select Supplier To Remove"]
     form=RemoveSupForm
     if httprequest.method=="POST":
-        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
             form = form(httprequest.POST)
