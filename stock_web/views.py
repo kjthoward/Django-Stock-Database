@@ -1660,7 +1660,10 @@ def changedefsup(httprequest, pk):
                 if form.is_valid():
                     item.supplier_def=form.cleaned_data["supplier_def"]
                     item.save()
-                    messages.success(httprequest, "Default supplier for {} has changed to {}".format(item,form.cleaned_data["supplier_def"].name))
+                    if form.cleaned_data["supplier_def"] is not None:
+                        messages.success(httprequest, "Default supplier for {} has changed to {}".format(item,form.cleaned_data["supplier_def"].name))
+                    elif form.cleaned_data["supplier_def"] is None:
+                        messages.success(httprequest, "Default supplier for {} had been removed".format(item))
                     return HttpResponseRedirect(reverse("stock_web:listinv"))
         else:
             form = form(initial = {"supplier_def":item.supplier_def,

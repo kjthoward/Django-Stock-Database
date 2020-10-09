@@ -204,7 +204,6 @@ class NewReagentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(NewReagentForm, self).__init__(*args, **kwargs)
         self.fields["supplier_def"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
-        self.fields["supplier_def"].required = True
         self.fields["team_def"].queryset=Teams.objects.exclude(is_active=False)
         self.fields["team_def"].required = True
 
@@ -285,12 +284,15 @@ class ChangeDefSupForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
 
 class ChangeDefSupForm(forms.Form):
-    supplier_def=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").exclude(is_active=False).order_by("name"), label=u"Select New Supplier", widget=Select2Widget)
-    old=forms.ModelChoiceField(queryset = Suppliers.objects.all().order_by("name"), widget=forms.HiddenInput())
+    supplier_def=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").exclude(is_active=False).order_by("name"), label=u"Select New Supplier", widget=Select2Widget, required=False)
+    old=forms.ModelChoiceField(queryset = Suppliers.objects.all().order_by("name"), widget=forms.HiddenInput(), required=False)
     def clean(self):
         super(ChangeDefSupForm, self).clean()
-        if self.cleaned_data["old"]==self.cleaned_data["supplier_def"]:
-            self.add_error("supplier_def", forms.ValidationError("Previous Supplier Selected. Item Not Changed"))
+        try:
+            if self.cleaned_data["old"]==self.cleaned_data["supplier_def"]:
+                self.add_error("supplier_def", forms.ValidationError("Previous Supplier Selected. Item Not Changed"))
+        except:
+            pass
 
 class ChangeDefTeamForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(recipe_id=None).order_by("name"), widget=Select2Widget)
