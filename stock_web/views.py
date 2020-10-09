@@ -633,7 +633,7 @@ def invreport(httprequest, team, filters, what, extension):
             title="All Items In Stock Including Open Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="finished":
-            title="All Finsihed Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
+            title="All Finished Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True).order_by("reagent_id__name","-is_op","date_exp")
         if what!="minstock":
             if team!="ALL":
@@ -658,7 +658,26 @@ def invreport(httprequest, team, filters, what, extension):
                               item.date_exp.strftime("%d/%m/%Y"),
 
                               ]]
-
+            elif what=="finished":
+                body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
+                       "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run", "Date Finished", "Finished By"]]
+                for item in items:
+                    body+= [[item.reagent.name,
+                              item.reagent.cat_no,
+                              "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
+                              item.team.name,
+                              item.supplier.name,
+                              item.lot_no,
+                              item.internal.batch_number,
+                              item.date_rec.strftime("%d/%m/%Y"),
+                              item.date_exp.strftime("%d/%m/%Y"),
+                              item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
+                              item.op_user.username if item.op_user is not None else "",
+                              item.val.val_date.strftime("%d/%m/%Y") if item.val is not None else "",
+                              item.val.val_run if item.val is not None else "",
+                              item.date_fin.strftime("%d/%m/%Y"),
+                              item.fin_user.username,
+                              ]]
             else:
                 body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]

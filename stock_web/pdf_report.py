@@ -1,4 +1,5 @@
 import datetime
+import math
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib import colors
@@ -31,12 +32,22 @@ def fake_for_pages(body, title, httpresponse, user):
     new_body=[]
     for b in body:
         temp=[]
+        if len(b)>14:
+            limit=10
+        else:
+            limit=40
         for part in b:
             try:
-                if len(part)>40:
+                if len(part)>limit:
                     t=part.split(' ')
-                    a=" ".join(t[0:round(len(t)/2)])
-                    b=" ".join(t[len(t)-round(len(t)/2):])
+                    if len(t[0])==len(part):
+                        t=part.split("-")
+                    if len(t[0])==len(part):
+                        t=part.split("_")
+                    if len(t[0])==len(part):
+                        t=part.split(".")
+                    a=" ".join(t[0:math.ceil(len(t)/2)])
+                    b=" ".join(t[len(t)-math.floor(len(t)/2):])
                     temp+=["\n".join([a,b])]
                 else:
                     temp+=[part]
@@ -86,12 +97,23 @@ def report_gen(body, title, httpresponse, user):
     new_body=[]
     for b in body:
         temp=[]
+        print(len(b))
+        if len(b)>14:
+            limit=10
+        else:
+            limit=40
         for part in b:
             try:
-                if len(part)>40:
+                if len(part)>limit:
                     t=part.split(' ')
-                    a=" ".join(t[0:round(len(t)/2)])
-                    b=" ".join(t[len(t)-round(len(t)/2):])
+                    if len(t[0])==len(part):
+                        t=part.split("-")
+                    if len(t[0])==len(part):
+                        t=part.split("_")
+                    if len(t[0])==len(part):
+                        t=part.split(".")
+                    a=" ".join(t[0:math.ceil(len(t)/2)])
+                    b=" ".join(t[len(t)-math.floor(len(t)/2):])
                     temp+=["\n".join([a,b])]
                 else:
                     temp+=[part]
