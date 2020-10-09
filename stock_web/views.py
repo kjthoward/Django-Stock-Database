@@ -710,7 +710,7 @@ def _item_context(httprequest, item, undo):
              "Team - {}".format(item.team.name),
              "Lot Number - {}".format(item.lot_no) if item.lot_no !="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number)]
-    title_url=["","","",""]
+    title_url=["","","","", ""]
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
         title_url.append("")
