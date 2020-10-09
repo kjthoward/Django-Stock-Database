@@ -147,7 +147,10 @@ roles.short_description = u'Groups'
 def last(self):
     fmt = "%b %d, %H:%M"
     #fmt = "%Y %b %d, %H:%M:%S"
-    value = self.last_login.strftime(fmt)
+    if self.last_login is not None:
+        value = self.last_login.strftime(fmt)
+    else:
+        value = None
     return mark_safe("<nobr>%s</nobr>" % value)
 last.allow_tags = True
 last.admin_order_field = "last_login"
