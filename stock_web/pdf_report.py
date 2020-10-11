@@ -97,7 +97,6 @@ def report_gen(body, title, httpresponse, user):
     new_body=[]
     for b in body:
         temp=[]
-        print(len(b))
         if len(b)>14:
             limit=10
         else:
