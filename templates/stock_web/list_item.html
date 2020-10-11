@@ -27,7 +27,7 @@
                 <th scope="col">{{ item }}</th>
                 {% endfor %}
             </tr>
-            {% for row, stripe in body %} 
+            {% for row, stripe in body %}
             <tr {% if stripe %}class="active" {% endif %}>
                 {% for entry, url, style in row %}
                 <td{% if style %} class="{{ style }}"{% endif %}>
@@ -52,10 +52,10 @@
 		<th scope="col">{{ item }}</th>
 		{% endfor %}
 	</tr>
-	{% for row, stripe in cyto_body %} 
-	<tr {% if stripe %}class="active" {% endif %}>
-		{% for entry, url, style in row %}
-		<td{% if style %} class="{{ style }}"{% endif %}>
+	{% for row, stripe, style in cyto_body %}
+	<tr {% if stripe %}class="active" {% endif %} {% if style %} scope="col" style="color:red" {% endif %}>
+		{% for entry, url in row %}
+		<td>
 			{% if url %}<a href="{{ url }}">{% endif %}
 			{{ entry }}
 			{% if url %}</a>{% endif %}
@@ -64,7 +64,7 @@
 	</tr>
 	{% endfor %}
 </table>
-		
+
 {% endif %}
 {% endblock content %}
 

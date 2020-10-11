@@ -22,8 +22,8 @@ from .pdf_report import report_gen
 from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewTeamForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefSupForm1, ChangeDefSupForm, ChangeDefTeamForm1, \
-                   ChangeDefTeamForm, RemoveSupForm, EditSupForm, EditTeamForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, \
-                   ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, ValeDatesForm
+                   ChangeDefTeamForm, RemoveSupForm, EditSupForm, EditTeamForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeUseForm, \
+                   ChangeMinForm1, ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, ValeDatesForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -40,7 +40,7 @@ def is_logged_in(user):
 #used in user_passes_test decorator to check if the account logged in is admin
 def is_admin(user):
     return (user.is_staff or user.groups.filter(name="Admin").exists())
-    
+
 def is_super_admin(user):
     return user.is_staff
 #used in user_passes_test decorator to check if the account has a forced password reset active (decorate used as
@@ -86,7 +86,7 @@ def _toolbar(httprequest, active=""):
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
                      {"name": "(De)Activate Team", "url":reverse("stock_web:activteam")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")}]
-                     
+
 
 
     if is_admin(httprequest.user):
@@ -917,7 +917,7 @@ def _vol_context(httprequest, item, undo):
     context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest)}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
-    if item.current_vol<item.vol_rec:
+    if item.last_usage is not None:
         cyto_headings=["Volume at Start", "Volume at End", "Volume Used", "Date", "User"]
         if undo=="undo":
             cyto_headings+=["Action"]
@@ -931,24 +931,19 @@ def _vol_context(httprequest, item, undo):
                     use.date,
                     use.user]
             urls=["","","","",""]
-            style=["","","","",""]
             if use.sol is not None:
                 urls=[reverse("stock_web:item",args=[Inventory.objects.get(sol=use.sol).pk])]*5
-
-
             if undo=="undo":
                 if use==item.last_usage:
                     if item.finished==True:
-                        values+=["UNDO (RE-OPEN)"]
+                        values+=["EDIT (RE-OPEN)"]
                     else:
-                        values+=["UNDO"]
+                        values+=["EDIT"]
                     urls+=[reverse("stock_web:undoitem",args=["unuse",item.id])]
-                    style+=[""]
                 else:
                     values+=[""]
                     urls+=[""]
-                    style+=[""]
-            cyto_body.append((zip(values,urls,urls),stripe))
+            cyto_body.append((zip(values,urls),stripe, True if use.used<0 else False))
             stripe=not(stripe)
         context.update({"cyto":True,
                         "cyto_headings":cyto_headings,
@@ -1764,10 +1759,10 @@ def undoitem(httprequest, task, pk):
     submiturl = reverse("stock_web:undoitem",args=[task, pk])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
-
-    if task in ["delete", "unopen", "reopen","unuse"]:
+    subheading = None
+    if task in ["delete", "unopen", "reopen"]:
         form = DeleteForm
-        title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {} {}".format(task.upper(), item.internal, item.reagent,"({}µl use)".format(item.last_usage.used) if task=="unuse" else "")]
+        title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {}".format(task.upper(), item.internal, item.reagent)]
         if task=="unopen" and item.reagent.track_vol==True and item.current_vol!=item.vol_rec:
             title+=["THIS WILL REMOVE ALL USES OF THIS REAGENT AND SET ITS VOLUME BACK TO ITS VOLUME RECEIVED"]
         #pdb.set_trace()
@@ -1811,26 +1806,6 @@ def undoitem(httprequest, task, pk):
                                     item.reagent.count_no+=1
                                     item.reagent.save()
                                 item.save()
-                            if task=="unuse" and item.reagent.track_vol==True:
-                                uses=VolUsage.objects.filter(item=item).order_by("id").reverse()
-                                use=item.last_usage
-                                if use.sol is not None:
-                                    messages.success(httprequest, "You cannot undo this usage as it was part of solution {}. PLEASE EDIT THIS SOLUTION TO UNDO THIS USAGE".format(Inventory.objects.get(sol=use.sol)))
-                                    return HttpResponseRedirect(reverse("stock_web:undoitem", args=[task,pk]))
-                                item.current_vol+=use.used
-                                item.reagent.count_no+=use.used
-                                if len(uses)>1:
-                                    item.last_usage=uses[1]
-                                else:
-                                    item.last_usage=None
-                                item.reagent.save()
-                                if item.finished==True:
-                                    item.finished=False
-                                    item.date_fin=None
-                                    item.fin_user=None
-                                    item.fin_text=None
-                                item.save()
-                                use.delete()
                             if task=="delete":
                                 if item.reagent.track_vol==False:
                                     item.reagent.count_no-=1
@@ -1913,4 +1888,49 @@ def undoitem(httprequest, task, pk):
             form.fields["all_type"].choices = [(0,"NO"),
                                           (1,"YES - Only For This Reagent"),
                                           (2,"YES - All Items On {}, Regardless of Reagent".format(item.val))]
-    return render(httprequest, "stock_web/form.html", {"header":title, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+    elif task=="unuse":
+        form=ChangeUseForm
+        title=["UNUSE {} - {}".format(item.internal, item.reagent)]
+        subheading = ["Enter the a new volume used.",
+                      "0 Deletes the usage record.",
+                      "Entering a negative number will increase the volume left"]
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    if form.cleaned_data["sure"]==True:
+                        uses=VolUsage.objects.filter(item=item).order_by("id").reverse()
+                        use=item.last_usage
+                        if use.sol is not None:
+                            messages.success(httprequest, "You cannot edit this usage as it was part of solution {}.".format(Inventory.objects.get(sol=use.sol)))
+                            return HttpResponseRedirect(reverse("stock_web:undoitem", args=[task,pk]))
+                        item.current_vol+=(use.used-int(form.cleaned_data["vol_used"]))
+                        item.reagent.count_no+=(use.used-int(form.cleaned_data["vol_used"]))
+                        item.reagent.save()
+                        if item.finished==True:
+                            item.finished=False
+                            item.date_fin=None
+                            item.fin_user=None
+                            item.fin_text=None
+                        if int(form.cleaned_data["vol_used"])==0:
+                            if len(uses)>1:
+                                item.last_usage=uses[1]
+                            else:
+                                item.last_usage=None
+                            item.save()
+                            use.delete()
+                        else:
+                            use.end=use.start-int(form.cleaned_data["vol_used"])
+                            use.used=int(form.cleaned_data["vol_used"])
+                            use.user=httprequest.user
+                            use.save()
+                            item.save()
+                        return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
+        else:
+            #pdb.set_trace()
+            form = form(initial = {"vol_used":item.last_usage.used,
+                                   "last_usage":item.last_usage.used,
+                                   "current_vol":item.current_vol})
+    return render(httprequest, "stock_web/form.html", {"header":title, "subheading":subheading, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})

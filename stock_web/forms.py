@@ -357,6 +357,24 @@ class UnValForm(forms.Form):
     sure=forms.BooleanField(label="Tick this box and click save to proceed with the action")
     all_type=forms.ChoiceField(label="Remove validation for other items on this run?")
 
+class ChangeUseForm(forms.Form):
+    vol_used = forms.IntegerField(label=u"New Volume Used (µl)")
+    sure=forms.BooleanField(label="Tick this box and click save to proceed with the action")
+    current_vol=forms.IntegerField(required=False, widget=forms.HiddenInput())
+    last_usage=forms.IntegerField(required=False, widget=forms.HiddenInput())
+    
+    
+    def clean(self):
+        super(ChangeUseForm, self).clean()
+        errors=[]
+        if self.cleaned_data["vol_used"]>self.cleaned_data["current_vol"]:
+            errors+=[("vol_used", forms.ValidationError("Volume Used Exceeds Current Volume in Tube"))]
+        if self.cleaned_data["vol_used"]==int(self.data["last_usage"]):
+            errors+=[("vol_used", forms.ValidationError("New volume used is the same."))]
+        if errors!=[]:
+            for error in errors:
+                self.add_error(error[0], error[1])
+            
 class ChangeMinForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), label="Reagent", widget=Select2Widget)
 
