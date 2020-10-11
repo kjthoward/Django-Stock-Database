@@ -474,7 +474,7 @@ def inventory(httprequest, search, what, sortby, page):
                   item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
                   item.val.val_date.strftime("%d/%m/%Y") if item.val_id is not None else "",
                   item.days_remaining(),
-                  item.team,
+                  item.team.name if item.team is not None else "",
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
               "",
@@ -494,7 +494,45 @@ def inventory(httprequest, search, what, sortby, page):
         context.update({"pages":pages, "text1": "Click to change page",
                         "text2":"Current page is {} showing items {}-{}".format(page,(page-1)*200,
                                                                          page*200 if (page*200<len(items)) else (len(items)))})
+    if httprequest.method=="POST" and search=="search":
+        if ".xlsx" in httprequest.POST["submit"]:
+            workbook = openpyxl.Workbook()
+            worksheet = workbook.active
+            # import pdb; pdb.set_trace()
+            worksheet.append([heading[0] for heading in headings])
+            for item in items:
+                worksheet.append([item.reagent.name,
+                          item.supplier.name,
+                          item.internal.batch_number,
+                          item.date_rec.strftime("%d/%m/%Y"),
+                          item.date_exp.strftime("%d/%m/%Y"),
+                          item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
+                          item.val.val_date.strftime("%d/%m/%Y") if item.val_id is not None else "",
+                          item.days_remaining(),
+                          item.team.name if item.team is not None else "",
+                          ])
 
+            httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
+            httpresponse['Content-Disposition'] = 'attachment; filename="Search Results - {}.xlsx"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
+
+        elif "pdf" in httprequest.POST["submit"]:
+            contents=[[heading[0] for heading in headings]]
+            for item in items:
+                contents.append([item.reagent.name,
+                          item.supplier.name,
+                          item.internal.batch_number,
+                          item.date_rec.strftime("%d/%m/%Y"),
+                          item.date_exp.strftime("%d/%m/%Y"),
+                          item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
+                          item.val.val_date.strftime("%d/%m/%Y") if item.val_id is not None else "",
+                          item.days_remaining(),
+                          item.team.name if item.team is not None else "",
+                          ])
+            httpresponse = HttpResponse(content_type='application/pdf')
+            httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
+            table=report_gen(contents,"Search Results",httpresponse,httprequest.user.username)
+
+        return httpresponse
     return render(httprequest, "stock_web/listinventory.html", context)
 
 @user_passes_test(is_logged_in, login_url=UNAUTHURL)

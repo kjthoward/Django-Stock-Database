@@ -4,7 +4,13 @@
 <div class="container-fluid">
 
 <h4>{{ header }}{% if headerlink.url %}<a href="{{ headerlink.url }}">{% endif %}{{ headerlink.label }}{% if headerlink.url %}</a>{% endif %}</h4>
-
+{% if "Search" in header %}
+<form action="{{ url }}" method="post">
+  {% csrf_token %}
+  <input type="submit" class="btn btn-success" name="submit" value="Download Results.pdf" />
+	<input type="submit" class="btn btn-primary" name="submit" value="Download Results.xlsx" />
+</form>
+{% endif %}
 {% if pages %}
 {{ text1 }}
 <ul class="list-inline">
@@ -31,7 +37,7 @@
                 <th scope="col">{% if url %}<a href="{{ url }}" style="color:black" title="Click to Sort by {{ item }}">{% endif %}{{ item }}{% if url %}</a>{% endif %}</th>
                 {% endfor %}
             </tr>
-            {% for row, strike in body %} 
+            {% for row, strike in body %}
             <tr>
                 {% for entry, url in row %}
                   <td>{% if url %}<a href="{{ url }}">{% endif %}{% if strike %}<del>{% endif %}{{ entry }}{% if strike %}</del>{% endif %}{% if url %}</a>{% endif %}</td>
