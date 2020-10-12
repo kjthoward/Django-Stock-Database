@@ -1199,7 +1199,7 @@ def item(httprequest, pk):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def recipes(httprequest):
     title = "List of Recipes"
-    headings = ["Recipe Name", "Number of Components", "Shelf Life (Months)", "Active"]
+    headings = ["Recipe Name", "Number of Components", "Shelf Life (Months)", "Active", "Witness Required?"]
     items=Recipe.objects.all().order_by("name")
     body=[]
 
@@ -1207,8 +1207,10 @@ def recipes(httprequest):
         values = [item.name,
                   item.length,
                   item.shelf_life,
-                  "YES" if Reagents.objects.get(recipe=item).is_active else "NO"]
+                  "YES" if item.reagent.is_active else "NO",
+                  "YES" if item.witness_req else "NO",]
         urls=[reverse("stock_web:recipe",args=[item.id]),
+              "",
               "",
               "",
               "",
