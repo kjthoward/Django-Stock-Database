@@ -23,7 +23,7 @@ from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewTeamForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefSupForm1, ChangeDefSupForm, ChangeDefTeamForm1, \
                    ChangeDefTeamForm, RemoveSupForm, EditSupForm, EditTeamForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeUseForm, \
-                   ChangeMinForm1, ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, ValeDatesForm
+                   ChangeMinForm1, ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, TeamOnlyForm, ValeDatesForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -1318,7 +1318,10 @@ def newinv(httprequest, pk):
 def createnewsol(httprequest, pk):
     recipe = Recipe.objects.get(pk=int(pk))
     title="Select Items for Recipe: {}".format(recipe)
-    form=WitnessForm
+    if recipe.witness_req==True:
+        form=WitnessForm
+    else:
+        form=TeamOnlyForm
     if httprequest.method == "POST":
         if "submit" in httprequest.POST and httprequest.POST["submit"] == "save":
             form = form(httprequest.POST)
@@ -1339,7 +1342,7 @@ def createnewsol(httprequest, pk):
                 if witness==httprequest.user:
                     messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-            except ValueError:
+            except (ValueError, KeyError):
                 witness=None
             if recipe.track_vol==True:
                 vol_made=httprequest.POST.getlist("total_volume")[0]

@@ -228,8 +228,9 @@ class NewRecipeForm(forms.ModelForm):
                    "comp7":Select2Widget,
                    "comp8":Select2Widget,
                    "comp9":Select2Widget,
-                   "comp10":Select2Widget}
-        labels = {"track_vol":"Tick if this reagent should have it's volume tracked (e.g FISH probe)"}          
+                   "comp10":Select2Widget,
+                   }
+        labels = {"track_vol":"Tick if this reagent should have it's volume tracked (e.g FISH probe)"}
     def __init__(self, *args, **kwargs):
         super(NewRecipeForm, self).__init__(*args, **kwargs)
         self.fields["team_def"].queryset=Teams.objects.exclude(is_active=False)
@@ -362,8 +363,8 @@ class ChangeUseForm(forms.Form):
     sure=forms.BooleanField(label="Tick this box and click save to proceed with the action")
     current_vol=forms.IntegerField(required=False, widget=forms.HiddenInput())
     last_usage=forms.IntegerField(required=False, widget=forms.HiddenInput())
-    
-    
+
+
     def clean(self):
         super(ChangeUseForm, self).clean()
         errors=[]
@@ -374,7 +375,7 @@ class ChangeUseForm(forms.Form):
         if errors!=[]:
             for error in errors:
                 self.add_error(error[0], error[1])
-            
+
 class ChangeMinForm1(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), label="Reagent", widget=Select2Widget)
 
@@ -434,4 +435,6 @@ class PasswordChangeForm(PasswordChangeForm):
 
 class WitnessForm(forms.Form):
     name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).exclude(username="Admin").order_by("username"), widget=Select2Widget, label=u"Select Witness")
+    team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=True)
+class TeamOnlyForm(forms.Form):
     team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=True)

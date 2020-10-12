@@ -175,7 +175,8 @@ class Recipe(models.Model):
     reagent=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"Reagent ID", related_name="Reagent_ID")
     shelf_life=models.PositiveIntegerField(verbose_name=u"Shelf Life (Months)")
     track_vol=models.BooleanField(default=False, verbose_name=u"Volume Tracked")
-
+    witness_req=models.BooleanField(default=False, verbose_name=u"Witness Required?")
+    
     @classmethod
     def create(cls, values):
         with transaction.atomic():

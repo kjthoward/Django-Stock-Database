@@ -21,11 +21,11 @@ from .models import Suppliers, Teams, Reagents, VolUsage, Internal, Validation, 
 class Supplier_Admin(admin.ModelAdmin):
     list_display = ("name","is_active")
     search_fields = ("name",)
-    
+
 class Team_Admin(admin.ModelAdmin):
     list_display = ("name","is_active")
-    search_fields = ("name",) 
-    
+    search_fields = ("name",)
+
 class Reagent_Admin(admin.ModelAdmin):
     def amount_in_stock(self, obj):
         if obj.track_vol==True:
@@ -34,16 +34,16 @@ class Reagent_Admin(admin.ModelAdmin):
             return obj.count_no
     amount_in_stock.short_description = "Amount in Stock"
     list_display = ("name", "supplier_def", "cat_no", "team_def", "amount_in_stock", "track_vol", "is_active")
-    search_fields = ("name", "cat_no", "supplier_def__name", "team_def__name")  
-    
+    search_fields = ("name", "cat_no", "supplier_def__name", "team_def__name")
+
 class Usage_Admin(admin.ModelAdmin):
     list_display = ("item", "start", "end", "used", "date", "user")
-    search_fields = ("item__reagent__name", "item__internal__batch_number", "date", "user__username")  
-    
+    search_fields = ("item__reagent__name", "item__internal__batch_number", "date", "user__username")
+
 class Validation_Admin(admin.ModelAdmin):
-    list_display = ("val_run", "val_date", "val_user")    
-    search_fields = ("val_run", "val_date", "val_user__username") 
-    
+    list_display = ("val_run", "val_date", "val_user")
+    search_fields = ("val_run", "val_date", "val_user__username")
+
 class Recipe_Admin(admin.ModelAdmin):
     def list_comp_recipe(self, obj):
         link_list=[]
@@ -53,7 +53,7 @@ class Recipe_Admin(admin.ModelAdmin):
             link_list+=['<a href="{}">{}</a>'.format(link,text)]
         return mark_safe(", ".join(link_list))
     list_comp_recipe.short_description = "Components"
-    list_display = ("name", "Default_Team", "shelf_life", "track_vol", "list_comp_recipe") 
+    list_display = ("name", "Default_Team", "shelf_life", "track_vol", "list_comp_recipe", "witness_req") 
     search_fields = ("name", "reagent__team_def__name", "comp1__name", "comp2__name", \
                      "comp3__name", "comp4__name", "comp5__name", "comp6__name", \
                      "comp7__name", "comp8__name", "comp9__name", "comp10__name")
@@ -70,8 +70,8 @@ class Inventory_Admin(admin.ModelAdmin):
                      "date_exp", "date_op", "op_user", "val_links", "date_fin", "fin_user")
     search_fields = ("reagent__name", "internal__batch_number", "po", "team__name", "rec_user__username", \
                      "op_user__username", "fin_user__username", "val__val_run")
-        
-        
+
+
 class Solution_Admin(admin.ModelAdmin):
     def list_comp_soltuion(self, obj):
         link_list=[]
