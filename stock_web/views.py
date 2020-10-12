@@ -781,6 +781,9 @@ def _item_context(httprequest, item, undo):
     if item.accept_reason is not None:
         title.append("Reason for Acceptance - {}".format(item.accept_reason))
         title_url.append("")
+    if item.witness is not None:
+        title.append("Witnessed By - {}".format(item.witness))
+        title_url.append("")
     if item.sol is not None and undo!="undo":
         for comp in item.sol.list_comp():
             if comp.val_id is not None:
@@ -880,9 +883,10 @@ def _vol_context(httprequest, item, undo):
     if item.accept_reason is not None:
         title.append("Reason for Acceptance - {}".format(item.accept_reason))
         title_url.append("")
-    if item.sol is not None:
+    if item.witness is not None:
         title.append("Witnessed By - {}".format(item.witness))
         title_url.append("")
+    if item.sol is not None:
         for comp in item.sol.list_comp():
             if comp.val_id is not None:
                 title.append(comp)
