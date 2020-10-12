@@ -221,7 +221,7 @@ class Recipe(models.Model):
                 for stock in in_stock:
                     possibles+=[stock]
         return possibles
-    #function to list components, used in admin view    
+    #function to list components, used in admin view
     def list_comp(self):
         comps=[]
         for i in range(1,11):
@@ -397,7 +397,7 @@ class VolUsage(models.Model):
     item=models.ForeignKey(Inventory, blank=True, null=True, on_delete=models.PROTECT)
     start=models.PositiveIntegerField()
     end=models.PositiveIntegerField()
-    used=models.PositiveIntegerField()
+    used=models.IntegerField()
     date=models.DateField(default=datetime.date.today)
     user=models.ForeignKey(User, on_delete=models.PROTECT)
     sol=models.ForeignKey('Solutions', on_delete=models.PROTECT,  blank=True, null=True)
@@ -498,4 +498,4 @@ class Solutions(models.Model):
     #Function to display stock number (which is stored in inventory record, not solution), used in Admin view
     def Stock_Number(self):
         stock_number=Inventory.objects.get(sol=self.id)
-        return str(stock_number.internal.batch_number)        
+        return str(stock_number.internal.batch_number)
