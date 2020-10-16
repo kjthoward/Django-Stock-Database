@@ -37,8 +37,8 @@
                 <th scope="col">{% if url %}<a href="{{ url }}" style="color:black" title="Click to Sort by {{ item }}">{% endif %}{{ item }}{% if url %}</a>{% endif %}</th>
                 {% endfor %}
             </tr>
-            {% for row, strike in body %}
-            <tr>
+            {% for row, strike, low in body %}
+            <tr {% if low %} scope="col" style="color:red" {% endif %}>
                 {% for entry, url in row %}
                   <td>{% if url %}<a href="{{ url }}">{% endif %}{% if strike %}<del>{% endif %}{{ entry }}{% if strike %}</del>{% endif %}{% if url %}</a>{% endif %}</td>
                 {% endfor %}

@@ -502,8 +502,7 @@ def inventory(httprequest, search, what, sortby, page):
               "",
               "",
               ]
-        body.append((zip(values,urls),item.finished))
-
+        body.append((zip(values,urls),item.finished, True if item.days_remaining()<0 else False))
     context = {"header":title,"headings":headings, "body":body,
                "toolbar":_toolbar(httprequest, active="Inventory")}
     if pages:
