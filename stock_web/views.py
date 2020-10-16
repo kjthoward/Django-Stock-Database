@@ -442,11 +442,13 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Date Finished","Days till expired", "Team"]
+    headings = ["Reagent Name", "Catalogue Number", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Date Finished","Days till expired", "Team"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
+                reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__cat_no"
+                                                     if sortby=="order=reagent_id__cat_no" else "order=reagent_id__cat_no", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
-                                                     if sortby=="order=supplier_id__name" else "order=supplier_id__name", 1]),
+                                                     if sortby=="order=supplier_id__name" else "order=supplier_id__name", 1]),                                                     
                 reverse("stock_web:inventory", args=[search, what,"order=-internal_id__batch_number"
                                                      if sortby=="order=internal_id__batch_number" else "order=internal_id__batch_number", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-date_rec"
@@ -481,6 +483,7 @@ def inventory(httprequest, search, what, sortby, page):
     items_trunc=items[(page-1)*200:page*200]
     for item in items_trunc:
         values = [item.reagent.name,
+                  item.reagent.cat_no if item.reagent.cat_no is not None else "",
                   item.supplier.name,
                   item.internal.batch_number,
                   item.date_rec.strftime("%d/%m/%Y"),
@@ -492,6 +495,7 @@ def inventory(httprequest, search, what, sortby, page):
                   item.team.name if item.team is not None else "",
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
+              "",
               "",
               "",
               "",
@@ -517,6 +521,7 @@ def inventory(httprequest, search, what, sortby, page):
             worksheet.append([heading[0] for heading in headings])
             for item in items:
                 worksheet.append([item.reagent.name,
+                          item.reagent.cat_no,
                           item.supplier.name,
                           item.internal.batch_number,
                           item.date_rec.strftime("%d/%m/%Y"),
@@ -536,6 +541,7 @@ def inventory(httprequest, search, what, sortby, page):
             contents=[[heading[0] for heading in headings]]
             for item in items:
                 contents.append([item.reagent.name,
+                          item.reagent.cat_no,
                           item.supplier.name,
                           item.internal.batch_number,
                           item.date_rec.strftime("%d/%m/%Y"),
