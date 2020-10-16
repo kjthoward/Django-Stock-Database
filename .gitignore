@@ -1,5 +1,6 @@
 *.DS_Store
 *.bat
+*.sh
 *.sqlite3
 *KEY.txt
 *email.json
