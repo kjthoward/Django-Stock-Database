@@ -276,7 +276,8 @@ class SearchForm(forms.Form):
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
     team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=False)
-    in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
+    in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES"), (2,"Show Only Finished")], widget=Select2Widget)
+    val_status=forms.ChoiceField(label="validation Status", choices=[(1,"Not Validated"),(0,"Validated")], widget=Select2Widget, required=False)
 
 class ValeDatesForm(forms.Form):
     val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
@@ -397,13 +398,8 @@ class StockReportForm(forms.Form):
 
 class InvReportForm(forms.Form):
     report=forms.ChoiceField(label="Select Report To Generate",
-                             choices=[("unval","All Unvalidated Items"),
-                                      ("val","All Validated Items"),
-                                      ("exp","Items Expiring Soon"),
-                                      ("all","All In-Stock Items"),
-                                      ("allinc","All In-Stock Items (Including Open Items)"),
-                                      ("minstock","All Items Below Minimum Stock Level"),
-                                      ("finished","All Finished Items")])
+                             choices=[("exp","Items Expiring Soon"),
+                                      ("minstock","All Items Below Minimum Stock Level")])
     rec_range = fields.DateRangeField(required=False, label=u"Received Between", input_formats=['%Y-%m-%d'], widget=widgets.DateRangeWidget(format="%Y-%m-%d", attrs={"style": "width:15em"}))
     open_range = fields.DateRangeField(required=False, label=u"Opened Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))
     val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))

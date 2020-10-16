@@ -221,8 +221,9 @@ def search(httprequest):
                 queries = []
                 for key, query in [("reagent", "reagent__name__icontains"), ("supplier", "supplier__name__icontains"),
                                    ("lot_no", "lot_no__icontains"), ("int_id","internal__batch_number__exact"),
-                                   ("in_stock","finished__lte"),( "rec_range","date_rec__range"), ("open_range","date_op__range"),
-                                   ("val_range","val_id__val_date__range"), ("fin_range","date_fin__range"), ("team", "team__exact")
+                                   ("val_status", "val_id__isnull"),("in_stock","finished__lte"),( "rec_range","date_rec__range"), 
+                                   ("open_range","date_op__range"), ("val_range","val_id__val_date__range"), 
+                                   ("fin_range","date_fin__range"), ("team", "team__exact")
                                   ]:
                     val = form.cleaned_data[key]
                     if key=="team" and val is not None:
@@ -231,6 +232,9 @@ def search(httprequest):
                         if val[0]!=None:
                             if "range" in query:
                                 val=(val[0].strftime("%Y-%m-%d"), val[1].strftime("%Y-%m-%d"))
+                            if key=="in_stock" and val=="2":
+                                query="finished__exact"
+                                val="1"
                             queries += ["{}={}".format(query, val)]
                 return HttpResponseRedirect(reverse("stock_web:inventory", args=["search", ";".join(queries),"_","1"]))
     else:
@@ -413,8 +417,16 @@ def inventory(httprequest, search, what, sortby, page):
             for key, value in query.items():
                 if "range" in key:
                     query[key]=value.strip("()").replace("'","").replace(" ","").split(",")
+                if key=="val_id__isnull":
+                    if int(value)==0:
+                        value=False
+                    else:
+                        value=True
+                    
+                    query[key]=value
 
             title="Search Results"
+            
         elif search=="filter" and "reagent__name__iexact" in query.keys():
             title=query['reagent__name__iexact']
         if sortby!="_":
@@ -662,25 +674,9 @@ def invreport(httprequest, team, filters, what, extension):
             query = dict([q.split("=") for q in filters.split(";")])
             for key, value in query.items():
                 query[key]=value.strip("()").replace("'","").replace(" ","").split(",")
-        if what=="unval":
-            title="All Unvalidated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
-        elif what=="val":
-            title="All Validated Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="exp":
             title="Items Expiring Soon Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
-        elif what=="all":
-            title="All Items In Stock Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
-        elif what=="allinc":
-            title="All Items In Stock Including Open Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
-        elif what=="finished":
-            title="All Finished Items Report - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=True).order_by("reagent_id__name","-is_op","date_exp")
-        if what!="minstock":
             if team!="ALL":
                 items=items.filter(team=team)
             if filters!="_":
@@ -688,59 +684,23 @@ def invreport(httprequest, team, filters, what, extension):
             if len(items)==0:
                 messages.success(httprequest, "No inventory items fit the search criteria")
                 return HttpResponseRedirect(reverse("stock_web:invreport", args=["_","_","_","_"]))
-            if what=="all":
-                body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
-                       "Expiry"]]
-                for item in items:
-                    body+= [[item.reagent.name,
-                              item.reagent.cat_no,
-                              "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
-                              item.team.name,
-                              item.supplier.name,
-                              item.lot_no,
-                              item.internal.batch_number,
-                              item.date_rec.strftime("%d/%m/%Y"),
-                              item.date_exp.strftime("%d/%m/%Y"),
-
-                              ]]
-            elif what=="finished":
-                body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
-                       "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run", "Date Finished", "Finished By"]]
-                for item in items:
-                    body+= [[item.reagent.name,
-                              item.reagent.cat_no,
-                              "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
-                              item.team.name,
-                              item.supplier.name,
-                              item.lot_no,
-                              item.internal.batch_number,
-                              item.date_rec.strftime("%d/%m/%Y"),
-                              item.date_exp.strftime("%d/%m/%Y"),
-                              item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
-                              item.op_user.username if item.op_user is not None else "",
-                              item.val.val_date.strftime("%d/%m/%Y") if item.val is not None else "",
-                              item.val.val_run if item.val is not None else "",
-                              item.date_fin.strftime("%d/%m/%Y"),
-                              item.fin_user.username,
-                              ]]
-            else:
-                body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
-                       "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
-                for item in items:
-                    body+= [[item.reagent.name,
-                              item.reagent.cat_no,
-                              "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
-                              item.team.name,
-                              item.supplier.name,
-                              item.lot_no,
-                              item.internal.batch_number,
-                              item.date_rec.strftime("%d/%m/%Y"),
-                              item.date_exp.strftime("%d/%m/%Y"),
-                              item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
-                              item.op_user.username if item.op_user is not None else "",
-                              item.val.val_date.strftime("%d/%m/%Y") if item.val is not None else "",
-                              item.val.val_run if item.val is not None else "",
-                              ]]
+            body=[["Reagent", "Catalogue Number", "Current Volume", "Team", "Supplier", "Lot Number", "Stock Number", "Received",
+                   "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
+            for item in items:
+                body+= [[item.reagent.name,
+                          item.reagent.cat_no,
+                          "{}µl".format(item.current_vol) if item.current_vol is not None else "N/A",
+                          item.team.name,
+                          item.supplier.name,
+                          item.lot_no,
+                          item.internal.batch_number,
+                          item.date_rec.strftime("%d/%m/%Y"),
+                          item.date_exp.strftime("%d/%m/%Y"),
+                          item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
+                          item.op_user.username if item.op_user is not None else "",
+                          item.val.val_date.strftime("%d/%m/%Y") if item.val is not None else "",
+                          item.val.val_run if item.val is not None else "",
+                          ]]
         elif what=="minstock":
             title="Items Below Their Minimum Stock Levels - Downloaded {}".format(datetime.datetime.today().date().strftime("%d-%m-%Y"))
             items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
