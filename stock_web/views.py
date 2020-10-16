@@ -516,6 +516,7 @@ def inventory(httprequest, search, what, sortby, page):
             httpresponse['Content-Disposition'] = 'attachment; filename="Search Results - {}.xlsx"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
 
         elif "pdf" in httprequest.POST["submit"]:
+            doc_title="Search Results - {}".format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
             contents=[[heading[0] for heading in headings]]
             for item in items:
                 contents.append([item.reagent.name,
@@ -529,8 +530,8 @@ def inventory(httprequest, search, what, sortby, page):
                           item.team.name if item.team is not None else "",
                           ])
             httpresponse = HttpResponse(content_type='application/pdf')
-            httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
-            table=report_gen(contents,"Search Results",httpresponse,httprequest.user.username)
+            httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(doc_title)
+            table=report_gen(contents, doc_title, httpresponse,httprequest.user.username)
 
         return httpresponse
     return render(httprequest, "stock_web/listinventory.html", context)
