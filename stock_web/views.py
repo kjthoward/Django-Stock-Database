@@ -603,7 +603,7 @@ def stockreport(httprequest, fin, filters, pk, extension):
         body=[["Supplier Name", "Catalogue Number", "Lot Number", "Stock Number","Team", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
         if fin=="1":
-            body[-1].append("Date Finised")
+            body[-1].append("Date Finished")
             body[-1].append("Finished By")
         for item in items:
             body+= [[ item.supplier.name,
