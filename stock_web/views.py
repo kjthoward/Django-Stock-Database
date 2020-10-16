@@ -863,6 +863,9 @@ def _vol_context(httprequest, item, undo):
             else:
                 title.append(str(comp)+" - NOT VALIDATED")
             title_url.append(reverse("stock_web:item",args=[comp.id]))
+    if item.val is None:
+        title.append("****ITEM NOT VALIDATED****")
+        title_url.append("")
     title=zip(title,title_url)
     if item.sol is not None:
         headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
