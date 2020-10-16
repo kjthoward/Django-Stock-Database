@@ -430,7 +430,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Days till expired", "Team"]
+    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Date Finished","Days till expired", "Team"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -445,6 +445,8 @@ def inventory(httprequest, search, what, sortby, page):
                                                      if sortby=="order=date_op" else "order=date_op",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-val_id__val_date"
                                                      if sortby=="order=val_id__val_date" else "order=val_id__val_date",1]),
+                reverse("stock_web:inventory", args=[search, what,"order=-date_fin"
+                                                     if sortby=="order=date_fin" else "order=date_fin",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-days_rem"
                                                      if sortquery=="days_rem" else "order=days_rem",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-team"
@@ -473,10 +475,12 @@ def inventory(httprequest, search, what, sortby, page):
                   item.date_exp.strftime("%d/%m/%Y"),
                   item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
                   item.val.val_date.strftime("%d/%m/%Y") if item.val_id is not None else "",
+                  item.date_fin.strftime("%d/%m/%Y") if item.date_fin is not None else "",
                   item.days_remaining(),
                   item.team.name if item.team is not None else "",
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
+              "",
               "",
               "",
               "",
@@ -508,6 +512,7 @@ def inventory(httprequest, search, what, sortby, page):
                           item.date_exp.strftime("%d/%m/%Y"),
                           item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
                           item.val.val_date.strftime("%d/%m/%Y") if item.val_id is not None else "",
+                          item.date_fin.strftime("%d/%m/%Y") if item.date_fin is not None else "",
                           item.days_remaining(),
                           item.team.name if item.team is not None else "",
                           ])
@@ -526,6 +531,7 @@ def inventory(httprequest, search, what, sortby, page):
                           item.date_exp.strftime("%d/%m/%Y"),
                           item.date_op.strftime("%d/%m/%Y") if item.date_op is not None else "",
                           item.val.val_date.strftime("%d/%m/%Y") if item.val_id is not None else "",
+                          item.date_fin.strftime("%d/%m/%Y") if item.date_fin is not None else "",
                           item.days_remaining(),
                           item.team.name if item.team is not None else "",
                           ])
