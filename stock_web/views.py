@@ -740,10 +740,11 @@ def invreport(httprequest, team, filters, what, extension):
 def _item_context(httprequest, item, undo):
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
+             "Catalogue Number - {}".format(item.reagent.cat_no) if item.sol is None else "",
              "Team - {}".format(item.team.name),
              "Lot Number - {}".format(item.lot_no) if item.lot_no !="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number)]
-    title_url=["","","","", ""]
+    title_url=["","","","","",""]
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
         title_url.append("")
@@ -844,13 +845,14 @@ def _vol_context(httprequest, item, undo):
     stripe=False
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
+             "Catalogue Number - {}".format(item.reagent.cat_no) if item.sol is None else "",
              "Team - {}".format(item.team.name),
              "Purchase Order Number - {}".format(item.po),
              "Lot Number - {}".format(item.lot_no) if item.lot_no!="N/A" else "",
              "Stock Number - {}".format(item.internal.batch_number),
              "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
              "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
-    title_url=["","","","","","","",""]
+    title_url=["","","","","","","","",""]
     skip=False
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
