@@ -32,7 +32,7 @@ def fake_for_pages(body, title, httpresponse, user):
     new_body=[]
     for b in body:
         temp=[]
-        if len(b)>14:
+        if len(b)>12:
             limit=10
         else:
             limit=40
@@ -97,7 +97,7 @@ def report_gen(body, title, httpresponse, user):
     new_body=[]
     for b in body:
         temp=[]
-        if len(b)>14:
+        if len(b)>12:
             limit=10
         else:
             limit=40
