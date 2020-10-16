@@ -277,7 +277,9 @@ class SearchForm(forms.Form):
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
     team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES"), (2,"Show Only Finished")], widget=Select2Widget)
+    inc_open=forms.ChoiceField(label="Include Open Items?", choices=[(0,"NO"),(1,"YES")], widget=Select2Widget)
     val_status=forms.ChoiceField(label="Validation Status", choices=[(1,"Not Validated"),(0,"Validated")], widget=Select2Widget, required=False)
+
 
 class ValeDatesForm(forms.Form):
     val_range = fields.DateRangeField(required=False, label=u"Validated Between",widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}))

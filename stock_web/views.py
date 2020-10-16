@@ -223,7 +223,7 @@ def search(httprequest):
                                    ("lot_no", "lot_no__icontains"), ("int_id","internal__batch_number__exact"),
                                    ("val_status", "val_id__isnull"),("in_stock","finished__lte"),( "rec_range","date_rec__range"), 
                                    ("open_range","date_op__range"), ("val_range","val_id__val_date__range"), 
-                                   ("fin_range","date_fin__range"), ("team", "team__exact")
+                                   ("fin_range","date_fin__range"), ("team", "team__exact"), ("inc_open","is_op__lte")
                                   ]:
                     val = form.cleaned_data[key]
                     if key=="team" and val is not None:
@@ -238,7 +238,7 @@ def search(httprequest):
                             queries += ["{}={}".format(query, val)]
                 return HttpResponseRedirect(reverse("stock_web:inventory", args=["search", ";".join(queries),"_","1"]))
     else:
-        form = SearchForm(initial = {"in_stock":1})
+        form = SearchForm(initial = {"in_stock":1, "inc_open":1})
     submiturl = reverse("stock_web:search")
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/searchform.html", {"form": form, "heading":"Enter Search Query", "toolbar": _toolbar(httprequest, active="Search"), "submiturl": submiturl, "cancelurl": cancelurl })
