@@ -10,4 +10,5 @@ migrations/
 *.docx
 *.png
 *.xlsx
+*.csv
 DB_BACKUPS/
