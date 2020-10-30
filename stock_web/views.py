@@ -52,6 +52,10 @@ def no_reset(user):
     else:
         return True
 
+def view_404(httprequest, exception):
+    messages.success(httprequest, f"Webpage with the path {exception.args[-1]['path']} doesn't exist.\n If you think you are getting this message in error please contact a member of the Bioinformatics Team")
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
+
 #sets up database for first use (sets up groups and adds Admin as superuser/staff)
 def prime(httprequest):
     if len(User.objects.all())!=0:

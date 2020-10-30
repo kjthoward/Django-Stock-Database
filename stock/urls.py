@@ -25,6 +25,7 @@ urlpatterns = [
     path('select2/', include('django_select2.urls')),
     path('stock/admin/', admin.site.urls),
 ]
+handler404 = 'stock_web.views.view_404'
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns = [
