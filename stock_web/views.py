@@ -284,6 +284,8 @@ def loginview(httprequest):
 
         else:
             form = LoginForm()
+            if "rv:11.0" in httprequest.META['HTTP_USER_AGENT']:
+                messages.success(httprequest, "WARNING - YOUR BROWSER IS NOT SUPPORTED ON THIS SITE. PLEASE SWITCH TO FIREFOX OR GOOGLE CHROME")
     return render(httprequest, "stock_web/login.html", {"form": form})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
