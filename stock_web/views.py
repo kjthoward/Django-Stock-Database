@@ -252,7 +252,8 @@ def loginview(httprequest):
     if httprequest.user.is_authenticated:
         logout(httprequest)
         messages.success(httprequest,"You are now logged out")
-        return HttpResponseRedirect(reverse("stock_web:listinv"))
+        form = LoginForm()
+        return render(httprequest, "stock_web/login.html", {"form": form})
     else:
 
         if httprequest.method == "POST" and "login" in httprequest.POST:
