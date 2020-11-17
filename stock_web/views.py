@@ -449,7 +449,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Catalogue Number", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Date Finished","Days till expired", "Team"]
+    headings = ["Reagent Name", "Catalogue Number", "Supplier", "Stock Number", "Date Received", "Expiry Date", "Date Opened", "Date Validated", "Date Finished","Days till expired", "Team"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__cat_no"
