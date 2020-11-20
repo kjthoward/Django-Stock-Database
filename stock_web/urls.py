@@ -23,6 +23,7 @@ urlpatterns = [
     re_path(r'^valitem/(.*)/$', views.valitem, name='valitem'),
     re_path(r'^finishitem/(.*)/$', views.finishitem, name='finishitem'),
     re_path(r"^loginview/$", views.loginview, name="loginview"),
+    re_path(r"^logout_page/$", views.logout_page, name="logout_page"),
     re_path(r"^change_password/$", views.change_password, name="change_password"),
     re_path(r"^activteam/$", views.activteam, name="activteam"),
     re_path(r"^activsup/$", views.activsup, name="activsup"),
