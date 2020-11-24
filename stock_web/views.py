@@ -1182,7 +1182,7 @@ def finishitem(httprequest, pk):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
     try:
-        item = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","project").get(pk=int(pk))
+        item = Inventory.objects.select_related("supplier","reagent","internal","val").get(pk=int(pk))
     except:
         messages.success(httprequest, "The item you're trying to access does not exist.\n If you think you are getting this message in error please email kieran.howard@ouh.nhs.uk")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
