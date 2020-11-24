@@ -34,7 +34,7 @@ class NewInvForm1(forms.ModelForm):
         item=Reagents.objects.get(pk=self.data["reagent"])
         if item.recipe is not None:
             for i in range(1,item.recipe.length()+1):
-                if Reagents.objects.get(pk=eval('item.recipe.comp{}.id'.format(i))).count_no==0:
+                if len(Inventory.objects.filter(reagent_id=eval('item.recipe.comp{}.id'.format(i)), finished=False))==0:
                     errors+=[forms.ValidationError("There is no {} in stock".format(eval('item.recipe.comp{}.name'.format(i))))]
             if errors:
                 raise forms.ValidationError(errors)
