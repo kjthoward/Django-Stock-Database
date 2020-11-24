@@ -218,7 +218,7 @@ class Recipe(models.Model):
         for k,v in Recipe.objects.filter(pk=self.id).values().first().items():
             if "comp" in k and v is not None:
                 inv_id=v
-                in_stock=Inventory.objects.select_related("supplier","reagent","internal").filter(reagent_id=inv_id,finished=False)
+                in_stock=Inventory.objects.select_related("supplier","reagent","internal","val", "op_user").filter(reagent_id=inv_id,finished=False)
                 for stock in in_stock:
                     possibles+=[stock]
         return possibles
