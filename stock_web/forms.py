@@ -213,7 +213,7 @@ class NewReagentForm(forms.ModelForm):
             self.add_error("name", forms.ValidationError("A Reagent with the name {} already exists".format(self.cleaned_data["name"])))
 
 class NewRecipeForm(forms.ModelForm):
-    number=forms.IntegerField(min_value=1, label=u"Minimum Stock Level")
+    number=forms.IntegerField(min_value=0, label=u"Minimum Stock Level")
     team_def=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Default Team", widget=Select2Widget, required=True)
     class Meta:
         model = Recipe
