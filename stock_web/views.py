@@ -769,15 +769,21 @@ def _item_context(httprequest, item, undo):
     if item.witness is not None:
         title.append("Witnessed By - {}".format(item.witness))
         title_url.append("")
+    #Checks validation status of components of a solution
+    sol_val=True
     if item.sol is not None and undo!="undo":
         for comp in item.sol.list_comp():
             if comp.val_id is not None:
                 title.append(comp)
             else:
+                sol_val=False
                 title.append(str(comp)+" - NOT VALIDATED")
             title_url.append(reverse("stock_web:item",args=[comp.id]))
-    if item.val is None:
+    if item.val is None and item.sol is None:
         title.append("****ITEM NOT VALIDATED****")
+        title_url.append("")
+    if item.sol is not None and sol_val==False:
+        title.append("****COMPONENTS ARE NOT VALIDATED****")
         title_url.append("")
     title=zip(title,title_url)
     if item.sol is not None:
@@ -1095,6 +1101,8 @@ def valitem(httprequest,pk):
     item=Inventory.objects.get(pk=int(pk))
     form=ValItemForm
     if Inventory.objects.get(pk=int(pk)).is_op==False:
+        return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
+    if item.sol is not None:
         return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     header=["Validating item {}".format(item)]
     header+=["Date Open: {}".format(item.date_op)]

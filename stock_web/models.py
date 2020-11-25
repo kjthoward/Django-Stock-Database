@@ -290,7 +290,7 @@ class Inventory(models.Model):
             try:
                 values["val_id"]=Inventory.objects.filter(reagent=values["reagent"].id, lot_no=values["lot_no"],val_id__gte=0).first().val_id
             except: pass
-            if "~" in values["reagent"].name:
+            if "~" in values["reagent"].name and values["reagent"].recipe is None:
                 try:
 
                     values["val_id"]=Validation.objects.get(val_date=values["date_rec"], val_run="NOT_TO_BE_TESTED").pk
