@@ -787,7 +787,15 @@ def _item_context(httprequest, item, undo):
     sol_val=True
     if item.sol is not None and undo!="undo":
         for comp in item.sol.list_comp():
-            if comp.val_id is not None:
+            if comp.sol_id is not None:
+                for comp1 in comp.sol.list_comp():
+                    if comp1.val_id is None:
+                        sol_val=False
+                if sol_val==False:
+                    title.append(str(comp)+" - NOT VALIDATED")
+                else:
+                    title.append(comp)
+            elif comp.val_id is not None:
                 title.append(comp)
             else:
                 sol_val=False
