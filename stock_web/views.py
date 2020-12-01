@@ -1846,6 +1846,7 @@ def undoitem(httprequest, task, pk):
                                 item.finished=0
                                 item.fin_user=None
                                 item.fin_text=None
+                                item.date_fin=None
                                 item.reagent.open_no=F("open_no")+1
                                 item.reagent.save()
                                 item.save()
