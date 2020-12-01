@@ -6,6 +6,7 @@ app_name = 'stock_web'
 urlpatterns = [
     re_path(r'^recipes/$', views.recipes, name='recipes'),
     re_path(r'^prime/$', views.prime, name='prime'),
+    re_path(r'^vol_migrate/$', views.vol_migrate, name='vol_migrate'),
     re_path(r'^newinv/(.*)/$', views.newinv, name='newinv'),
     re_path(r'^search/$', views.search, name='search'),
     re_path(r'^valdates/$', views.valdates, name='valdates'),

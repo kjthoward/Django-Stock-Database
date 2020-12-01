@@ -108,7 +108,8 @@ class Reagents(models.Model):
     supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier", blank=True, null=True)
     team_def = models.ForeignKey(Teams, on_delete=models.PROTECT, verbose_name=u"Default Team")
     #storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
-    count_no=models.PositiveIntegerField(default=0, verbose_name=u"Amount in Stock")
+    count_no=models.PositiveIntegerField(default=0, verbose_name=u"Unopened Items")
+    open_no=models.PositiveIntegerField(default=0, verbose_name=u"Opened Items")
     min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")
     recipe=models.ForeignKey("Recipe", on_delete=models.PROTECT, blank=True, null=True)
     track_vol=models.BooleanField(default=False, verbose_name=u"Volume Tracked")
@@ -323,7 +324,8 @@ class Inventory(models.Model):
             reagent=Inventory.objects.get(id=item).reagent
             if reagent.track_vol==False:
                 reagent.count_no=F("count_no")-1
-                reagent.save()
+            reagent.open_no=F("open_no")+1
+            reagent.save()    
             invitem=Inventory.objects.get(id=item)
             invitem.date_op=values["date_op"]
             invitem.op_user=user
@@ -372,10 +374,13 @@ class Inventory(models.Model):
             reagent=Inventory.objects.get(id=item).reagent
             if reagent.track_vol==False and invitem.is_op==False:
                 reagent.count_no=F("count_no")-1
+                reagent.open_no=F("open_no")-1
                 invitem.save()
                 reagent.save()
 
             elif reagent.track_vol==False and invitem.is_op==True:
+                reagent.open_no=F("open_no")-1
+                reagent.save()
                 invitem.save()
 
             elif reagent.track_vol==True:
@@ -387,6 +392,7 @@ class Inventory(models.Model):
                     reagent.count_no=F("count_no")-values["vol"]
                 else:
                     reagent.count_no=F("count_no")-invitem.current_vol
+                reagent.open_no=F("open_no")-1
                 reagent.save()
                 invitem.current_vol=0
                 invitem.save()

@@ -66,6 +66,18 @@ def prime(httprequest):
         messages.success(httprequest, "Database Primed")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
 
+def vol_migrate(httprequest):
+    open_items=Inventory.objects.filter(is_op=True, finished=False)
+    all_reagents=Reagents.objects.all()
+    counts={}
+    for reagent in all_reagents:
+        num_open=open_items.filter(reagent=reagent).count()
+        reagent.open_no=num_open
+        reagent.save()
+    messages.success(httprequest, "Open Item Counts Migrated")
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
+
+
 def _toolbar(httprequest, active=""):
     inventory_dropdown = [{"name":"All", "url":reverse("stock_web:inventory", args=["_", "all","_",1])},
                           {"name":"In Stock", "url":reverse("stock_web:inventory", args=["_", "instock","_", 1])},
@@ -346,14 +358,16 @@ def valdates(httprequest):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def listinv(httprequest):
     title = "List of Reagents"
-    headings = ["Reagent Name", "Number In Stock", "Minimum Stock Level"]
+    headings = ["Reagent Name", "Number Unopen (Or Volume) In Stock", "Number Open In Stock", "Minimum Stock Level"]
     items=Reagents.objects.all().exclude(is_active=False, count_no=0).order_by("name")
     body=[]
     for item in items:
         values = [item.name,
                   "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
+                  item.open_no,
                   "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]
         urls=[reverse("stock_web:inventory",args=["filter","reagent__name__iexact={};finished__lte=0".format(item.name),"_",1]),
+              "",
               "",
               "",
               ]
@@ -1067,7 +1081,7 @@ def openitem(httprequest, pk):
                             make="made"
                         else:
                             make="ordered"
-                        messages_to_show+=["Current stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(item.reagent.name,
+                        messages_to_show+=["Current unopened stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
                                                                                                                                               item.reagent.min_count,
                                                                                                                                               make)]
@@ -1227,15 +1241,17 @@ def recipes(httprequest):
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def recipe(httprequest, pk):
-    item = Recipe.objects.get(pk=int(pk))
+    item = Recipe.objects.select_related("reagent", "comp1", "comp2", "comp3", "comp4", "comp5", "comp6", "comp7", "comp8", "comp9", "comp10").get(pk=int(pk))
     title = "Components for {}".format(item.name)
-    headings = ["Reagent", "Amount in stock"]
+    headings = ["Reagent", "Number Unopen (Or Volume) In Stock", "Number Open In Stock",]
     body=[]
     for i in range(1, item.length()+1):
         values = [eval('item.comp{}.name'.format(i)),
                   "{}µl".format(eval('item.comp{}.count_no'.format(i))) if eval('item.comp{}.track_vol'.format(i))==True else eval('item.comp{}.count_no'.format(i)),
+                  eval('item.comp{}.open_no'.format(i)),
                   ]
         urls= ["",
+               "",
                ""]
         body.append((zip(values,urls),False))
     context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest, active="Recipe")}
@@ -1287,7 +1303,7 @@ def newinv(httprequest, pk):
                             make="made"
                         else:
                             make="ordered"
-                        message+=["Current stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(form.cleaned_data["reagent"].name,
+                        message+=["Current unopened stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(form.cleaned_data["reagent"].name,
                                                                                                                                        quant,
                                                                                                                                        form.cleaned_data["reagent"].min_count,
                                                                                                                                        make)]
@@ -1830,6 +1846,7 @@ def undoitem(httprequest, task, pk):
                                 item.finished=0
                                 item.fin_user=None
                                 item.fin_text=None
+                                item.reagent.open_no=F("open_no")+1
                                 item.reagent.save()
                                 item.save()
                             elif task=="unopen":
@@ -1848,6 +1865,7 @@ def undoitem(httprequest, task, pk):
                                 item.op_user_id=None
                                 if item.reagent.track_vol:
                                     item.reagent.count_no+=sum([x.used for x in VolUsage.objects.filter(item=item)])
+                                    item.reagent.open_no=F("open_no")-1
                                     item.reagent.save()
                                     item.last_usage=None
                                     item.current_vol=item.vol_rec
@@ -1855,6 +1873,7 @@ def undoitem(httprequest, task, pk):
                                     VolUsage.objects.filter(item=item).delete()
                                 else:
                                     item.reagent.count_no+=1
+                                    item.reagent.open_no=F("open_no")-1
                                     item.reagent.save()
                                 item.save()
                             if task=="delete":

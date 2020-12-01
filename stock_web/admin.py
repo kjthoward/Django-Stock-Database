@@ -33,7 +33,7 @@ class Reagent_Admin(admin.ModelAdmin):
         else:
             return obj.count_no
     amount_in_stock.short_description = "Amount in Stock"
-    list_display = ("name", "supplier_def", "cat_no", "team_def", "amount_in_stock", "track_vol", "is_active")
+    list_display = ("name", "supplier_def", "cat_no", "team_def", "amount_in_stock", "open_no", "track_vol", "is_active")
     search_fields = ("name", "cat_no", "supplier_def__name", "team_def__name")
 
 class Usage_Admin(admin.ModelAdmin):

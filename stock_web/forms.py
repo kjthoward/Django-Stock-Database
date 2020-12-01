@@ -195,6 +195,7 @@ class NewReagentForm(forms.ModelForm):
         fields= "__all__"
         ####UNHIDE STORAGE IF EVER USED
         widgets = {"count_no":forms.HiddenInput,
+                   "open_no":forms.HiddenInput,
                    "recipe":forms.HiddenInput,
                    "supplier_def":Select2Widget,
                    "team_def": Select2Widget,
