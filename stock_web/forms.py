@@ -372,7 +372,7 @@ class ChangeUseForm(forms.Form):
     def clean(self):
         super(ChangeUseForm, self).clean()
         errors=[]
-        if self.cleaned_data["vol_used"]>self.cleaned_data["current_vol"]:
+        if self.cleaned_data["vol_used"]>self.cleaned_data["current_vol"]+self.cleaned_data["last_usage"]:
             errors+=[("vol_used", forms.ValidationError("Volume Used Exceeds Current Volume in Tube"))]
         if self.cleaned_data["vol_used"]==int(self.data["last_usage"]):
             errors+=[("vol_used", forms.ValidationError("New volume used is the same."))]

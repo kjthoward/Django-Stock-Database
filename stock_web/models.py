@@ -382,7 +382,6 @@ class Inventory(models.Model):
                 invitem.save()
 
             elif reagent.track_vol==True:
-
                 if invitem.current_vol!=0:
                     use=VolUsage.use(item,invitem.current_vol,0,invitem.current_vol,user,None,values["date_fin"])
                     invitem.last_usage=use
@@ -390,7 +389,8 @@ class Inventory(models.Model):
                     reagent.count_no=F("count_no")-values["vol"]
                 else:
                     reagent.count_no=F("count_no")-invitem.current_vol
-                reagent.open_no=F("open_no")-1
+                if invitem.is_op==True:
+                    reagent.open_no=F("open_no")-1
                 reagent.save()
                 invitem.current_vol=0
                 invitem.save()

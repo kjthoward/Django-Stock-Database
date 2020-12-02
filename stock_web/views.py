@@ -955,14 +955,6 @@ def _vol_context(httprequest, item, undo):
             headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
-        if undo=="undo":
-            headings+=["Action"]
-            if item.is_op==True:
-                values+=["Re-Open Item"]
-                urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
-            elif item.is_op==False:
-                values+=["Un-discard Item"]
-                urls+=[reverse("stock_web:undoitem",args=["undiscard",item.id])]
     if item.val_id is not None:
         if undo=="undo":
             headings+=["Action"]
@@ -1878,8 +1870,9 @@ def undoitem(httprequest, task, pk):
                                 item.fin_user=None
                                 item.fin_text=None
                                 item.date_fin=None
-                                item.reagent.count_no=F("count_no")+1
-                                item.reagent.save()
+                                if item.reagent.track_vol==False:
+                                    item.reagent.count_no=F("count_no")+1
+                                    item.reagent.save()
                                 item.save()
                             elif task=="unopen":
                                 sols=Solutions.objects.filter(Q(comp1=item)|Q(comp2=item)|Q(comp3=item)|
@@ -2016,6 +2009,16 @@ def undoitem(httprequest, task, pk):
                             item.date_fin=None
                             item.fin_user=None
                             item.fin_text=None
+                            if item.date_op is not None:
+                                item.reagent.open_no=F("open_no")+1
+                                item.reagent.save()
+                            elif int(form.cleaned_data["vol_used"])!=0:
+                                item.date_op=datetime.date.today()
+                                item.op_user=httprequest.user
+                                item.is_op=True
+                                item.reagent.open_no=F("open_no")+1
+                                item.reagent.save()
+                        
                         if int(form.cleaned_data["vol_used"])==0:
                             if len(uses)>1:
                                 item.last_usage=uses[1]
