@@ -370,11 +370,9 @@ class Inventory(models.Model):
             invitem.fin_text=values["fin_text"]
             invitem.date_fin=values["date_fin"]
             invitem.finished=True
-
             reagent=Inventory.objects.get(id=item).reagent
             if reagent.track_vol==False and invitem.is_op==False:
                 reagent.count_no=F("count_no")-1
-                reagent.open_no=F("open_no")-1
                 invitem.save()
                 reagent.save()
 
