@@ -831,37 +831,10 @@ def _item_context(httprequest, item, undo):
         else:
             values+=["Open Item"]
             urls+=[reverse("stock_web:openitem",args=[item.id])]
-    if ((item.date_op is not None) and (item.val_id is None) and (item.finished==False)):
-        if undo=="undo":
-            headings+=["Action"]
-            values+=["Un-open Item"]
-            urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None and (httprequest.user.groups.filter(name="Admin").exists() or httprequest.user.is_staff):
-            headings+=["Action"]
-            values+=["Validate Item"]
-            urls+=[reverse("stock_web:valitem",args=[item.id])]
     elif ((item.date_op is not None) and (item.val_id is not None) and (item.finished==False) and (undo=="undo")):
         headings+=["Action"]
         values+=["Un-open Item"]
         urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-    if item.val_id is not None and item.finished==False:
-        if undo=="undo":
-            headings+=["Action"]
-            values+=["Un-Validate Item"]
-            urls+=[reverse("stock_web:undoitem",args=["unval",item.id])]
-        elif item.is_op==True:
-            headings+=["Action"]
-            values+=["Finish/Discard Item"]
-            urls+=[reverse("stock_web:finishitem",args=[item.id])]
-            SKIP=True
-
-    if ((item.finished==False) and (undo!="undo")  and (SKIP==False)):
-        headings+=["Action"]
-        if item.sol_id is not None:
-            values+=["Finish Item"]
-        else:
-            values+=["Discard Item"]
-        urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
         if item.is_op==True:
             headings+=["Date Finished", "Finished by"]
@@ -871,8 +844,38 @@ def _item_context(httprequest, item, undo):
         urls+=["",""]
         if undo=="undo":
             headings+=["Action"]
-            values+=["Re-Open Item"]
-            urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
+            if item.is_op==True:
+                values+=["Re-Open Item"]
+                urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
+            elif item.is_op==False:
+                values+=["Un-discard Item"]
+                urls+=[reverse("stock_web:undoitem",args=["undiscard",item.id])]
+    if item.val_id is not None:
+        if undo=="undo":
+            headings+=["Action"]
+            values+=["Un-Validate Item"]
+            urls+=[reverse("stock_web:undoitem",args=["unval",item.id])]
+    if ((item.date_op is not None) and (item.val_id is None)):
+        if undo=="undo" and item.finished==False:
+            headings+=["Action"]
+            values+=["Un-open Item"]
+            urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
+        elif item.sol_id is None and (httprequest.user.groups.filter(name="Admin").exists() or httprequest.user.is_staff) and undo!="undo":
+            headings+=["Action"]
+            values+=["Validate Item"]
+            urls+=[reverse("stock_web:valitem",args=[item.id])]
+    if item.is_op==True and item.finished==False and undo!="undo":
+        headings+=["Action"]
+        values+=["Finish/Discard Item"]
+        urls+=[reverse("stock_web:finishitem",args=[item.id])]
+        SKIP=True
+    if ((item.finished==False) and (undo!="undo")  and (SKIP==False)):
+        headings+=["Action"]
+        if item.sol_id is not None:
+            values+=["Finish Item"]
+        else:
+            values+=["Discard Item"]
+        urls+=[reverse("stock_web:finishitem",args=[item.id])]
     body = [(zip(values,urls, urls),False)]
     context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "cyto":False}
     if ((item.finished==True) and (item.fin_text is not None)):
@@ -941,33 +944,10 @@ def _vol_context(httprequest, item, undo):
         headings+=["Action"]
         values+=["Use Amount"]
         urls+=[reverse("stock_web:useitem",args=[item.id])]
-    if ((item.date_op is not None) and (item.val_id is None) and (item.finished==False)):
-        if undo=="undo":
-            headings+=["Action"]
-            values+=["Un-open Item"]
-            urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None and item.last_usage is not None and (httprequest.user.groups.filter(name="Admin").exists() or httprequest.user.is_staff):
-            headings+=["Action"]
-            values+=["Validate Item"]
-            urls+=[reverse("stock_web:valitem",args=[item.id])]
     elif ((item.date_op is not None) and (item.val_id is not None) and (item.finished==False) and (undo=="undo")):
         headings+=["Action"]
         values+=["Un-open Item"]
         urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-    if item.val_id is not None and item.finished==False:
-        if undo=="undo":
-            headings+=["Action"]
-            values+=["Un-Validate Item"]
-            urls+=[reverse("stock_web:undoitem",args=["unval",item.id])]
-        elif item.is_op==True:
-            headings+=["Action"]
-            values+=["Finish/Discard Item"]
-            urls+=[reverse("stock_web:finishitem",args=[item.id])]
-            SKIP=True
-    if ((item.finished==False) and (undo!="undo")  and (SKIP==False)):
-        headings+=["Action"]
-        values+=["Discard Item"]
-        urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
         if item.is_op==True:
             headings+=["Date Finished", "Finished by"]
@@ -975,6 +955,41 @@ def _vol_context(httprequest, item, undo):
             headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
+        if undo=="undo":
+            headings+=["Action"]
+            if item.is_op==True:
+                values+=["Re-Open Item"]
+                urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
+            elif item.is_op==False:
+                values+=["Un-discard Item"]
+                urls+=[reverse("stock_web:undoitem",args=["undiscard",item.id])]
+    if item.val_id is not None:
+        if undo=="undo":
+            headings+=["Action"]
+            values+=["Un-Validate Item"]
+            urls+=[reverse("stock_web:undoitem",args=["unval",item.id])]
+    if ((item.date_op is not None) and (item.val_id is None)):
+        if undo=="undo" and (item.finished==False):
+            headings+=["Action"]
+            values+=["Un-open Item"]
+            urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
+        elif item.sol_id is None and item.last_usage is not None and (httprequest.user.groups.filter(name="Admin").exists() or httprequest.user.is_staff) and undo!="undo":
+            headings+=["Action"]
+            values+=["Validate Item"]
+            urls+=[reverse("stock_web:valitem",args=[item.id])]
+    if item.is_op==True and item.finished==False and undo!="undo":
+        headings+=["Action"]
+        values+=["Finish/Discard Item"]
+        urls+=[reverse("stock_web:finishitem",args=[item.id])]
+        SKIP=True
+    if ((item.finished==False) and (undo!="undo")  and (SKIP==False)):
+        headings+=["Action"]
+        if item.sol_id is not None:
+            values+=["Finish Item"]
+        else:
+            values+=["Discard Item"]
+        urls+=[reverse("stock_web:finishitem",args=[item.id])]
+    
     body = [(zip(values,urls, urls),stripe)]
     context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest)}
     if ((item.finished==True) and (item.fin_text is not None)):
@@ -1835,7 +1850,7 @@ def undoitem(httprequest, task, pk):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     subheading = None
-    if task in ["delete", "unopen", "reopen"]:
+    if task in ["delete", "unopen", "reopen", "undiscard"]:
         form = DeleteForm
         title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {}".format(task.upper(), item.internal, item.reagent)]
         if task=="unopen" and item.reagent.track_vol==True and item.current_vol!=item.vol_rec:
@@ -1856,6 +1871,14 @@ def undoitem(httprequest, task, pk):
                                 item.fin_text=None
                                 item.date_fin=None
                                 item.reagent.open_no=F("open_no")+1
+                                item.reagent.save()
+                                item.save()
+                            elif task=="undiscard":
+                                item.finished=0
+                                item.fin_user=None
+                                item.fin_text=None
+                                item.date_fin=None
+                                item.reagent.count_no=F("count_no")+1
                                 item.reagent.save()
                                 item.save()
                             elif task=="unopen":
