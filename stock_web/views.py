@@ -77,28 +77,28 @@ def prime(httprequest):
 #     messages.success(httprequest, "Open Item Counts Migrated")
 #     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
-def migrate_4OD(httprequest):
-    new_user=User.objects.get(username="4OD")
-    items=Inventory.objects.all()
-    count=0
-    for item in items:
-        if ("4OD" in item.po) or ("4OD" in item.lot_no):
-            item.rec_user=new_user
-            if item.is_op==True:
-                item.op_user=new_user
-            count+=1
-            item.save()
-    messages.success(httprequest, f"User changed for {count} items")
-    return HttpResponseRedirect(reverse("stock_web:listinv"))
-    
-def migrate_sols(httprequest):
-    items=Inventory.objects.filter(sol_id__gt=0)
-    for item in items:
-        values={"val_date":item.date_rec, "val_run":"INTERNAL"}
-        # import pdb; pdb.set_trace()
-        Inventory.validate(values, item.reagent.id, item.lot_no, item.rec_user)
-    messages.success(httprequest, f"Validation updated for {len(items)} items")
-    return HttpResponseRedirect(reverse("stock_web:listinv"))
+# def migrate_4OD(httprequest):
+#     new_user=User.objects.get(username="4OD")
+#     items=Inventory.objects.all()
+#     count=0
+#     for item in items:
+#         if ("4OD" in item.po) or ("4OD" in item.lot_no):
+#             item.rec_user=new_user
+#             if item.is_op==True:
+#                 item.op_user=new_user
+#             count+=1
+#             item.save()
+#     messages.success(httprequest, f"User changed for {count} items")
+#     return HttpResponseRedirect(reverse("stock_web:listinv"))
+# 
+# def migrate_sols(httprequest):
+#     items=Inventory.objects.filter(sol_id__gt=0)
+#     for item in items:
+#         values={"val_date":item.date_rec, "val_run":"INTERNAL"}
+#         # import pdb; pdb.set_trace()
+#         Inventory.validate(values, item.reagent.id, item.lot_no, item.rec_user)
+#     messages.success(httprequest, f"Validation updated for {len(items)} items")
+#     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 def _toolbar(httprequest, active=""):
     inventory_dropdown = [{"name":"All", "url":reverse("stock_web:inventory", args=["_", "all","_",1])},
