@@ -293,11 +293,14 @@ class Inventory(models.Model):
             except: pass
             if "~" in values["reagent"].name and values["reagent"].recipe is None:
                 try:
-
                     values["val_id"]=Validation.objects.get(val_date=values["date_rec"], val_run="NOT_TO_BE_TESTED").pk
                 except:
                     values["val_id"]=Validation.objects.create(val_date=values["date_rec"], val_run="NOT_TO_BE_TESTED",val_user_id=user.id).pk
-
+            elif values["reagent"].recipe is not None:
+                try:
+                    values["val_id"]=Validation.objects.get(val_date=values["date_rec"], val_run="INTERNAL").pk
+                except:
+                    values["val_id"]=Validation.objects.create(val_date=values["date_rec"], val_run="INTERNAL",val_user_id=user.id).pk
             internals=[]
             for _ in range(amount):
                 inventory=cls(**values)
