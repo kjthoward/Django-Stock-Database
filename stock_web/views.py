@@ -1009,7 +1009,11 @@ def _vol_context(httprequest, item, undo):
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     
     body = [(zip(values,urls, urls),stripe)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest)}
+    if undo=="undo":
+        toolbar = _toolbar(httprequest, active="Edit Data")
+    else:
+        toolbar = _toolbar(httprequest)
+    context = {"header":title,"headings":headings, "body":body, "toolbar":toolbar}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     if item.last_usage is not None:
