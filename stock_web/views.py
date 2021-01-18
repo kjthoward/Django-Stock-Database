@@ -899,7 +899,11 @@ def _item_context(httprequest, item, undo):
             values+=["Discard Item"]
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     body = [(zip(values,urls, urls),False)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "cyto":False}
+    if undo=="undo":
+        toolbar = _toolbar(httprequest, active="Edit Data")
+    else:
+        toolbar = _toolbar(httprequest)
+    context = {"header":title,"headings":headings, "body":body, "toolbar":toolbar, "cyto":False}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     return context
