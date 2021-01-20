@@ -441,7 +441,7 @@ class ChangeExpForm(forms.Form):
             self.add_error("new_exp_date",forms.ValidationError("New expiry date occurs before date received"))
             
 class ChangeRecForm(forms.Form):
-    new_date=forms.DateField(widget=DateInput(), label=u"Date Recieved")
+    new_date=forms.DateField(widget=DateInput(), label=u"Date Received")
     open=forms.BooleanField(widget=forms.HiddenInput(), required=False)
     date_op=forms.DateField(widget=forms.HiddenInput(), required=False)
     date_exp=forms.DateField(widget=forms.HiddenInput(), required=False)
@@ -450,13 +450,13 @@ class ChangeRecForm(forms.Form):
     def clean(self):
         super(ChangeRecForm, self).clean()
         if self.cleaned_data["new_date"]>self.cleaned_data["date_exp"]:
-            self.add_error("new_date",forms.ValidationError("New recieved date occurs after expiry date"))
+            self.add_error("new_date",forms.ValidationError("New received date occurs after expiry date"))
         elif self.cleaned_data["open"]==True:
             if self.cleaned_data["new_date"]>self.cleaned_data["date_op"]:
-                self.add_error("new_date",forms.ValidationError("New recieved date occurs after date item was open"))
+                self.add_error("new_date",forms.ValidationError("New received date occurs after date item was open"))
         elif self.cleaned_data["finished"]==True:
             if self.cleaned_data["new_date"]>self.cleaned_data["date_fin"]:
-                self.add_error("new_date",forms.ValidationError("New recieved date occurs after date item was finished"))
+                self.add_error("new_date",forms.ValidationError("New received date occurs after date item was finished"))
 
 class ChangeFinForm(forms.Form):
     new_date=forms.DateField(widget=DateInput(), label=u"Date Finished")

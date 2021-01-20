@@ -1926,7 +1926,7 @@ def changedate(httprequest, pk, type):
                                    "date_rec":item.date_rec})
     elif type=="rec":
         form = ChangeRecForm
-        title=[f"SELECT NEW RECIEVED DATE FOR: {item}"]
+        title=[f"SELECT NEW RECEIVED DATE FOR: {item}"]
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST:
                 return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
@@ -1935,7 +1935,7 @@ def changedate(httprequest, pk, type):
                 if form.is_valid():
                     item.date_rec=form.cleaned_data["new_date"]
                     item.save()
-                    messages.success(httprequest,f"Date Recieved for {item} changed to {form.cleaned_data['new_date'].strftime('%d-%m-%Y')}")
+                    messages.success(httprequest,f"Date Received for {item} changed to {form.cleaned_data['new_date'].strftime('%d-%m-%Y')}")
                     return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
         else:
             form = form(initial = {"new_date":item.date_rec,
