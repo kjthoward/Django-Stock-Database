@@ -432,6 +432,45 @@ class PasswordChangeForm(PasswordChangeForm):
     #Blanks help_text, as it messes up formatting/spacing of boxes, re-added using messages.info in views
     PasswordChangeForm.base_fields["new_password1"].help_text=""
 
+class ChangeExpForm(forms.Form):
+    new_exp_date=forms.DateField(widget=DateInput(), label=u"Expiry Date")
+    date_rec=forms.DateField(widget=forms.HiddenInput(), required=False)
+    def clean(self):
+        super(ChangeExpForm, self).clean()
+        if self.cleaned_data["new_exp_date"]<self.cleaned_data["date_rec"]:
+            self.add_error("new_exp_date",forms.ValidationError("New expiry date occurs before date received"))
+            
+class ChangeRecForm(forms.Form):
+    new_date=forms.DateField(widget=DateInput(), label=u"Date Recieved")
+    open=forms.BooleanField(widget=forms.HiddenInput(), required=False)
+    date_op=forms.DateField(widget=forms.HiddenInput(), required=False)
+    date_exp=forms.DateField(widget=forms.HiddenInput(), required=False)
+    finished=forms.BooleanField(widget=forms.HiddenInput(), required=False)
+    date_fin=forms.DateField(widget=forms.HiddenInput(), required=False)
+    def clean(self):
+        super(ChangeRecForm, self).clean()
+        if self.cleaned_data["new_date"]>self.cleaned_data["date_exp"]:
+            self.add_error("new_date",forms.ValidationError("New recieved date occurs after expiry date"))
+        elif self.cleaned_data["open"]==True:
+            if self.cleaned_data["new_date"]>self.cleaned_data["date_op"]:
+                self.add_error("new_date",forms.ValidationError("New recieved date occurs after date item was open"))
+        elif self.cleaned_data["finished"]==True:
+            if self.cleaned_data["new_date"]>self.cleaned_data["date_fin"]:
+                self.add_error("new_date",forms.ValidationError("New recieved date occurs after date item was finished"))
+
+class ChangeFinForm(forms.Form):
+    new_date=forms.DateField(widget=DateInput(), label=u"Date Finished")
+    date_rec=forms.DateField(widget=forms.HiddenInput(), required=False)
+    open=forms.BooleanField(widget=forms.HiddenInput(), required=False)
+    date_op=forms.DateField(widget=forms.HiddenInput(), required=False)
+    def clean(self):
+        super(ChangeFinForm, self).clean()
+        if self.cleaned_data["new_date"]<self.cleaned_data["date_rec"]:
+            self.add_error("new_date",forms.ValidationError("New date finished occurs before date received"))
+        elif self.cleaned_data["open"]==True:
+            if self.cleaned_data["new_date"]<self.cleaned_data["date_op"]:
+                self.add_error("new_date",forms.ValidationError("New date finished occurs before date item was open"))
+                        
 class WitnessForm(forms.Form):
     name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).exclude(username="Admin").order_by("username"), widget=Select2Widget, label=u"Select Witness")
     team=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Team", widget=Select2Widget, required=True)

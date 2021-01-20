@@ -13,6 +13,7 @@
   // This used to be done in forms attrs but forms get initialised on server boot, so dates based off of
   // current date used server boot date not the actual "today"
   function initiate_dates() {
+    var new_date_box = document.getElementById("id_new_date");
     var date_rec_box = document.getElementById("id_date_rec");
     var date_use_box = document.getElementById("id_date_used");
     var date_open_box = document.getElementById("id_date_op");
@@ -59,6 +60,10 @@
             $('#id_fin_range').on('cancel.daterangepicker', function(ev, picker) {
                 $(this).val('');
             });
+    }
+    if (new_date_box != null){
+      new_date_box.min=change_date(-5);
+      new_date_box.max=change_date(0);
     }
     if (date_rec_box != null){
       date_rec_box.min=change_date(-1);

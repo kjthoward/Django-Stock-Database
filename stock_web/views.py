@@ -23,7 +23,8 @@ from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewTeamForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefSupForm1, ChangeDefSupForm, ChangeDefTeamForm1, \
                    ChangeDefTeamForm, RemoveSupForm, EditSupForm, EditTeamForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeUseForm, \
-                   ChangeMinForm1, ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, TeamOnlyForm, ValeDatesForm
+                   ChangeMinForm1, ChangeMinForm, InvReportForm,StockReportForm, PWResetForm, PasswordChangeForm, WitnessForm, TeamOnlyForm, ValeDatesForm, \
+                   ChangeExpForm, ChangeRecForm, ChangeFinForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -835,12 +836,18 @@ def _item_context(httprequest, item, undo):
     else:
         headings = ["Date Received", "Received By", "Condition Received", "Expiry Date"]
     values = [item.date_rec, item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
-    urls = ["", "", "", ""]
+    if undo=="undo":
+        urls=[reverse("stock_web:changedate",args=[item.pk,"rec"]),"", "", reverse("stock_web:changedate",args=[item.pk,"exp"])]
+    else:
+        urls=["","", "", ""]
     SKIP=False
     if item.date_op is not None:
         headings+=["Date Opened", "Opened By"]
         values+=[item.date_op,item.op_user]
-        urls+=["",""]
+        if undo=="undo":
+            urls+=[reverse("stock_web:changedate",args=[item.pk,"op"]),""]
+        else:
+            urls+=["",""]
     if item.val_id is not None:
         headings+=["Date Validated", "Validation Run", "Validation User"]
         values+=[item.val.val_date, item.val.val_run, item.val.val_user]
@@ -863,7 +870,10 @@ def _item_context(httprequest, item, undo):
         else:
             headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
-        urls+=["",""]
+        if undo=="undo":
+            urls+=[reverse("stock_web:changedate",args=[item.pk,"fin"]),""]
+        else:
+            urls+=["",""]
         if undo=="undo":
             headings+=["Action"]
             if item.is_op==True:
@@ -948,12 +958,18 @@ def _vol_context(httprequest, item, undo):
     else:
         headings = ["Date Received", "Received By", "Condition Received", "Expiry Date"]
     values = [item.date_rec, item.rec_user.username, CONDITIONS[item.cond_rec], item.date_exp]
-    urls = ["", "", "", ""]
+    if undo=="undo":
+        urls=[reverse("stock_web:changedate",args=[item.pk,"rec"]),"", "", reverse("stock_web:changedate",args=[item.pk,"exp"])]
+    else:
+        urls=["","", "", ""]
     SKIP=False
     if item.date_op is not None:
         headings+=["Date Opened", "Opened By"]
         values+=[item.date_op,item.op_user]
-        urls+=["",""]
+        if undo=="undo":
+            urls+=[reverse("stock_web:changedate",args=[item.pk,"op"]),""]
+        else:
+            urls+=["",""]
     if item.val_id is not None:
         headings+=["Date Validated", "Validation Run", "Validation User"]
         values+=[item.val.val_date, item.val.val_run, item.val.val_user]
@@ -1864,6 +1880,93 @@ def editinv(httprequest, pk):
         else:
             return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "undo"))
 
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+#############ADD HTTP POSTS
+#############ADD CHECKS FOR VALIDITY FOR EXP AND REC USING MESSAGES.SUCCESS
+def changedate(httprequest, pk, type):
+    item=Inventory.objects.get(pk=int(pk))
+    submiturl = reverse("stock_web:changedate",args=[pk, type])
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+    if type=="op":
+        if item.is_op==False:
+            messages.success(httprequest, "ITEM HAS NOT PREVIOUSLY BEEN OPENED")
+            return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
+        form = OpenItemForm
+        title=[f"SELECT NEW OPEN DATE FOR: {item}"]
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST:
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    item.date_op=form.cleaned_data["date_op"]
+                    item.save()
+                    messages.success(httprequest,f"Date Open for {item} changed to {form.cleaned_data['date_op'].strftime('%d-%m-%Y')}")
+                    return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
+        else:
+            form = form(initial = {"date_rec":item.date_rec,
+                                  "date_op":item.date_op})
+    elif type=="exp":
+        form = ChangeExpForm
+        title=[f"SELECT NEW EXPIRY DATE FOR: {item}"]
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST:
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    item.date_exp=form.cleaned_data["new_exp_date"]
+                    item.save()
+                    messages.success(httprequest,f"Expriy Date for {item} changed to {form.cleaned_data['new_exp_date'].strftime('%d-%m-%Y')}")
+                    return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
+        else:
+            form = form(initial = {"new_exp_date":item.date_exp,
+                                   "date_rec":item.date_rec})
+    elif type=="rec":
+        form = ChangeRecForm
+        title=[f"SELECT NEW RECIEVED DATE FOR: {item}"]
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST:
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    item.date_rec=form.cleaned_data["new_date"]
+                    item.save()
+                    messages.success(httprequest,f"Date Recieved for {item} changed to {form.cleaned_data['new_date'].strftime('%d-%m-%Y')}")
+                    return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
+        else:
+            form = form(initial = {"new_date":item.date_rec,
+                                   "open":item.is_op,
+                                   "date_op":item.date_op,
+                                   "date_exp":item.date_exp,
+                                   "finished":item.finished,
+                                   "date_fin":item.date_fin})
+    elif type=="fin":
+        if item.finished==False:
+            messages.success(httprequest, "ITEM IS NOT FINISHED")
+            return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
+        form = ChangeFinForm
+        title=[f"SELECT NEW FINISHED DATE FOR: {item}"]
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST:
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    item.date_exp=form.cleaned_data["new_exp_date"]
+                    item.save()
+                    messages.success(httprequest,f"Expriy Date for {item} changed to {form.cleaned_data['new_exp_date'].strftime('%d-%m-%Y')}")
+                    return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
+        else:
+            form = form(initial = {"new_date":item.date_fin,
+                                   "date_rec":item.date_rec,
+                                   "open":item.is_op,
+                                   "date_op":item.date_op})
+    return render(httprequest, "stock_web/form.html", {"header":title, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+    
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def undoitem(httprequest, task, pk):
