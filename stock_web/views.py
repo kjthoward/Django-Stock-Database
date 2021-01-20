@@ -1882,8 +1882,6 @@ def editinv(httprequest, pk):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-#############ADD HTTP POSTS
-#############ADD CHECKS FOR VALIDITY FOR EXP AND REC USING MESSAGES.SUCCESS
 def changedate(httprequest, pk, type):
     item=Inventory.objects.get(pk=int(pk))
     submiturl = reverse("stock_web:changedate",args=[pk, type])
