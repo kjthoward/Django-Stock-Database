@@ -298,7 +298,7 @@ class Inventory(models.Model):
                     values["val_id"]=Validation.objects.create(val_date=values["date_rec"], val_run="NOT_TO_BE_TESTED",val_user_id=user.id).pk
             elif values["reagent"].recipe is not None:
                 try:
-                    values["val_id"]=Validation.objects.get(val_date=values["date_rec"], val_run="INTERNAL").pk
+                    values["val_id"]=Validation.objects.get(val_date=values["date_rec"], val_run="INTERNAL", val_user_id=user.id).pk
                 except:
                     values["val_id"]=Validation.objects.create(val_date=values["date_rec"], val_run="INTERNAL",val_user_id=user.id).pk
             internals=[]
