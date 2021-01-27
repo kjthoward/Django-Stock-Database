@@ -146,7 +146,7 @@ class Internal(models.Model):
 
 class Validation(models.Model):
     def __str__ (self):
-        return "{} {}".format(self.val_run, self.val_date.strftime("%d/%m/%y"))
+        return "{} {} - {}".format(self.val_run, self.val_date.strftime("%d/%m/%y"), self.val_user.username)
     val_date=models.DateField(null=True, blank=True, verbose_name = "Date")
     val_run=models.CharField(max_length=25, verbose_name = u"Run Name")
     val_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, verbose_name = u"User")
