@@ -493,8 +493,8 @@ class Solutions(models.Model):
                 values["num_rec"]=1
             else:
                 values["vol_rec"]=vol_made
-                for item, vol in vols_used.items():
-                    Inventory.take_out(vol,item,user,sol=solution)
+            for item, vol in vols_used.items():
+                Inventory.take_out(vol,item,user,sol=solution)
             return Inventory.create(values,user), changed, EXP_DATE
     def list_comp(self):
         comps=[]
