@@ -15,7 +15,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.template.response import TemplateResponse
 from django import forms
 import pdb
-from .models import Suppliers, Teams, Reagents, VolUsage, Internal, Validation, Recipe, Inventory, Solutions, ForceReset
+from .models import Suppliers, Teams, Reagents, VolUsage, Internal, Validation, Recipe, Inventory, Solutions, ForceReset, Emails
 
 #Modify admin view pages to include things like search
 class Supplier_Admin(admin.ModelAdmin):
@@ -43,6 +43,10 @@ class Usage_Admin(admin.ModelAdmin):
 class Validation_Admin(admin.ModelAdmin):
     list_display = ("val_run", "val_date", "val_user")
     search_fields = ("val_run", "val_date", "val_user__username")
+    
+class Emails_Admin(admin.ModelAdmin):
+    list_display = ("to", "text", "subj", "sent")
+    search_fields = ("to", "text", "subj")
 
 class Recipe_Admin(admin.ModelAdmin):
     def list_comp_recipe(self, obj):
@@ -102,6 +106,7 @@ admin.site.register(Recipe, Recipe_Admin)
 admin.site.register(Inventory, Inventory_Admin)
 admin.site.register(Solutions, Solution_Admin)
 admin.site.register(ForceReset)
+admin.site.register(Emails, Emails_Admin)
 #Changes titles on Admin Site
 admin.site.site_header="Stock (Web) Database Admin Page"
 admin.site.index_title="Stock Administration"

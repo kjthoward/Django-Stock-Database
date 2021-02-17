@@ -19,7 +19,7 @@ import string
 from .prime import PRIME
 from .email import send, EMAIL
 from .pdf_report import report_gen
-from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage
+from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage, Emails
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewTeamForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefSupForm1, ChangeDefSupForm, ChangeDefTeamForm1, \
                    ChangeDefTeamForm, RemoveSupForm, EditSupForm, EditTeamForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeUseForm, \
@@ -231,7 +231,8 @@ def resetpw(httprequest):
                 send(subject,text,USER.email)
                 messages.success(httprequest, "Password has been reset and emailed to {}".format(USER.email))
             except:
-                messages.success(httprequest, "Email did not send. Please try again. If error persists contact an Admin")
+                Emails.objects.create(to=USER.email, subj=subject, text=text)
+                messages.success(httprequest, "Email did not send. It will automatically try again soon. If you need to access your account urgently, or don't get an email within 24 hours, please contact an Admin")
             return HttpResponseRedirect(reverse("stock_web:loginview"))
     else:
         form=PWResetForm()
@@ -1104,6 +1105,7 @@ def useitem(httprequest,pk):
                                 try:
                                     send(subject,text, user.email)
                                 except Exception as e:
+                                    Emails.objects.create(to=user.email, subj=subject, text=text)
                                     print(e)
                 if int(item.current_vol)==0:
                     message+=["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
@@ -1155,6 +1157,7 @@ def openitem(httprequest, pk):
                                     try:
                                         send(subject,text, user.email)
                                     except Exception as e:
+                                        Emails.objects.create(to=user.email, subj=subject, text=text)
                                         print(e)
                 #Shows a warning if the item is opened after it's expiry date
                 if form.cleaned_data["date_op"]>=item.date_exp:
@@ -1235,6 +1238,7 @@ def finishitem(httprequest, pk):
                                     try:
                                         send(subject,text, user.email)
                                     except Exception as e:
+                                        Emails.objects.create(to=user.email, subj=subject, text=text)
                                         print(e)
 
                 if item.val_id is None and item.is_op==True and item.sol is None:
@@ -1247,6 +1251,7 @@ def finishitem(httprequest, pk):
                                 try:
                                     send(subject,text, user.email)
                                 except Exception as e:
+                                    Emails.objects.create(to=user.email, subj=subject, text=text)
                                     print(e)
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:

@@ -48,6 +48,9 @@ def create_profile(sender, instance, created, **kwargs):
                     USER.save()
                 except:
                     print("EMAIL ERROR")
+                    Emails.objects.create(to=instance.email, subj=subject, text=text)
+                    USER.emailed=True
+                    USER.save()
                     pass
 
 class Suppliers(models.Model):
@@ -507,3 +510,11 @@ class Solutions(models.Model):
     def Stock_Number(self):
         stock_number=Inventory.objects.get(sol=self.id)
         return str(stock_number.internal.batch_number)
+        
+class Emails(models.Model):
+    class Meta:
+        verbose_name_plural = "Emails To Send"
+    to = models.TextField(verbose_name=u"Sent To")
+    subj = models.TextField(verbose_name=u"Subject")
+    text = models.TextField(verbose_name=u"Text")
+    sent = models.BooleanField(default=False)
