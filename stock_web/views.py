@@ -2137,38 +2137,39 @@ def undoitem(httprequest, task, pk):
                         if use.sol is not None:
                             messages.success(httprequest, "You cannot edit this usage as it was part of solution {}.".format(Inventory.objects.get(sol=use.sol)))
                             return HttpResponseRedirect(reverse("stock_web:undoitem", args=[task,pk]))
-                        item.current_vol+=(use.used-int(form.cleaned_data["vol_used"]))
-                        item.reagent.count_no+=(use.used-int(form.cleaned_data["vol_used"]))
-                        item.reagent.save()
-                        if item.finished==True:
-                            item.finished=False
-                            item.date_fin=None
-                            item.fin_user=None
-                            item.fin_text=None
-                            if item.date_op is not None:
-                                item.reagent.open_no=F("open_no")+1
-                                item.reagent.save()
-                            elif int(form.cleaned_data["vol_used"])!=0:
-                                item.date_op=datetime.date.today()
-                                item.op_user=httprequest.user
-                                item.is_op=True
-                                item.reagent.open_no=F("open_no")+1
-                                item.reagent.save()
-                        
-                        if int(form.cleaned_data["vol_used"])==0:
-                            if len(uses)>1:
-                                item.last_usage=uses[1]
+                        with transaction.atomic():
+                            item.current_vol+=(use.used-int(form.cleaned_data["vol_used"]))
+                            item.reagent.count_no+=(use.used-int(form.cleaned_data["vol_used"]))
+                            item.reagent.save()
+                            if item.finished==True:
+                                item.finished=False
+                                item.date_fin=None
+                                item.fin_user=None
+                                item.fin_text=None
+                                if item.date_op is not None:
+                                    item.reagent.open_no=F("open_no")+1
+                                    item.reagent.save()
+                                elif int(form.cleaned_data["vol_used"])!=0:
+                                    item.date_op=datetime.date.today()
+                                    item.op_user=httprequest.user
+                                    item.is_op=True
+                                    item.reagent.open_no=F("open_no")+1
+                                    item.reagent.save()
+                            
+                            if int(form.cleaned_data["vol_used"])==0:
+                                if len(uses)>1:
+                                    item.last_usage=uses[1]
+                                else:
+                                    item.last_usage=None
+                                item.save()
+                                use.delete()
                             else:
-                                item.last_usage=None
-                            item.save()
-                            use.delete()
-                        else:
-                            use.end=use.start-int(form.cleaned_data["vol_used"])
-                            use.used=int(form.cleaned_data["vol_used"])
-                            use.user=httprequest.user
-                            use.save()
-                            item.save()
-                        return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
+                                use.end=use.start-int(form.cleaned_data["vol_used"])
+                                use.used=int(form.cleaned_data["vol_used"])
+                                use.user=httprequest.user
+                                use.save()
+                                item.save()
+                            return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
         else:
             #pdb.set_trace()
             form = form(initial = {"vol_used":item.last_usage.used,
