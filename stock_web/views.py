@@ -18,6 +18,7 @@ import random
 import string
 from decimal import Decimal
 from .prime import PRIME
+from .cyto import ADD_CYTO
 from .email import send, EMAIL
 from .pdf_report import report_gen
 from .models import ForceReset, Suppliers, Teams, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage, Emails
@@ -68,6 +69,11 @@ def prime(httprequest):
         messages.success(httprequest, "Database Primed")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
 
+def add_cyto(httprequest):
+    suppliers, reagents=ADD_CYTO()
+    messages.success(httprequest, f"Cyto Reagents ({reagents}) and Suppliers ({suppliers}) added")
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
+        
 # def vol_migrate(httprequest):
 #     open_items=Inventory.objects.filter(is_op=True, finished=False)
 #     all_reagents=Reagents.objects.all()
