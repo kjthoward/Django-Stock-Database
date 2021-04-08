@@ -16,6 +16,7 @@ import datetime
 import math
 import random
 import string
+from decimal import Decimal
 from .prime import PRIME
 from .email import send, EMAIL
 from .pdf_report import report_gen
@@ -387,9 +388,9 @@ def listinv(httprequest):
     body=[]
     for item in items:
         values = [item.name,
-                  "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
-                  item.open_no,
-                  "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]
+                  "{}µl".format(item.count_no) if item.track_vol==True else int(item.count_no),
+                  int(item.open_no),
+                  "{}µl".format(item.min_count) if item.track_vol==True else int(item.min_count)]
         urls=[reverse("stock_web:inventory",args=["filter","reagent__name__iexact={};finished__lte=0".format(item.name),"_",1]),
               "",
               "",
@@ -770,8 +771,8 @@ def invreport(httprequest, team, filters, what, extension):
                         item.cat_no,
                         item.team_def.name if item.team_def.name is not None else "",
                         item.supplier_def.name if item.supplier_def is not None else "",
-                         "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
-                         "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]]
+                         "{}µl".format(item.count_no) if item.track_vol==True else int(item.count_no),
+                         "{}µl".format(item.min_count) if item.track_vol==True else int(item.min_count)]]
         if extension=='0':
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
@@ -1363,7 +1364,7 @@ def newinv(httprequest, pk):
                     if item.track_vol==False:
                         quant=form.cleaned_data["reagent"].count_no+int(form.data["num_rec"])
                     elif item.track_vol==True:
-                        quant=form.cleaned_data["reagent"].count_no+int(form.data["vol_rec"])
+                        quant=form.cleaned_data["reagent"].count_no+Decimal(form.data["vol_rec"])
                     if quant<form.cleaned_data["reagent"].min_count:
                         if form.cleaned_data["reagent"].recipe is not None:
                             make="made"
@@ -1563,7 +1564,7 @@ def newreagent(httprequest):
         form = form()
     submiturl = reverse("stock_web:newreagent")
     cancelurl = reverse("stock_web:listinv")
-    return render(httprequest, "stock_web/form.html", {"header":["New Reagent Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+    return render(httprequest, "stock_web/newreagentform.html", {"header":["New Reagent Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -1621,7 +1622,7 @@ def newrecipe(httprequest):
         form = form()
     submiturl = reverse("stock_web:newrecipe")
     cancelurl = reverse("stock_web:listinv")
-    return render(httprequest, "stock_web/form.html", {"header":["New Recipe Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+    return render(httprequest, "stock_web/newreagentform.html", {"header":["New Recipe Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -2137,39 +2138,38 @@ def undoitem(httprequest, task, pk):
                         if use.sol is not None:
                             messages.success(httprequest, "You cannot edit this usage as it was part of solution {}.".format(Inventory.objects.get(sol=use.sol)))
                             return HttpResponseRedirect(reverse("stock_web:undoitem", args=[task,pk]))
-                        with transaction.atomic():
-                            item.current_vol+=(use.used-int(form.cleaned_data["vol_used"]))
-                            item.reagent.count_no+=(use.used-int(form.cleaned_data["vol_used"]))
-                            item.reagent.save()
-                            if item.finished==True:
-                                item.finished=False
-                                item.date_fin=None
-                                item.fin_user=None
-                                item.fin_text=None
-                                if item.date_op is not None:
-                                    item.reagent.open_no=F("open_no")+1
-                                    item.reagent.save()
-                                elif int(form.cleaned_data["vol_used"])!=0:
-                                    item.date_op=datetime.date.today()
-                                    item.op_user=httprequest.user
-                                    item.is_op=True
-                                    item.reagent.open_no=F("open_no")+1
-                                    item.reagent.save()
-                            
-                            if int(form.cleaned_data["vol_used"])==0:
-                                if len(uses)>1:
-                                    item.last_usage=uses[1]
-                                else:
-                                    item.last_usage=None
-                                item.save()
-                                use.delete()
+                        item.current_vol+=(use.used-Decimal(form.cleaned_data["vol_used"]))
+                        item.reagent.count_no+=(use.used-Decimal(form.cleaned_data["vol_used"]))
+                        item.reagent.save()
+                        if item.finished==True:
+                            item.finished=False
+                            item.date_fin=None
+                            item.fin_user=None
+                            item.fin_text=None
+                            if item.date_op is not None:
+                                item.reagent.open_no=F("open_no")+1
+                                item.reagent.save()
+                            elif int(form.cleaned_data["vol_used"])!=0:
+                                item.date_op=datetime.date.today()
+                                item.op_user=httprequest.user
+                                item.is_op=True
+                                item.reagent.open_no=F("open_no")+1
+                                item.reagent.save()
+                        
+                        if Decimal(form.cleaned_data["vol_used"])==0.00:
+                            if len(uses)>1:
+                                item.last_usage=uses[1]
                             else:
-                                use.end=use.start-int(form.cleaned_data["vol_used"])
-                                use.used=int(form.cleaned_data["vol_used"])
-                                use.user=httprequest.user
-                                use.save()
-                                item.save()
-                            return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
+                                item.last_usage=None
+                            item.save()
+                            use.delete()
+                        else:
+                            use.end=use.start-Decimal(form.cleaned_data["vol_used"])
+                            use.used=Decimal(form.cleaned_data["vol_used"])
+                            use.user=httprequest.user
+                            use.save()
+                            item.save()
+                        return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
         else:
             #pdb.set_trace()
             form = form(initial = {"vol_used":item.last_usage.used,

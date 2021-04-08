@@ -4,6 +4,7 @@ from django import forms
 from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
+from decimal import Decimal
 from bootstrap_daterangepicker import widgets, fields
 from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams
 from django.contrib.auth.forms import PasswordChangeForm
@@ -71,6 +72,7 @@ class NewInvForm(forms.ModelForm):
         self.fields["team"].queryset=Teams.objects.exclude(is_active=False)
 
 class NewProbeForm(forms.ModelForm):
+    vol_rec = forms.DecimalField(max_digits=7, decimal_places=2, min_value=0, label="Volume Received (µl)")
     class Meta:
         model = Inventory
         fields = ("reagent", "supplier", "team", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec", "accept_reason")
@@ -97,7 +99,7 @@ class NewProbeForm(forms.ModelForm):
         self.fields["team"].queryset=Teams.objects.exclude(is_active=False)
 
 class UseItemForm(forms.ModelForm):
-    vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
+    vol_used = forms.DecimalField(max_digits=7, decimal_places=2, min_value=0, label=u"Volume Used (µl)")
     date_used = forms.DateField(widget=DateInput(), label=u"Date Used")
     class Meta:
         model = Inventory
@@ -214,7 +216,7 @@ class NewReagentForm(forms.ModelForm):
             self.add_error("name", forms.ValidationError("A Reagent with the name {} already exists".format(self.cleaned_data["name"])))
 
 class NewRecipeForm(forms.ModelForm):
-    number=forms.IntegerField(min_value=0, label=u"Minimum Stock Level")
+    min_count=forms.DecimalField(max_digits=7, decimal_places=2, min_value=0, label=u"Minimum Stock Level")
     team_def=forms.ModelChoiceField(queryset = Teams.objects.all().order_by("name"), label=u"Default Team", widget=Select2Widget, required=True)
     class Meta:
         model = Recipe
@@ -363,10 +365,10 @@ class UnValForm(forms.Form):
     all_type=forms.ChoiceField(label="Remove validation for other items on this run?")
 
 class ChangeUseForm(forms.Form):
-    vol_used = forms.IntegerField(label=u"New Volume Used (µl)")
+    vol_used = forms.DecimalField(max_digits=7, decimal_places=2, label=u"New Volume Used (µl)")
     sure=forms.BooleanField(label="Tick this box and click save to proceed with the action")
-    current_vol=forms.IntegerField(required=False, widget=forms.HiddenInput())
-    last_usage=forms.IntegerField(required=False, widget=forms.HiddenInput())
+    current_vol=forms.DecimalField(required=False, widget=forms.HiddenInput())
+    last_usage=forms.DecimalField(required=False, widget=forms.HiddenInput())
 
 
     def clean(self):
@@ -374,7 +376,7 @@ class ChangeUseForm(forms.Form):
         errors=[]
         if self.cleaned_data["vol_used"]>self.cleaned_data["current_vol"]+self.cleaned_data["last_usage"]:
             errors+=[("vol_used", forms.ValidationError("Volume Used Exceeds Current Volume in Tube"))]
-        if self.cleaned_data["vol_used"]==int(self.data["last_usage"]):
+        if self.cleaned_data["vol_used"]==Decimal(self.data["last_usage"]):
             errors+=[("vol_used", forms.ValidationError("New volume used is the same."))]
         if errors!=[]:
             for error in errors:

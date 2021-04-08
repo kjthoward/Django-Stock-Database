@@ -1,5 +1,6 @@
 from django.db import models, transaction
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import F
@@ -111,9 +112,9 @@ class Reagents(models.Model):
     supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier", blank=True, null=True)
     team_def = models.ForeignKey(Teams, on_delete=models.PROTECT, verbose_name=u"Default Team")
     #storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
-    count_no=models.PositiveIntegerField(default=0, verbose_name=u"Unopened Items")
-    open_no=models.PositiveIntegerField(default=0, verbose_name=u"Opened Items")
-    min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")
+    count_no=models.DecimalField(max_digits=7, decimal_places=2, validators=[MinValueValidator(0)], default=0, verbose_name=u"Unopened Items")
+    open_no=models.DecimalField(max_digits=7, decimal_places=2, validators=[MinValueValidator(0)], default=0, verbose_name=u"Opened Items")
+    min_count=models.DecimalField(max_digits=7, decimal_places=2, validators=[MinValueValidator(0)], default=0, verbose_name=u"Minimum Stock Level")
     recipe=models.ForeignKey("Recipe", on_delete=models.PROTECT, blank=True, null=True)
     track_vol=models.BooleanField(default=False, verbose_name=u"Volume Tracked")
     is_active=models.BooleanField(default=True)
@@ -184,8 +185,8 @@ class Recipe(models.Model):
     @classmethod
     def create(cls, values):
         with transaction.atomic():
-            minstock=values["number"]
-            del(values["number"])
+            minstock=values["min_count"]
+            del(values["min_count"])
             def_team=values["team_def"]
             del(values["team_def"])
             recipe=cls(**values)
@@ -271,8 +272,8 @@ class Inventory(models.Model):
     finished=models.BooleanField(default=False)
     fin_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="3+", blank=True, null=True, verbose_name = u"Finished By")
     fin_text = models.CharField(max_length=100, blank=True, null=True, verbose_name=u"Finished Reason")
-    vol_rec=models.PositiveIntegerField(verbose_name=u"Volume Received (µl)", blank=True, null=True)
-    current_vol=models.PositiveIntegerField(verbose_name=u"Current Volume (µl)", blank=True, null=True)
+    vol_rec=models.DecimalField(max_digits=7, decimal_places=2, verbose_name=u"Volume Received (µl)", blank=True, null=True)
+    current_vol=models.DecimalField(max_digits=7, decimal_places=2, verbose_name=u"Current Volume (µl)", blank=True, null=True)
     last_usage=models.ForeignKey('VolUsage', blank=True, null=True, on_delete=models.PROTECT)
     witness=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="4+", blank=True, null=True)
     accept_reason=models.CharField(max_length=150, blank=True, null=True, verbose_name=u"Acceptance Reason")
@@ -406,9 +407,9 @@ class VolUsage(models.Model):
     class Meta:
         verbose_name_plural = "Volume Usage"
     item=models.ForeignKey(Inventory, blank=True, null=True, on_delete=models.PROTECT)
-    start=models.PositiveIntegerField()
-    end=models.PositiveIntegerField()
-    used=models.IntegerField()
+    start=models.DecimalField(max_digits=7, decimal_places=2)
+    end=models.DecimalField(max_digits=7, decimal_places=2)
+    used=models.DecimalField(max_digits=7, decimal_places=2)
     date=models.DateField(default=datetime.date.today)
     user=models.ForeignKey(User, on_delete=models.PROTECT)
     sol=models.ForeignKey('Solutions', on_delete=models.PROTECT,  blank=True, null=True)

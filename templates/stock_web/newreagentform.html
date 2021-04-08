@@ -1,0 +1,57 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+<body>
+<div class="container-fluid">
+{% for head in header %}
+<h4>{{ head }}</h4>
+{% endfor %}
+    {% for line in newinformation %}
+    {{ line  }}</br>
+    {% endfor %}
+    <div class="row">
+      <div class="col-sm-4">
+
+            {% for warning, severe in newwarnings %}
+            {% if severe %}<div class="alert alert-danger"><span class="glyphicon glyphicon-ban-circle"></span><strong> WARNING! </strong>
+            {% else %}<div class="alert alert-warning"><span class="glyphicon glyphicon-exclamation-sign"></span><strong> Warning! </strong>{% endif %}
+            {{ warning }}</div>
+            {% endfor %}
+      </div>
+      <div class="col-sm-8">
+      </div>
+    </div>
+
+    <form action="{{ submiturl }}" method="post">
+      {% csrf_token %}
+      <fieldset><legend>{{ heading }}</legend>
+          <table onchange="check_tracked()">
+            {{ form }}
+          </table>
+        <input type="submit" class="btn btn-success" name="submit" value="save" />
+        {% for button, style, url in extrabuttons %}<a class="btn btn-{{ style }}" href="{{ url }}">{{ button  }}<a/>{% endfor %}
+        <a class="btn btn-danger" href="{{ cancelurl }}">cancel</a>
+      </fieldset>
+    </form>
+</div>
+</body>
+<script>
+// If the reagent is FISH probe allows for 2DP precision, otherwise only integer
+function check_tracked() {
+  var mincount = document.getElementById("id_min_count");
+  var track = document.getElementById("id_track_vol");
+  if (track.checked==true){
+    mincount.step=0.01;
+  }
+  else {
+    if (track.checked==false){
+      mincount.step=1;
+    }
+  }
+}
+
+
+window.onload=check_tracked();
+window.onload=initiate_dates();
+</script>
+{% endblock content %}
