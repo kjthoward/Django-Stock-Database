@@ -1,4 +1,4 @@
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -328,6 +328,13 @@ class Inventory(models.Model):
     def open(cls, values, item, user):
         with transaction.atomic():
             reagent=Inventory.objects.get(id=item).reagent
+            if int(reagent.count_no)==0:
+                open_items=Inventory.objects.filter(is_op=True, finished=False, reagent=reagent).count()
+                un_open_items=Inventory.objects.filter(is_op=False, finished=False, reagent=reagent).count()
+                reagent.open_no=open_items
+                reagent.count_no=un_open_items
+                reagent.save()
+                reagent.refresh_from_db()
             if reagent.track_vol==False:
                 reagent.count_no=F("count_no")-1
             reagent.open_no=F("open_no")+1
