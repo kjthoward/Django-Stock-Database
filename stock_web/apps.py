@@ -6,5 +6,5 @@ class StockWebConfig(AppConfig):
     verbose_name = "Stock Database Tables"
 
     def ready(self):
-        from email_scheduler import scheduler
+        from scheduler_top import scheduler
         scheduler.start()
