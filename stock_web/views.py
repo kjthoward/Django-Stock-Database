@@ -414,7 +414,7 @@ def inventory(httprequest, search, what, sortby, page):
         page=1
     ##HACK USED IF / IS IN REAGENT SEARCH TERM (such as "item1/item2 mix")
     if "/" in search and (("__icontains" in what) or ("__lte" in what) or ("__iexact" in what)):
-        what="".join(search.split("/")[1:])+"/"+what
+        what="/".join(search.split("/")[1:])+"/"+what
         search="search"
     if sortby!="_":
         sortquery = sortby.split("=")[1]
