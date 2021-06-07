@@ -13,3 +13,4 @@ migrations/
 *.csv
 DB_BACKUPS/
 /stock/settings.py
+/stock_web/prime.py
