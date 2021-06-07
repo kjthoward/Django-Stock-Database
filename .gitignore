@@ -12,3 +12,4 @@ migrations/
 *.xlsx
 *.csv
 DB_BACKUPS/
+/stock/settings.py
