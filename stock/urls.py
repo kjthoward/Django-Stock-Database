@@ -20,14 +20,19 @@ from django.views.generic.base import RedirectView
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/stock/listinv')),
-    path('stock/', include('stock_web.urls')),
-    path('select2/', include('django_select2.urls')),
-    path('stock/admin/', admin.site.urls),
+    path("", RedirectView.as_view(url="/stock/listinv")),
+    path("stock/", include("stock_web.urls")),
+    path("select2/", include("django_select2.urls")),
+    path("stock/admin/", admin.site.urls),
 ]
-handler404 = 'stock_web.views.view_404'
+handler404 = "stock_web.views.view_404"
 if settings.DEBUG:
     import debug_toolbar
-    urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
-            ] + urlpatterns +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+    urlpatterns = (
+        [
+            path("__debug__/", include(debug_toolbar.urls)),
+        ]
+        + urlpatterns
+        + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    )
