@@ -736,7 +736,7 @@ class ChangeUseForm(forms.Form):
     sure = forms.BooleanField(
         label="Tick this box and click save to proceed with the action"
     )
-    reason = forms.CharField(label=u"Reason for change", required=True)
+    reason = forms.CharField(label=u"Reason for change", required=True, max_length=100)
     current_vol = forms.DecimalField(required=False, widget=forms.HiddenInput())
     last_usage = forms.DecimalField(required=False, widget=forms.HiddenInput())
 
