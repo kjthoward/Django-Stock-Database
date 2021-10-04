@@ -795,6 +795,7 @@ class VolUsage(models.Model):
     used = models.DecimalField(max_digits=7, decimal_places=2)
     date = models.DateField(default=datetime.date.today)
     user = models.ForeignKey(User, on_delete=models.PROTECT)
+    reason = models.CharField(max_length=100, blank=True, null=True)
     sol = models.ForeignKey(
         "Solutions", on_delete=models.PROTECT, blank=True, null=True
     )

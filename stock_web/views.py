@@ -1914,6 +1914,10 @@ def _vol_context(httprequest, item, undo):
             cyto_headings += ["Action"]
         uses = VolUsage.objects.filter(item=item.pk)
         uses = sorted(uses, key=lambda use: use.date)
+        REASON=False
+        if any([use.reason is not None for use in uses]):
+            cyto_headings.append("Reason")
+            REASON=True
         cyto_body = []
         for use in uses:
             values = [
@@ -1924,6 +1928,9 @@ def _vol_context(httprequest, item, undo):
                 use.user,
             ]
             urls = ["", "", "", "", ""]
+            if REASON==True:
+                values.append(use.reason if use.reason else "")
+                urls.append("")
             if use.sol is not None:
                 urls = [
                     reverse(
@@ -3859,6 +3866,7 @@ def undoitem(httprequest, task, pk):
                             use.end = use.start - Decimal(form.cleaned_data["vol_used"])
                             use.used = Decimal(form.cleaned_data["vol_used"])
                             use.user = httprequest.user
+                            use.reason = form.cleaned_data["reason"]
                             use.save()
                             item.save()
                         return HttpResponseRedirect(
