@@ -67,12 +67,7 @@ class NewInvForm1(forms.ModelForm):
                     ]
             if errors:
                 raise forms.ValidationError(errors)
-        # filters out recipes from inventory selection form
 
-
-##    def __init__(self, *args, **kwargs):
-##        super(NewInvForm1, self).__init__(*args, **kwargs)
-##        self.fields["reagent"].queryset=Reagents.objects.filter(recipe_id=None)
 class NewInvForm(forms.ModelForm):
     num_rec = forms.IntegerField(min_value=1, label="Number Received")
 
@@ -423,9 +418,6 @@ class NewRecipeForm(forms.ModelForm):
         super(NewRecipeForm, self).__init__(*args, **kwargs)
         self.fields["team_def"].queryset = Teams.objects.exclude(is_active=False)
 
-    ##        for i in range(1,11):
-    ##            self.fields["comp{}".format(i)].queryset=Reagents.objects.filter(recipe_id=None)
-
     def clean(self):
         super(NewRecipeForm, self).clean()
         comps = []
@@ -435,9 +427,7 @@ class NewRecipeForm(forms.ModelForm):
         for k, v in self.cleaned_data.items():
             if "comp" in k:
                 reagents[k] = v
-        ##        reagents=self.cleaned_data
-        ##        del(reagents["name"])
-        ##        del(reagents["shelf_life"])
+
         for key, value in sorted(reagents.items(), key=lambda x: int(x[0][4:])):
             if "comp" in key:
                 if value is not None:

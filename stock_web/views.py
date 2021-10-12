@@ -11,7 +11,6 @@ from django.urls import reverse
 from django.db import transaction
 from operator import attrgetter
 import openpyxl
-import pdb
 import datetime
 import math
 import random
@@ -142,36 +141,22 @@ def vol_migrate(httprequest):
     all_reagents = Reagents.objects.all()
     counts = {}
     for reagent in all_reagents:
-        num_open = open_items.filter(reagent=reagent).count()
-        num_unopen = un_open_items.filter(reagent=reagent).count()
-        reagent.open_no = num_open
-        reagent.count_no = num_unopen
-        reagent.save()
+        num_open = open_items.filter(reagent=reagent)
+        num_unopen = un_open_items.filter(reagent=reagent)
+        if reagent.track_vol == False:
+            reagent.open_no = num_open.count()
+            reagent.count_no = num_unopen.count()
+            reagent.save()
+        else:
+            vol = 0
+            for item in num_unopen:
+                vol += item.vol_rec
+            for item in num_open:
+                vol += item.current_vol
+            reagent.open_no = num_open.count()
+            reagent.count_no = vol
+            reagent.save()
     return HttpResponseRedirect(reverse("stock_web:listinv"))
-
-
-# def migrate_4OD(httprequest):
-#     new_user=User.objects.get(username="4OD")
-#     items=Inventory.objects.all()
-#     count=0
-#     for item in items:
-#         if ("4OD" in item.po) or ("4OD" in item.lot_no):
-#             item.rec_user=new_user
-#             if item.is_op==True:
-#                 item.op_user=new_user
-#             count+=1
-#             item.save()
-#     messages.success(httprequest, f"User changed for {count} items")
-#     return HttpResponseRedirect(reverse("stock_web:listinv"))
-#
-# def migrate_sols(httprequest):
-#     items=Inventory.objects.filter(sol_id__gt=0)
-#     for item in items:
-#         values={"val_date":item.date_rec, "val_run":"INTERNAL"}
-#         # import pdb; pdb.set_trace()
-#         Inventory.validate(values, item.reagent.id, item.lot_no, item.rec_user)
-#     messages.success(httprequest, f"Validation updated for {len(items)} items")
-#     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
 def _toolbar(httprequest, active=""):
@@ -394,8 +379,7 @@ def change_password(httprequest):
         "cancelurl": cancelurl,
         "toolbar": _toolbar(httprequest, active="Account Settings"),
     }
-    ##    if ForceReset.objects.get(user=httprequest.user.pk).force_password_change==False:
-    ##        context.update({"toolbar":_toolbar(httprequest)})
+
     return render(httprequest, "stock_web/pwform.html", context)
 
 
@@ -588,7 +572,7 @@ def loginview(httprequest):
                             reverse("stock_web:change_password")
                         )
                     else:
-                        # import pdb; pdb.set_trace()
+
                         return HttpResponseRedirect(
                             httprequest.GET["next"]
                             if "next" in httprequest.GET.keys()
@@ -604,8 +588,6 @@ def loginview(httprequest):
                             httprequest,
                             f'User {form.cleaned_data["username"]} does not exist',
                         )
-            else:
-                pdb.set_trace()
 
         else:
             form = LoginForm()
@@ -660,6 +642,7 @@ def valdates(httprequest):
                         "Opened By",
                         "Date Validated",
                         "Validation Run",
+                        "Date Finished",
                     ]
                 ]
                 for item in items:
@@ -680,17 +663,10 @@ def valdates(httprequest):
                             if item.val is not None
                             else "",
                             item.val.val_run if item.val is not None else "",
+                            item.date_fin.strftime("%d/%m/%Y") if item.finished else "",
                         ]
                     ]
-                if "pdf" in httprequest.POST["submit"]:
-                    httpresponse = HttpResponse(content_type="application/pdf")
-                    httpresponse[
-                        "Content-Disposition"
-                    ] = 'attachment; filename="{}.pdf"'.format(title)
-                    table = report_gen(
-                        body, title, httpresponse, httprequest.user.username
-                    )
-                elif "xlsx" in httprequest.POST["submit"]:
+                if "xlsx" in httprequest.POST["submit"]:
                     workbook = openpyxl.Workbook()
                     worksheet = workbook.active
                     for row in body:
@@ -707,7 +683,7 @@ def valdates(httprequest):
         form = form()
         return render(
             httprequest,
-            "stock_web/reportform.html",
+            "stock_web/valdatesform.html",
             {
                 "header": header,
                 "form": form,
@@ -1133,7 +1109,7 @@ def inventory(httprequest, search, what, sortby, page):
         if ".xlsx" in httprequest.POST["submit"]:
             workbook = openpyxl.Workbook()
             worksheet = workbook.active
-            # import pdb; pdb.set_trace()
+
             worksheet.append([heading[0] for heading in headings])
             for item in items:
                 worksheet.append(
@@ -3432,8 +3408,6 @@ def editinv(httprequest, pk):
     else:
         item = Inventory.objects.get(pk=int(pk))
         if item.reagent.track_vol == True:
-            ##            messages.success(httprequest, "It is currently not possible to undo actions done to cytogenetics reagents using this form. Please contact an Administrator")
-            ##            return HttpResponseRedirect(reverse("stock_web:item",args=[item.pk]))
             return render(
                 httprequest,
                 "stock_web/list_item.html",
@@ -3602,7 +3576,7 @@ def undoitem(httprequest, task, pk):
             title += [
                 "THIS WILL REMOVE ALL USES OF THIS REAGENT AND SET ITS VOLUME BACK TO ITS VOLUME RECEIVED"
             ]
-        # pdb.set_trace()
+
         if httprequest.method == "POST":
 
             if "submit" not in httprequest.POST:
@@ -3652,7 +3626,7 @@ def undoitem(httprequest, task, pk):
                                         "UNABLE TO UNOPEN ITEM AS IT'S USED IN THE FOLLOWING SOLUTION(S)",
                                     )
                                     for sol in sols:
-                                        # pdb.set_trace()
+
                                         messages.info(
                                             httprequest, Inventory.objects.get(sol=sol)
                                         )
@@ -3793,7 +3767,7 @@ def undoitem(httprequest, task, pk):
                             Validation.objects.get(pk=current_val_id).delete()
                     return HttpResponseRedirect(reverse("stock_web:editinv", args=[pk]))
         else:
-            # pdb.set_trace()
+
             form = form()
             form.fields["all_type"].choices = [
                 (0, "NO"),
@@ -3873,7 +3847,6 @@ def undoitem(httprequest, task, pk):
                             reverse("stock_web:editinv", args=[pk])
                         )
         else:
-            # pdb.set_trace()
             form = form(
                 initial={
                     "vol_used": item.last_usage.used,

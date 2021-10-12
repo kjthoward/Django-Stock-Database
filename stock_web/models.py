@@ -8,7 +8,6 @@ from django.apps import apps
 from django.conf import settings
 from calendar import monthrange
 import datetime
-import pdb
 import itertools
 
 
@@ -101,13 +100,6 @@ class Teams(models.Model):
         team = cls.objects.create(name=name)
         return team
 
-
-##class Storage(models.Model):
-##    def __str__(self):
-##        return self.name
-##    class Meta:
-##        verbose_name_plural = "Storage"
-##    name = models.CharField(max_length=20, unique=True)
 
 
 class Reagents(models.Model):
@@ -736,12 +728,9 @@ class Inventory(models.Model):
 
         with transaction.atomic():
             val = Validation.new(values["val_date"], values["val_run"].upper(), user)
-            # bulk_update(updates.values(),[item.val_id=val])
+
             Inventory.objects.filter(reagent=reagent_id, lot_no=lot).update(val_id=val)
             return Inventory.objects.filter(reagent=reagent_id, lot_no=lot, val_id=val)
-            # for item in items:
-            #    item.val_id=val
-            # Inventory.objects.bulk_update(items,['val_id'])
 
     @classmethod
     def finish(cls, values, item, user):
