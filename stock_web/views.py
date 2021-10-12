@@ -632,6 +632,7 @@ def valdates(httprequest):
                         "Opened By",
                         "Date Validated",
                         "Validation Run",
+                        "Date Finished",
                     ]
                 ]
                 for item in items:
@@ -652,17 +653,10 @@ def valdates(httprequest):
                             if item.val is not None
                             else "",
                             item.val.val_run if item.val is not None else "",
+                            item.date_fin.strftime("%d/%m/%Y") if item.finished else "",
                         ]
                     ]
-                if "pdf" in httprequest.POST["submit"]:
-                    httpresponse = HttpResponse(content_type="application/pdf")
-                    httpresponse[
-                        "Content-Disposition"
-                    ] = 'attachment; filename="{}.pdf"'.format(title)
-                    table = report_gen(
-                        body, title, httpresponse, httprequest.user.username
-                    )
-                elif "xlsx" in httprequest.POST["submit"]:
+                if "xlsx" in httprequest.POST["submit"]:
                     workbook = openpyxl.Workbook()
                     worksheet = workbook.active
                     for row in body:
@@ -679,7 +673,7 @@ def valdates(httprequest):
         form = form()
         return render(
             httprequest,
-            "stock_web/reportform.html",
+            "stock_web/valdatesform.html",
             {
                 "header": header,
                 "form": form,
