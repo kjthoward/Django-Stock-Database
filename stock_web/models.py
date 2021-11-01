@@ -656,26 +656,25 @@ class Inventory(models.Model):
     def open(cls, values, item, user):
         with transaction.atomic():
             reagent = Inventory.objects.get(id=item).reagent
-            if int(reagent.count_no) == 0:
-                open_items = Inventory.objects.filter(
-                    is_op=True, finished=False, reagent=reagent
-                ).count()
-                un_open_items = Inventory.objects.filter(
-                    is_op=False, finished=False, reagent=reagent
-                ).count()
-                reagent.open_no = open_items
-                reagent.count_no = un_open_items
-                reagent.save()
-                reagent.refresh_from_db()
+            open_items = Inventory.objects.filter(
+                is_op=True, finished=False, reagent=reagent
+            ).count()
+            un_open_items = Inventory.objects.filter(
+                is_op=False, finished=False, reagent=reagent
+            ).count()
+            reagent.open_no = open_items
+            reagent.count_no = un_open_items
+            reagent.save()
+            reagent.refresh_from_db()
             if reagent.track_vol == False:
                 reagent.count_no = F("count_no") - 1
-            reagent.open_no = F("open_no") + 1
-            reagent.save()
-            invitem = Inventory.objects.get(id=item)
-            invitem.date_op = values["date_op"]
-            invitem.op_user = user
-            invitem.is_op = True
-            invitem.save()
+                reagent.open_no = F("open_no") + 1
+                reagent.save()
+                invitem = Inventory.objects.get(id=item)
+                invitem.date_op = values["date_op"]
+                invitem.op_user = user
+                invitem.is_op = True
+                invitem.save()
 
     @classmethod
     def take_out(cls, vol, item, user, date=datetime.datetime.now().date(), sol=None):
@@ -712,6 +711,16 @@ class Inventory(models.Model):
             invitem.date_fin = values["date_fin"]
             invitem.finished = True
             reagent = Inventory.objects.get(id=item).reagent
+            open_items = Inventory.objects.filter(
+                is_op=True, finished=False, reagent=reagent
+            ).count()
+            un_open_items = Inventory.objects.filter(
+                is_op=False, finished=False, reagent=reagent
+            ).count()
+            reagent.open_no = open_items
+            reagent.count_no = un_open_items
+            reagent.save()
+            reagent.refresh_from_db()
             if reagent.track_vol == False and invitem.is_op == False:
                 reagent.count_no = F("count_no") - 1
                 invitem.save()

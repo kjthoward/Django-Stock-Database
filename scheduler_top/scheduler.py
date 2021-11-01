@@ -1,5 +1,6 @@
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from scheduler_top import update_emails, update_stock
 import socket
 
@@ -14,5 +15,5 @@ def start():
     else:
         scheduler = BackgroundScheduler()
         scheduler.add_job(update_emails.send_emails, "interval", minutes=30, jitter=120)
-        scheduler.add_job(update_stock.update_counts, "interval", hours=2, jitter=120)
+        scheduler.add_job(update_stock.update_counts, CronTrigger.from_crontab('0 03 * * *'))
         scheduler.start()
