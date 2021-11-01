@@ -9,6 +9,7 @@ from django.db.models import F, Q
 from django.shortcuts import render
 from django.urls import reverse
 from django.db import transaction
+from django.db.models.functions import Lower
 from operator import attrgetter
 import openpyxl
 import datetime
@@ -694,7 +695,7 @@ def listinv(httprequest):
         "Number Open In Stock",
         "Minimum Stock Level",
     ]
-    items = Reagents.objects.all().exclude(is_active=False, count_no=0).order_by("name")
+    items = Reagents.objects.all().exclude(is_active=False, count_no=0).order_by(Lower("name"))
     body = []
     for item in items:
         values = [
@@ -1426,7 +1427,7 @@ def invreport(httprequest, team, filters, what, extension):
                     date_exp__lte=datetime.datetime.now() + datetime.timedelta(days=42),
                     finished=False,
                 )
-                .order_by("reagent_id__name", "-is_op", "date_exp")
+                .order_by(Lower("reagent_id__name"), "-is_op", "date_exp")
             )
             if team != "ALL":
                 items = items.filter(team=team)
@@ -2293,7 +2294,7 @@ def recipes(httprequest):
         "Active",
         "Witness Required?",
     ]
-    items = Recipe.objects.all().order_by("name")
+    items = Recipe.objects.all().order_by(Lower("name"))
     body = []
 
     for item in items:
