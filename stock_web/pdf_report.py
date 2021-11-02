@@ -84,7 +84,7 @@ def fake_for_pages(body, title, httpresponse, user):
     return doc.page
 
 
-def report_gen(body, title, httpresponse, user):
+def report_gen(body, title, httpresponse, user, shade):
     styles = getSampleStyleSheet()
     styleNormal = styles["Normal"]
     styleHeading = styles["Heading1"]
@@ -113,6 +113,8 @@ def report_gen(body, title, httpresponse, user):
 
         canvas.restoreState()
 
+    i=0
+    hash_rows=[]
     new_body = []
     for b in body:
         temp = []
@@ -121,6 +123,11 @@ def report_gen(body, title, httpresponse, user):
         else:
             limit = 40
         for part in b:
+            try:
+                if "#" in part:
+                    hash_rows.append(i)
+            except:
+                pass
             try:
                 if len(part) > limit:
                     t = part.split(" ")
@@ -137,6 +144,7 @@ def report_gen(body, title, httpresponse, user):
                     temp += [part]
             except:
                 temp += [part]
+        i+=1
         new_body += [temp]
     TABLE = Table(data=new_body, repeatRows=1)
     TABLE.setStyle(
@@ -148,6 +156,10 @@ def report_gen(body, title, httpresponse, user):
             ]
         )
     )
+    if shade == True:
+        for each in set(hash_rows):
+            bg_color = colors.red
+            TABLE.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
     table = []
     table.append(TABLE)
     doc = BaseDocTemplate(

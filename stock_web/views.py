@@ -1422,6 +1422,7 @@ def invreport(httprequest, team, filters, what, extension):
         else:
             form = form()
     else:
+        colours = False
         if filters != "_":
             query = dict([q.split("=") for q in filters.split(";")])
             for key, value in query.items():
@@ -1429,6 +1430,7 @@ def invreport(httprequest, team, filters, what, extension):
                     value.strip("()").replace("'", "").replace(" ", "").split(",")
                 )
         elif what == "exp":
+            colours = True
             title = "Items Expiring Soon Report - Downloaded {}".format(
                 datetime.datetime.today().date().strftime("%d-%m-%Y")
             )
@@ -1540,7 +1542,9 @@ def invreport(httprequest, team, filters, what, extension):
             httpresponse[
                 "Content-Disposition"
             ] = 'attachment; filename="{}.pdf"'.format(title)
-            table = report_gen(body, title, httpresponse, httprequest.user.username)
+            table = report_gen(
+                body, title, httpresponse, httprequest.user.username, colours
+            )
 
         if extension == "1":
             workbook = openpyxl.Workbook()
@@ -1890,10 +1894,10 @@ def _vol_context(httprequest, item, undo):
             cyto_headings += ["Action"]
         uses = VolUsage.objects.filter(item=item.pk)
         uses = sorted(uses, key=lambda use: use.date)
-        REASON=False
+        REASON = False
         if any([use.reason is not None for use in uses]):
             cyto_headings.append("Reason")
-            REASON=True
+            REASON = True
         cyto_body = []
         for use in uses:
             values = [
@@ -1904,7 +1908,7 @@ def _vol_context(httprequest, item, undo):
                 use.user,
             ]
             urls = ["", "", "", "", ""]
-            if REASON==True:
+            if REASON == True:
                 values.append(use.reason if use.reason else "")
                 urls.append("")
             if use.sol is not None:
