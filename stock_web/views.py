@@ -2008,6 +2008,10 @@ def useitem(httprequest, pk):
                                     print(e)
                 if int(item.current_vol) == 0:
                     message += ["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
+                    if item.team.name == "CYTO":
+                        message += [
+                            "Have you updated the FISH Probe manager in StarLIMS?"
+                        ]
                 if form.cleaned_data["date_used"] >= item.date_exp:
                     message += ["WARNING - ITEM USED AFTER EXPIRY DATE"]
                 if message != []:
@@ -2192,7 +2196,7 @@ def finishitem(httprequest, pk):
             )
         else:
             if form.is_valid():
-
+                message = []
                 Inventory.finish(form.cleaned_data, pk, httprequest.user)
                 if item.reagent.track_vol == True or item.is_op == False:
                     if item.reagent.count_no < item.reagent.min_count:
@@ -2200,16 +2204,16 @@ def finishitem(httprequest, pk):
                             make = "made"
                         else:
                             make = "ordered"
-                        messages.success(
-                            httprequest,
+                        message += [
                             "Current stock level for {0} is {1}{2}. \nMinimum quantity is {3}{2}. \nCheck if more needs to be {4}".format(
                                 item.reagent.name,
                                 item.reagent.count_no,
                                 "µl" if item.reagent.track_vol else "",
                                 item.reagent.min_count,
                                 make,
-                            ),
-                        )
+                            )
+                        ]
+
                         if EMAIL == True:
                             subject = "{} - Stock Level is below minimum level".format(
                                 item.reagent.name
@@ -2256,6 +2260,10 @@ def finishitem(httprequest, pk):
                                         to=user.email, subj=subject, text=text
                                     )
                                     print(e)
+                if item.reagent.track_vol == True and item.team.name == "CYTO":
+                    message += ["Have you updated the FISH Probe manager in StarLIMS?"]
+                if message != []:
+                    messages.success(httprequest, " \n".join(message))
                 return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
     else:
         if Inventory.objects.get(pk=int(pk)).finished == True:
@@ -2502,6 +2510,13 @@ def newinv(httprequest, pk):
                                     form.data["vol_rec"], form.cleaned_data["reagent"]
                                 ),
                             )
+                            if (
+                                Teams.objects.get(pk=int(form.data["team"])).name
+                                == "CYTO"
+                            ):
+                                message += [
+                                    "Have you updated the FISH Probe manager in StarLIMS?"
+                                ]
                     if form.cleaned_data["date_exp"] < (
                         form.cleaned_data["date_rec"] + relativedelta(months=+6)
                     ):
