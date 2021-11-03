@@ -128,9 +128,9 @@ def prime(httprequest):
 
 
 def add_cyto(httprequest):
-    suppliers, reagents = ADD_CYTO()
+    suppliers, reagents, inventory = ADD_CYTO()
     messages.success(
-        httprequest, f"Cyto Reagents ({reagents}) and Suppliers ({suppliers}) added"
+        httprequest, f"Cyto Reagents ({reagents}), Suppliers ({suppliers}) and Inventory Items ({inventory}) added"
     )
     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
