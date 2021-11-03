@@ -45,9 +45,6 @@ def ADD_CYTO():
             except Exception as e:
                 print(e)
                 print(sup)
-                import pdb
-
-                pdb.set_trace()
             values["min_count"] = Decimal(minimum)
             values["track_vol"] = vol
             if not Reagents.objects.filter(name=name).exists():
@@ -57,7 +54,4 @@ def ADD_CYTO():
                 except Exception as e:
                     print(e)
                     print(name)
-                    import pdb
-
-                    pdb.set_trace()
         return suppliers_count, reagents_count
