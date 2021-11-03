@@ -32,6 +32,7 @@ def ADD_CYTO():
                 suppliers_count += 1
         for reagent in items:
             name, cata, sup, minimum, vol, team = reagent.split("\t")
+            name=name.strip('"')
             if vol == "TRUE":
                 vol = True
             else:
