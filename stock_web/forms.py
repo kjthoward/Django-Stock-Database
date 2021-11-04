@@ -121,7 +121,9 @@ class NewInvForm(forms.ModelForm):
             name="Internal"
         ).exclude(is_active=False)
         self.fields["accept_reason"].required = False
-        self.fields["team"].queryset = Teams.objects.exclude(is_active=False)
+        self.fields["team"].queryset = Teams.objects.exclude(is_active=False).exclude(
+            name="ALL"
+        )
 
 
 class NewProbeForm(forms.ModelForm):
@@ -174,7 +176,9 @@ class NewProbeForm(forms.ModelForm):
             name="Internal"
         ).exclude(is_active=False)
         self.fields["accept_reason"].required = False
-        self.fields["team"].queryset = Teams.objects.exclude(is_active=False)
+        self.fields["team"].queryset = Teams.objects.exclude(is_active=False).exclude(
+            name="ALL"
+        )
 
 
 class UseItemForm(forms.ModelForm):
@@ -361,7 +365,9 @@ class NewReagentForm(forms.ModelForm):
         self.fields["supplier_def"].queryset = Suppliers.objects.exclude(
             name="Internal"
         ).exclude(is_active=False)
-        self.fields["team_def"].queryset = Teams.objects.exclude(is_active=False)
+        self.fields["team_def"].queryset = Teams.objects.exclude(
+            is_active=False
+        ).exclude(name="ALL")
         self.fields["team_def"].required = True
 
     def clean(self):
@@ -380,7 +386,7 @@ class NewReagentForm(forms.ModelForm):
 class NewRecipeForm(forms.ModelForm):
     number = forms.IntegerField(min_value=0, label=u"Minimum Stock Level")
     team_def = forms.ModelChoiceField(
-        queryset=Teams.objects.all().order_by("name"),
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         label=u"Default Team",
         widget=Select2Widget,
         required=True,
@@ -408,7 +414,9 @@ class NewRecipeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(NewRecipeForm, self).__init__(*args, **kwargs)
-        self.fields["team_def"].queryset = Teams.objects.exclude(is_active=False)
+        self.fields["team_def"].queryset = Teams.objects.exclude(
+            is_active=False
+        ).exclude(name="ALL")
 
     def clean(self):
         super(NewRecipeForm, self).clean()
@@ -480,7 +488,7 @@ class SearchForm(forms.Form):
     lot_no = forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id = forms.CharField(label="Stock Number", max_length=4, required=False)
     team = forms.ModelChoiceField(
-        queryset=Teams.objects.all().order_by("name"),
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         label=u"Team",
         widget=Select2Widget,
         required=False,
@@ -557,7 +565,10 @@ class ChangeDefTeamForm1(forms.Form):
 
 class ChangeDefTeamForm(forms.Form):
     team_def = forms.ModelChoiceField(
-        queryset=Teams.objects.all().exclude(is_active=False).order_by("name"),
+        queryset=Teams.objects.all()
+        .exclude(is_active=False)
+        .exclude(name="ALL")
+        .order_by("name"),
         label=u"Select New Team",
         widget=Select2Widget,
     )
@@ -643,7 +654,7 @@ class EditSupForm(forms.Form):
 
 class EditTeamForm(forms.Form):
     name = ShowActiveModelChoiceField(
-        queryset=Teams.objects.all().order_by("name"),
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         widget=Select2Widget,
         label=u"Team",
     )
@@ -832,7 +843,7 @@ class InvReportForm(forms.Form):
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     team = forms.ModelChoiceField(
-        queryset=Teams.objects.all().order_by("name"),
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         label=u"Team",
         widget=Select2Widget,
         required=False,
@@ -965,7 +976,7 @@ class WitnessForm(forms.Form):
         label=u"Select Witness",
     )
     team = forms.ModelChoiceField(
-        queryset=Teams.objects.all().order_by("name"),
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         label=u"Team",
         widget=Select2Widget,
         required=True,
@@ -974,7 +985,7 @@ class WitnessForm(forms.Form):
 
 class TeamOnlyForm(forms.Form):
     team = forms.ModelChoiceField(
-        queryset=Teams.objects.all().order_by("name"),
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         label=u"Team",
         widget=Select2Widget,
         required=True,

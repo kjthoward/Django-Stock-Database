@@ -9,6 +9,7 @@ urlpatterns = [
     re_path(r"^vol_migrate/$", views.vol_migrate, name="vol_migrate"),
     # re_path(r'^migrate_4OD/$', views.migrate_4OD, name='migrate_4OD'),
     # re_path(r'^migrate_sols/$', views.migrate_sols, name='migrate_sols'),
+    re_path(r'^user_groups/$', views.user_groups, name='user_groups'),
     re_path(r"^newinv/(.*)/$", views.newinv, name="newinv"),
     re_path(r"^search/$", views.search, name="search"),
     re_path(r"^valdates/$", views.valdates, name="valdates"),

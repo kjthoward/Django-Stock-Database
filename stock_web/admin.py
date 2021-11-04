@@ -4,8 +4,8 @@ from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.utils import unquote
 from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.forms import (
     UserCreationForm,
     AdminPasswordChangeForm,
@@ -30,7 +30,9 @@ from .models import (
     Solutions,
     ForceReset,
     Emails,
+    EmailGroup,
 )
+
 
 # Modify admin view pages to include things like search
 class Supplier_Admin(admin.ModelAdmin):
@@ -299,6 +301,20 @@ pw_reset.short_description = "Reset PW"
 admin.site.unregister(User)
 
 
+class GroupInline(admin.StackedInline):
+    model = EmailGroup
+    can_delete = False
+    verbose_name_plural = "Email Group"
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_staff:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if request.user.is_staff:
+            return True
+
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = (
@@ -309,6 +325,7 @@ class CustomUserAdmin(UserAdmin):
         "is_active",
         SU,
         roles,
+        "emailgroup",
         last,
         pw_reset,
     )
@@ -325,6 +342,12 @@ class CustomUserAdmin(UserAdmin):
         ),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
     )
+    inlines = [GroupInline]
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj:
+            return list()
+        return super(CustomUserAdmin, self).get_inline_instances(request, obj)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -430,7 +453,6 @@ class CustomUserAdmin(UserAdmin):
         }
 
         request.current_app = self.admin_site.name
-
         return TemplateResponse(
             request,
             "admin/stock_web/change_password.html",

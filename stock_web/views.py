@@ -31,6 +31,7 @@ from .models import (
     Solutions,
     VolUsage,
     Emails,
+    EmailGroup,
 )
 from .forms import (
     LoginForm,
@@ -147,6 +148,12 @@ def vol_migrate(httprequest):
             reagent.open_no = num_open.count()
             reagent.count_no = vol
             reagent.save()
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
+
+
+def user_groups(httprequest):
+    for user in User.objects.all():
+        EmailGroup.objects.create(user=user, team=None)
     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
@@ -695,7 +702,11 @@ def listinv(httprequest):
         "Number Open In Stock",
         "Minimum Stock Level",
     ]
-    items = Reagents.objects.all().exclude(is_active=False, count_no=0).order_by(Lower("name"))
+    items = (
+        Reagents.objects.all()
+        .exclude(is_active=False, count_no=0)
+        .order_by(Lower("name"))
+    )
     body = []
     for item in items:
         values = [
@@ -1973,7 +1984,12 @@ def useitem(httprequest, pk):
                                 item.reagent.min_count
                             )
                         )
-                        for user in User.objects.filter(is_staff=True, is_active=True):
+                        team = item.reagent.team_def
+                        for user in User.objects.filter(
+                            is_active=True, emailgroup__team=team
+                        ) | User.objects.filter(
+                            is_active=True, emailgroup__team__name="ALL"
+                        ):
                             if user.email != "":
                                 try:
                                     send(subject, text, user.email)
@@ -2051,8 +2067,11 @@ def openitem(httprequest, pk):
                             text += "Minimum Stock level for this item is {}.<br><br>".format(
                                 item.reagent.min_count
                             )
+                            team = item.reagent.team_def
                             for user in User.objects.filter(
-                                is_staff=True, is_active=True
+                                is_active=True, emailgroup__team=team
+                            ) | User.objects.filter(
+                                is_active=True, emailgroup__team__name="ALL"
                             ):
                                 if user.email != "":
                                     try:
@@ -2196,8 +2215,11 @@ def finishitem(httprequest, pk):
                             text += "\n\nMinimum Stock level for this item is {}.<br><br>".format(
                                 item.reagent.min_count
                             )
+                            team = item.reagent.team_def
                             for user in User.objects.filter(
-                                is_staff=True, is_active=True
+                                is_active=True, emailgroup__team=team
+                            ) | User.objects.filter(
+                                is_active=True, emailgroup__team__name="ALL"
                             ):
                                 if user.email != "":
                                     try:
@@ -2223,7 +2245,12 @@ def finishitem(httprequest, pk):
                             if form.cleaned_data["fin_text"] != None
                             else "NOT ENTERED"
                         )
-                        for user in User.objects.filter(is_staff=True, is_active=True):
+                        team = item.reagent.team_def
+                        for user in User.objects.filter(
+                            is_active=True, emailgroup__team=team
+                        ) | User.objects.filter(
+                            is_active=True, emailgroup__team__name="ALL"
+                        ):
                             if user.email != "":
                                 try:
                                     send(subject, text, user.email)
