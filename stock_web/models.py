@@ -101,7 +101,6 @@ class Teams(models.Model):
         return team
 
 
-
 class Reagents(models.Model):
     def __str__(self):
         return self.name
@@ -721,6 +720,19 @@ class Inventory(models.Model):
                 reagent = Reagents.objects.get(pk=invitem.reagent_id)
                 reagent.count_no = F("count_no") - vol
                 reagent.save()
+                reagent.refresh_from_db()
+                if reagent.count_no < 0:
+                    open_items = Inventory.objects.filter(
+                        is_op=True, finished=False, reagent=reagent
+                    )
+                    un_open_items = Inventory.objects.filter(
+                        is_op=False, finished=False, reagent=reagent
+                    )
+                    new_vol = 0
+                    for inv_item in open_items:
+                        new_vol += inv_item.current_vol
+                    reagent.count_no = new_vol
+                    reagent.save()
             VolUsage.use(item, start_vol, invitem.current_vol, vol, user, sol, date)
 
     @classmethod
