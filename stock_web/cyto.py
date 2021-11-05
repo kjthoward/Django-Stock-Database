@@ -91,6 +91,7 @@ def ADD_CYTO():
             else:
                 openned = False
             username = User.objects.get(username=user_rec)
+            reagent=reagent.strip('"')
             values["vol_rec"] = vol_rec
             values["reagent"] = Reagents.objects.get(name=reagent)
             values["lot_no"] = lot
