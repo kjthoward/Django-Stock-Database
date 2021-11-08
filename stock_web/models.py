@@ -606,14 +606,6 @@ class Inventory(models.Model):
     accept_reason = models.CharField(
         max_length=150, blank=True, null=True, verbose_name="Acceptance Reason"
     )
-    item_comment = models.ForeignKey(
-        "Comments",
-        blank=True,
-        null=True,
-        on_delete=models.PROTECT,
-        verbose_name="Item comment",
-        default=None,
-    )
 
     def days_remaining(self):
         return (self.date_exp - datetime.date.today()).days
@@ -1028,7 +1020,7 @@ class Comments(models.Model):
         verbose_name_plural = "Item Comments"
 
     def __str__(self):
-        return f"{self.comment} - {self.user.username} - {self.date_made}"
+        return f"{self.item} - {self.comment} - {self.user.username} - {self.date_made}"
 
     date_made = models.DateField(default=datetime.date.today, verbose_name="Date Made")
     user = models.ForeignKey(
@@ -1037,3 +1029,9 @@ class Comments(models.Model):
         on_delete=models.PROTECT,
     )
     comment = models.TextField(max_length=250, verbose_name="comment")
+    item = models.ForeignKey(
+        Inventory,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )

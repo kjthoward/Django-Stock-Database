@@ -197,8 +197,8 @@ class Solution_Admin(admin.ModelAdmin):
     )
 
 class Comments_Admin(admin.ModelAdmin):
-    list_display = ("date_made", "user", "comment")
-    search_fields = ("date_made", "user", "comment")
+    list_display = ("item", "date_made", "user", "comment")
+    search_fields = ("item", "date_made", "user", "comment")
 
 # Registers models so they can be interacted with in Admin site
 admin.site.register(Suppliers, Supplier_Admin)

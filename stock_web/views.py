@@ -1618,11 +1618,13 @@ def _item_context(httprequest, item, undo):
                 sol_val = False
                 title.append(str(comp) + " - NOT VALIDATED")
             title_url.append(reverse("stock_web:item", args=[comp.id]))
-    if item.item_comment is not None:
-        title.append(
-            textwrap.fill(f"Comment - {item.item_comment.comment} by {item.item_comment.user.username} on {item.item_comment.date_made.strftime('%d/%m/%Y')}")
-        )
-        title_url.append("")
+    item_comments=Comments.objects.filter(item=item).order_by("date_made")
+    if item_comments is not None:
+        for comment in item_comments:
+            title.append(
+                textwrap.fill(f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}")
+            )
+            title_url.append("")
     if item.val is None and item.sol is None:
         title.append("****ITEM NOT VALIDATED****")
         title_url.append("")
@@ -1729,7 +1731,7 @@ def _item_context(httprequest, item, undo):
         else:
             values += ["Discard Item"]
         urls += [reverse("stock_web:finishitem", args=[item.id])]
-    if (item.item_comment is  None) and (undo != "undo"):
+    if undo != "undo":
         headings += ["Action"]
         values += ["Add Comment"]
         urls += [reverse("stock_web:add_comment", args=[item.id])]
@@ -1782,11 +1784,13 @@ def _vol_context(httprequest, item, undo):
     if item.witness is not None:
         title.append("Witnessed By - {}".format(item.witness))
         title_url.append("")
-    if item.item_comment is not None:
-        title.append(
-            textwrap.fill(f"Comment - {item.item_comment.comment} by {item.item_comment.user.username} on {item.item_comment.date_made.strftime('%d/%m/%Y')}")
-        )
-        title_url.append("")
+    item_comments=Comments.objects.filter(item=item).order_by("date_made")
+    if item_comments is not None:
+        for comment in item_comments:
+            title.append(
+                textwrap.fill(f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}")
+            )
+            title_url.append("")
     if item.sol is not None:
         for comp in item.sol.list_comp():
             if comp.val_id is not None:
@@ -1891,7 +1895,7 @@ def _vol_context(httprequest, item, undo):
         else:
             values += ["Discard Item"]
         urls += [reverse("stock_web:finishitem", args=[item.id])]
-    if (item.item_comment is  None) and (undo != "undo"):
+    if undo != "undo":
         headings += ["Action"]
         values += ["Add Comment"]
         urls += [reverse("stock_web:add_comment", args=[item.id])]
@@ -2313,7 +2317,7 @@ def finishitem(httprequest, pk):
 def add_comment(httprequest, pk):
     item = Inventory.objects.get(pk=int(pk))
     form = AddCommentForm
-    header = ["Adding comment for item {}".format(item)]
+    header = ["Adding comment for item: {}".format(item)]
     if httprequest.method == "POST":
         form = form(httprequest.POST, instance=item)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -2324,15 +2328,10 @@ def add_comment(httprequest, pk):
             )
         else:
             if form.is_valid():
-                comment = Comments.objects.create(user=httprequest.user, date_made=datetime.datetime.today(), comment=form.data["comment"])
-                item.item_comment=comment
-                item.save()
+                comment = Comments.objects.create(user=httprequest.user, date_made=datetime.datetime.today(), comment=form.data["comment"], item=item)
                 messages.success(httprequest, f"Comment Added for: {item}")
                 return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
     else:
-        if Inventory.objects.get(pk=int(pk)).item_comment is not None:
-            return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
-        # form = form(initial={"date_made": datetime.datetime.now()})
         form = form()
     submiturl = reverse("stock_web:add_comment", args=[pk])
     cancelurl = reverse("stock_web:item", args=[pk])
