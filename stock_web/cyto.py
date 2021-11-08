@@ -11,6 +11,7 @@ from .models import (
     Inventory,
     Solutions,
     VolUsage,
+    Comments
 )
 from decimal import Decimal
 import datetime
@@ -84,6 +85,7 @@ def ADD_CYTO():
                 vol_used,
                 date_val,
                 val_run,
+                comment,
             ) = item.split("\t")
             values = {}
             if int(openned) == 1:
@@ -92,15 +94,19 @@ def ADD_CYTO():
                 openned = False
             username = User.objects.get(username=user_rec)
             reagent=reagent.strip('"')
-            values["vol_rec"] = vol_rec
-            values["reagent"] = Reagents.objects.get(name=reagent)
-            values["lot_no"] = lot
-            values["po"] = purchase
-            values["cond_rec"] = conditon
-            values["date_rec"] = datetime.datetime.strptime(date_rec, "%d/%m/%Y")
-            values["date_exp"] = datetime.datetime.strptime(expiry, "%d/%m/%Y")
-            values["supplier"] = Suppliers.objects.get(name=supplier)
-            values["team"] = Teams.objects.get(name=team)
+            try:
+                values["vol_rec"] = vol_rec
+                values["reagent"] = Reagents.objects.get(name=reagent)
+                values["lot_no"] = lot
+                values["po"] = purchase
+                values["cond_rec"] = conditon
+                values["date_rec"] = datetime.datetime.strptime(date_rec, "%d/%m/%Y")
+                values["date_exp"] = datetime.datetime.strptime(expiry, "%d/%m/%Y")
+                values["supplier"] = Suppliers.objects.get(name=supplier)
+                values["team"] = Teams.objects.get(name=team)
+            except Exception as e:
+                print(e)
+                import pdb; pdb.set_trace()
             id = Inventory.create(values, username)[0]
             if openned == True:
                 inv_item = Inventory.objects.get(internal__batch_number=id)
@@ -118,5 +124,8 @@ def ADD_CYTO():
                 values["val_date"] = datetime.datetime.strptime(date_val, "%d/%m/%Y")
                 values["val_run"] = val_run
                 Inventory.validate(values, inv_item.reagent, inv_item.lot_no, username)
+            if comment != "":
+                inv_item = Inventory.objects.get(internal__batch_number=id)
+                comment = Comments.objects.create(user=username, date_made=datetime.datetime.today(), comment=comment, item=inv_item)
             inventory_count += 1
         return suppliers_count, reagents_count, inventory_count
