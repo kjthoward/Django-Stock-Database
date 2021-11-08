@@ -15,6 +15,7 @@ import datetime
 import math
 import random
 import string
+import textwrap
 from decimal import Decimal
 from .prime import PRIME
 from .cyto import ADD_CYTO
@@ -32,6 +33,7 @@ from .models import (
     Solutions,
     VolUsage,
     Emails,
+    Comments,
 )
 from .forms import (
     LoginForm,
@@ -71,6 +73,7 @@ from .forms import (
     ChangeExpForm,
     ChangeRecForm,
     ChangeFinForm,
+    AddCommentForm,
 )
 
 LOGINURL = settings.LOGIN_URL
@@ -130,7 +133,8 @@ def prime(httprequest):
 def add_cyto(httprequest):
     suppliers, reagents, inventory = ADD_CYTO()
     messages.success(
-        httprequest, f"Cyto Reagents ({reagents}), Suppliers ({suppliers}) and Inventory Items ({inventory}) added"
+        httprequest,
+        f"Cyto Reagents ({reagents}), Suppliers ({suppliers}) and Inventory Items ({inventory}) added",
     )
     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
@@ -1614,6 +1618,11 @@ def _item_context(httprequest, item, undo):
                 sol_val = False
                 title.append(str(comp) + " - NOT VALIDATED")
             title_url.append(reverse("stock_web:item", args=[comp.id]))
+    if item.item_comment is not None:
+        title.append(
+            textwrap.fill(f"Comment - {item.item_comment.comment} by {item.item_comment.user.username} on {item.item_comment.date_made.strftime('%d/%m/%Y')}")
+        )
+        title_url.append("")
     if item.val is None and item.sol is None:
         title.append("****ITEM NOT VALIDATED****")
         title_url.append("")
@@ -1720,6 +1729,10 @@ def _item_context(httprequest, item, undo):
         else:
             values += ["Discard Item"]
         urls += [reverse("stock_web:finishitem", args=[item.id])]
+    if (item.item_comment is  None) and (undo != "undo"):
+        headings += ["Action"]
+        values += ["Add Comment"]
+        urls += [reverse("stock_web:add_comment", args=[item.id])]
     body = [(zip(values, urls, urls), False)]
     if undo == "undo":
         toolbar = _toolbar(httprequest, active="Edit Data")
@@ -1768,6 +1781,11 @@ def _vol_context(httprequest, item, undo):
         title_url.append("")
     if item.witness is not None:
         title.append("Witnessed By - {}".format(item.witness))
+        title_url.append("")
+    if item.item_comment is not None:
+        title.append(
+            textwrap.fill(f"Comment - {item.item_comment.comment} by {item.item_comment.user.username} on {item.item_comment.date_made.strftime('%d/%m/%Y')}")
+        )
         title_url.append("")
     if item.sol is not None:
         for comp in item.sol.list_comp():
@@ -1873,7 +1891,10 @@ def _vol_context(httprequest, item, undo):
         else:
             values += ["Discard Item"]
         urls += [reverse("stock_web:finishitem", args=[item.id])]
-
+    if (item.item_comment is  None) and (undo != "undo"):
+        headings += ["Action"]
+        values += ["Add Comment"]
+        urls += [reverse("stock_web:add_comment", args=[item.id])]
     body = [(zip(values, urls, urls), stripe)]
     if undo == "undo":
         toolbar = _toolbar(httprequest, active="Edit Data")
@@ -2287,6 +2308,45 @@ def finishitem(httprequest, pk):
         },
     )
 
+@user_passes_test(is_logged_in, login_url=LOGINURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def add_comment(httprequest, pk):
+    item = Inventory.objects.get(pk=int(pk))
+    form = AddCommentForm
+    header = ["Adding comment for item {}".format(item)]
+    if httprequest.method == "POST":
+        form = form(httprequest.POST, instance=item)
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            if form.is_valid():
+                comment = Comments.objects.create(user=httprequest.user, date_made=datetime.datetime.today(), comment=form.data["comment"])
+                item.item_comment=comment
+                item.save()
+                messages.success(httprequest, f"Comment Added for: {item}")
+                return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
+    else:
+        if Inventory.objects.get(pk=int(pk)).item_comment is not None:
+            return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
+        # form = form(initial={"date_made": datetime.datetime.now()})
+        form = form()
+    submiturl = reverse("stock_web:add_comment", args=[pk])
+    cancelurl = reverse("stock_web:item", args=[pk])
+    return render(
+        httprequest,
+        "stock_web/form.html",
+        {
+            "header": header,
+            "form": form,
+            "toolbar": _toolbar(httprequest),
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+        },
+    )
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)

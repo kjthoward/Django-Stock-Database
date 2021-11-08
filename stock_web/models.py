@@ -62,7 +62,7 @@ class Suppliers(models.Model):
         return self.name
 
     name = models.CharField(max_length=50, unique=True)
-    is_active = models.BooleanField(default=True, verbose_name=u"Active")
+    is_active = models.BooleanField(default=True, verbose_name="Active")
 
     class Meta:
         verbose_name_plural = "Suppliers"
@@ -84,7 +84,7 @@ class Teams(models.Model):
         return self.name
 
     name = models.CharField(max_length=50, unique=True)
-    is_active = models.BooleanField(default=True, verbose_name=u"Active")
+    is_active = models.BooleanField(default=True, verbose_name="Active")
 
     class Meta:
         verbose_name_plural = "Teams"
@@ -111,17 +111,17 @@ class Reagents(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     cat_no = models.CharField(
-        max_length=20, blank=True, null=True, verbose_name=u"Catalogue Number"
+        max_length=20, blank=True, null=True, verbose_name="Catalogue Number"
     )
     supplier_def = models.ForeignKey(
         Suppliers,
         on_delete=models.PROTECT,
-        verbose_name=u"Default Supplier",
+        verbose_name="Default Supplier",
         blank=True,
         null=True,
     )
     team_def = models.ForeignKey(
-        Teams, on_delete=models.PROTECT, verbose_name=u"Default Team"
+        Teams, on_delete=models.PROTECT, verbose_name="Default Team"
     )
     # storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
     count_no = models.DecimalField(
@@ -129,26 +129,26 @@ class Reagents(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(0)],
         default=0,
-        verbose_name=u"Unopened Items",
+        verbose_name="Unopened Items",
     )
     open_no = models.DecimalField(
         max_digits=7,
         decimal_places=2,
         validators=[MinValueValidator(0)],
         default=0,
-        verbose_name=u"Opened Items",
+        verbose_name="Opened Items",
     )
     min_count = models.DecimalField(
         max_digits=7,
         decimal_places=2,
         validators=[MinValueValidator(0)],
         default=0,
-        verbose_name=u"Minimum Stock Level",
+        verbose_name="Minimum Stock Level",
     )
     recipe = models.ForeignKey(
         "Recipe", on_delete=models.PROTECT, blank=True, null=True
     )
-    track_vol = models.BooleanField(default=False, verbose_name=u"Volume Tracked")
+    track_vol = models.BooleanField(default=False, verbose_name="Volume Tracked")
     is_active = models.BooleanField(default=True)
 
     @classmethod
@@ -323,12 +323,12 @@ class Validation(models.Model):
         )
 
     val_date = models.DateField(null=True, blank=True, verbose_name="Date")
-    val_run = models.CharField(max_length=25, verbose_name=u"Run Name")
+    val_run = models.CharField(max_length=25, verbose_name="Run Name")
     val_user = models.ForeignKey(
         User,
         limit_choices_to={"is_active": True},
         on_delete=models.PROTECT,
-        verbose_name=u"User",
+        verbose_name="User",
     )
 
     @classmethod
@@ -350,7 +350,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 1",
+        verbose_name="component 1",
         related_name="component1",
     )
     comp2 = models.ForeignKey(
@@ -358,7 +358,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 2",
+        verbose_name="component 2",
         related_name="component2",
     )
     comp3 = models.ForeignKey(
@@ -366,7 +366,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 3",
+        verbose_name="component 3",
         related_name="component3",
     )
     comp4 = models.ForeignKey(
@@ -374,7 +374,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 4",
+        verbose_name="component 4",
         related_name="component4",
     )
     comp5 = models.ForeignKey(
@@ -382,7 +382,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 5",
+        verbose_name="component 5",
         related_name="component5",
     )
     comp6 = models.ForeignKey(
@@ -390,7 +390,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 6",
+        verbose_name="component 6",
         related_name="component6",
     )
     comp7 = models.ForeignKey(
@@ -398,7 +398,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 7",
+        verbose_name="component 7",
         related_name="component7",
     )
     comp8 = models.ForeignKey(
@@ -406,7 +406,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 8",
+        verbose_name="component 8",
         related_name="component8",
     )
     comp9 = models.ForeignKey(
@@ -414,7 +414,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 9",
+        verbose_name="component 9",
         related_name="component9",
     )
     comp10 = models.ForeignKey(
@@ -422,7 +422,7 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"component 10",
+        verbose_name="component 10",
         related_name="component10",
     )
     reagent = models.ForeignKey(
@@ -430,12 +430,12 @@ class Recipe(models.Model):
         blank=True,
         null=True,
         on_delete=models.PROTECT,
-        verbose_name=u"Reagent ID",
+        verbose_name="Reagent ID",
         related_name="Reagent_ID",
     )
-    shelf_life = models.PositiveIntegerField(verbose_name=u"Shelf Life (Months)")
-    track_vol = models.BooleanField(default=False, verbose_name=u"Volume Tracked")
-    witness_req = models.BooleanField(default=False, verbose_name=u"Witness Required?")
+    shelf_life = models.PositiveIntegerField(verbose_name="Shelf Life (Months)")
+    track_vol = models.BooleanField(default=False, verbose_name="Volume Tracked")
+    witness_req = models.BooleanField(default=False, verbose_name="Witness Required?")
 
     @classmethod
     def create(cls, values):
@@ -521,23 +521,23 @@ class Inventory(models.Model):
         (UNUSABLE, "Damaged - Not Usable"),
     ]
     internal = models.ForeignKey(
-        Internal, on_delete=models.PROTECT, verbose_name=u"Stock Number"
+        Internal, on_delete=models.PROTECT, verbose_name="Stock Number"
     )
     supplier = models.ForeignKey(Suppliers, on_delete=models.PROTECT)
     team = models.ForeignKey(Teams, on_delete=models.PROTECT)
-    lot_no = models.CharField(max_length=50, verbose_name=u"Lot Number")
+    lot_no = models.CharField(max_length=50, verbose_name="Lot Number")
     sol = models.ForeignKey(
         "Solutions", on_delete=models.PROTECT, blank=True, null=True
     )
-    po = models.CharField(max_length=20, verbose_name=u"Purchase Order")
+    po = models.CharField(max_length=20, verbose_name="Purchase Order")
     date_rec = models.DateField(
-        default=datetime.date.today, verbose_name=u"Date Received"
+        default=datetime.date.today, verbose_name="Date Received"
     )
     cond_rec = models.CharField(
         max_length=2,
         choices=CONDITION_CHOICES,
         default=GOOD,
-        verbose_name=u"Condition Received",
+        verbose_name="Condition Received",
     )
     rec_user = models.ForeignKey(
         User,
@@ -545,7 +545,7 @@ class Inventory(models.Model):
         on_delete=models.PROTECT,
         related_name="1+",
     )
-    date_exp = models.DateField(verbose_name=u"Expiry Date")
+    date_exp = models.DateField(verbose_name="Expiry Date")
     date_op = models.DateField(null=True, blank=True)
     is_op = models.BooleanField(default=False)
     op_user = models.ForeignKey(
@@ -555,16 +555,16 @@ class Inventory(models.Model):
         related_name="2+",
         blank=True,
         null=True,
-        verbose_name=u"Opened by",
+        verbose_name="Opened by",
     )
     val = models.ForeignKey(
         Validation,
         null=True,
         blank=True,
         on_delete=models.PROTECT,
-        verbose_name=u"Validation Run",
+        verbose_name="Validation Run",
     )
-    date_fin = models.DateField(null=True, blank=True, verbose_name=u"Date Finished")
+    date_fin = models.DateField(null=True, blank=True, verbose_name="Date Finished")
     finished = models.BooleanField(default=False)
     fin_user = models.ForeignKey(
         User,
@@ -573,22 +573,22 @@ class Inventory(models.Model):
         related_name="3+",
         blank=True,
         null=True,
-        verbose_name=u"Finished By",
+        verbose_name="Finished By",
     )
     fin_text = models.CharField(
-        max_length=100, blank=True, null=True, verbose_name=u"Finished Reason"
+        max_length=100, blank=True, null=True, verbose_name="Finished Reason"
     )
     vol_rec = models.DecimalField(
         max_digits=7,
         decimal_places=2,
-        verbose_name=u"Volume Received (µl)",
+        verbose_name="Volume Received (µl)",
         blank=True,
         null=True,
     )
     current_vol = models.DecimalField(
         max_digits=7,
         decimal_places=2,
-        verbose_name=u"Current Volume (µl)",
+        verbose_name="Current Volume (µl)",
         blank=True,
         null=True,
     )
@@ -604,7 +604,15 @@ class Inventory(models.Model):
         null=True,
     )
     accept_reason = models.CharField(
-        max_length=150, blank=True, null=True, verbose_name=u"Acceptance Reason"
+        max_length=150, blank=True, null=True, verbose_name="Acceptance Reason"
+    )
+    item_comment = models.ForeignKey(
+        "Comments",
+        blank=True,
+        null=True,
+        on_delete=models.PROTECT,
+        verbose_name="Item comment",
+        default=None,
     )
 
     def days_remaining(self):
@@ -832,7 +840,7 @@ class Solutions(models.Model):
         verbose_name_plural = "Solutions"
 
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.PROTECT, verbose_name=u"Recipe Name"
+        Recipe, on_delete=models.PROTECT, verbose_name="Recipe Name"
     )
     comp1 = models.ForeignKey(
         Inventory,
@@ -918,7 +926,7 @@ class Solutions(models.Model):
         User,
         limit_choices_to={"is_active": True},
         on_delete=models.PROTECT,
-        verbose_name=u"Created By",
+        verbose_name="Created By",
     )
     date_created = models.DateField(default=datetime.date.today)
 
@@ -940,7 +948,7 @@ class Solutions(models.Model):
                 recipe=rec,
                 creator_user=user,
                 date_created=datetime.datetime.today(),
-                **comps_dict
+                **comps_dict,
             )
             solution.save()
             # Shelf life/Expiry calculations
@@ -1009,7 +1017,23 @@ class Emails(models.Model):
     class Meta:
         verbose_name_plural = "Emails To Send"
 
-    to = models.TextField(verbose_name=u"Sent To")
-    subj = models.TextField(verbose_name=u"Subject")
-    text = models.TextField(verbose_name=u"Text")
+    to = models.TextField(verbose_name="Sent To")
+    subj = models.TextField(verbose_name="Subject")
+    text = models.TextField(verbose_name="Text")
     sent = models.BooleanField(default=False)
+
+
+class Comments(models.Model):
+    class Meta:
+        verbose_name_plural = "Item Comments"
+
+    def __str__(self):
+        return f"{self.comment} - {self.user.username} - {self.date_made}"
+
+    date_made = models.DateField(default=datetime.date.today, verbose_name="Date Made")
+    user = models.ForeignKey(
+        User,
+        limit_choices_to={"is_active": True},
+        on_delete=models.PROTECT,
+    )
+    comment = models.TextField(max_length=250, verbose_name="comment")

@@ -30,6 +30,7 @@ from .models import (
     Solutions,
     ForceReset,
     Emails,
+    Comments,
 )
 
 # Modify admin view pages to include things like search
@@ -195,6 +196,9 @@ class Solution_Admin(admin.ModelAdmin):
         "comp10__reagent__name",
     )
 
+class Comments_Admin(admin.ModelAdmin):
+    list_display = ("date_made", "user", "comment")
+    search_fields = ("date_made", "user", "comment")
 
 # Registers models so they can be interacted with in Admin site
 admin.site.register(Suppliers, Supplier_Admin)
@@ -208,6 +212,7 @@ admin.site.register(Inventory, Inventory_Admin)
 admin.site.register(Solutions, Solution_Admin)
 admin.site.register(ForceReset)
 admin.site.register(Emails, Emails_Admin)
+admin.site.register(Comments, Comments_Admin)
 # Changes titles on Admin Site
 admin.site.site_header = "Stock (Web) Database Admin Page"
 admin.site.index_title = "Stock Administration"

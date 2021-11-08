@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
 from decimal import Decimal
 from bootstrap_daterangepicker import widgets, fields
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams
+from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams, Comments
 from django.contrib.auth.forms import PasswordChangeForm
 
 
@@ -67,6 +67,7 @@ class NewInvForm1(forms.ModelForm):
                     ]
             if errors:
                 raise forms.ValidationError(errors)
+
 
 class NewInvForm(forms.ModelForm):
     num_rec = forms.IntegerField(min_value=1, label="Number Received")
@@ -304,6 +305,14 @@ class FinishItemForm(forms.ModelForm):
         super(FinishItemForm, self).__init__(*args, **kwargs)
         if self.initial["is_op"] == False:
             self.fields["fin_text"].required = True
+
+
+class AddCommentForm(forms.ModelForm):
+    class Meta:
+        model = Comments
+        fields = ("comment",)
+        # widgets = {"date_made": forms.HiddenInput}
+        labels = {"comment": "Comment"}
 
 
 class NewSupForm(forms.ModelForm):
