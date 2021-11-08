@@ -94,19 +94,15 @@ def ADD_CYTO():
                 openned = False
             username = User.objects.get(username=user_rec)
             reagent=reagent.strip('"')
-            try:
-                values["vol_rec"] = vol_rec
-                values["reagent"] = Reagents.objects.get(name=reagent)
-                values["lot_no"] = lot
-                values["po"] = purchase
-                values["cond_rec"] = conditon
-                values["date_rec"] = datetime.datetime.strptime(date_rec, "%d/%m/%Y")
-                values["date_exp"] = datetime.datetime.strptime(expiry, "%d/%m/%Y")
-                values["supplier"] = Suppliers.objects.get(name=supplier)
-                values["team"] = Teams.objects.get(name=team)
-            except Exception as e:
-                print(e)
-                import pdb; pdb.set_trace()
+            values["vol_rec"] = vol_rec
+            values["reagent"] = Reagents.objects.get(name=reagent)
+            values["lot_no"] = lot
+            values["po"] = purchase
+            values["cond_rec"] = conditon
+            values["date_rec"] = datetime.datetime.strptime(date_rec, "%d/%m/%Y")
+            values["date_exp"] = datetime.datetime.strptime(expiry, "%d/%m/%Y")
+            values["supplier"] = Suppliers.objects.get(name=supplier)
+            values["team"] = Teams.objects.get(name=team)
             id = Inventory.create(values, username)[0]
             if openned == True:
                 inv_item = Inventory.objects.get(internal__batch_number=id)
