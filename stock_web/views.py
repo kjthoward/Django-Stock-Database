@@ -1618,11 +1618,13 @@ def _item_context(httprequest, item, undo):
                 sol_val = False
                 title.append(str(comp) + " - NOT VALIDATED")
             title_url.append(reverse("stock_web:item", args=[comp.id]))
-    item_comments=Comments.objects.filter(item=item).order_by("date_made")
+    item_comments = Comments.objects.filter(item=item).order_by("date_made")
     if item_comments is not None:
         for comment in item_comments:
             title.append(
-                textwrap.fill(f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}")
+                textwrap.fill(
+                    f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}"
+                )
             )
             title_url.append("")
     if item.val is None and item.sol is None:
@@ -1784,11 +1786,13 @@ def _vol_context(httprequest, item, undo):
     if item.witness is not None:
         title.append("Witnessed By - {}".format(item.witness))
         title_url.append("")
-    item_comments=Comments.objects.filter(item=item).order_by("date_made")
+    item_comments = Comments.objects.filter(item=item).order_by("date_made")
     if item_comments is not None:
         for comment in item_comments:
             title.append(
-                textwrap.fill(f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}")
+                textwrap.fill(
+                    f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}"
+                )
             )
             title_url.append("")
     if item.sol is not None:
@@ -1992,6 +1996,7 @@ def useitem(httprequest, pk):
                     form.cleaned_data["vol_used"],
                     int(pk),
                     httprequest.user,
+                    form.cleaned_data["reason"],
                     form.cleaned_data["date_used"],
                 )
                 item.refresh_from_db()
@@ -2049,7 +2054,7 @@ def useitem(httprequest, pk):
     cancelurl = reverse("stock_web:item", args=[pk])
     return render(
         httprequest,
-        "stock_web/form.html",
+        "stock_web/useitemform.html",
         {
             "header": header,
             "form": form,
@@ -2312,6 +2317,7 @@ def finishitem(httprequest, pk):
         },
     )
 
+
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def add_comment(httprequest, pk):
@@ -2328,7 +2334,12 @@ def add_comment(httprequest, pk):
             )
         else:
             if form.is_valid():
-                comment = Comments.objects.create(user=httprequest.user, date_made=datetime.datetime.today(), comment=form.data["comment"], item=item)
+                comment = Comments.objects.create(
+                    user=httprequest.user,
+                    date_made=datetime.datetime.today(),
+                    comment=form.data["comment"],
+                    item=item,
+                )
                 messages.success(httprequest, f"Comment Added for: {item}")
                 return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
     else:
@@ -2346,6 +2357,7 @@ def add_comment(httprequest, pk):
             "cancelurl": cancelurl,
         },
     )
+
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)

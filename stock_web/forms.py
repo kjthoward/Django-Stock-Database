@@ -187,15 +187,23 @@ class UseItemForm(forms.ModelForm):
         max_digits=7, decimal_places=2, label=u"Volume Used (µl)"
     )
     date_used = forms.DateField(widget=DateInput(), label=u"Date Used")
+    reason = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.Textarea(attrs={"style": "height:4em;"}),
+        label=u"Reason",
+    )
 
     class Meta:
         model = Inventory
-        fields = ("current_vol", "date_op", "last_usage")
+        fields = ("current_vol", "date_op", "last_usage", "reason")
         widgets = {
             "current_vol": forms.HiddenInput,
             "date_op": forms.HiddenInput,
             "last_usage": forms.HiddenInput,
         }
+
+    field_order = ["vol_used", "date_used", "reason"]
 
     def clean(self):
         super(UseItemForm, self).clean()
@@ -221,6 +229,17 @@ class UseItemForm(forms.ModelForm):
                         ),
                     )
                 ]
+        if self.cleaned_data["vol_used"] < 0 and self.cleaned_data["reason"]=="":
+            errors += [
+                (
+                    "reason",
+                    forms.ValidationError(
+                        "If a negative value is entered a reason must be given"
+                    ),
+                )
+            ]
+        elif self.cleaned_data["vol_used"] == 0:
+            errors += [("vol_used", forms.ValidationError("Volume used cannot be 0"))]
         if errors != []:
             for error in errors:
                 self.add_error(error[0], error[1])

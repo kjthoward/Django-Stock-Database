@@ -706,8 +706,12 @@ class Inventory(models.Model):
             invitem.save()
 
     @classmethod
-    def take_out(cls, vol, item, user, date=datetime.datetime.now().date(), sol=None):
+    def take_out(
+        cls, vol, item, user, reason, date=datetime.datetime.now().date(), sol=None
+    ):
         with transaction.atomic():
+            if reason == "":
+                reason = None
             invitem = Inventory.objects.get(id=item)
             start_vol = invitem.current_vol
             invitem.current_vol = F("current_vol") - vol
@@ -733,7 +737,9 @@ class Inventory(models.Model):
                         new_vol += inv_item.current_vol
                     reagent.count_no = new_vol
                     reagent.save()
-            VolUsage.use(item, start_vol, invitem.current_vol, vol, user, sol, date)
+            VolUsage.use(
+                item, start_vol, invitem.current_vol, vol, user, sol, reason, date
+            )
 
     @classmethod
     def validate(cls, values, reagent_id, lot, user):
@@ -810,8 +816,10 @@ class VolUsage(models.Model):
         volume,
         user,
         sol,
+        reason,
         date=datetime.datetime.now().date(),
     ):
+        print(reason)
         invitem = Inventory.objects.get(pk=int(item))
         use = VolUsage.objects.create(
             item=invitem,
@@ -821,6 +829,7 @@ class VolUsage(models.Model):
             date=date,
             user=user,
             sol=sol,
+            reason=reason,
         )
         invitem.last_usage = use
         invitem.save()
