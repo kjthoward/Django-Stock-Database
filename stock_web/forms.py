@@ -184,7 +184,7 @@ class NewProbeForm(forms.ModelForm):
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.DecimalField(
-        max_digits=7, decimal_places=2, min_value=0, label=u"Volume Used (µl)"
+        max_digits=7, decimal_places=2, label=u"Volume Used (µl)"
     )
     date_used = forms.DateField(widget=DateInput(), label=u"Date Used")
 
