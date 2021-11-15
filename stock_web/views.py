@@ -2037,7 +2037,7 @@ def useitem(httprequest, pk):
                                     )
                                     print(e)
                 if int(item.current_vol) == 0:
-                    message += ["THIS TUBE MAY BE EMPTY, PLEASE CHECK IT'S VOLUME"]
+                    message += ["THIS TUBE MAY BE EMPTY, PLEASE CHECK ITS VOLUME"]
                 if form.cleaned_data["date_used"] >= item.date_exp:
                     message += ["WARNING - ITEM USED AFTER EXPIRY DATE"]
                 if message != []:
