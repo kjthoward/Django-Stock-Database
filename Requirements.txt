@@ -2,7 +2,7 @@ django==2.2.9
 django_select2==7.1.2
 django-debug-toolbar==2.2.1
 django-session-timeout==0.0.4
-reportlab==3.5.32
+reportlab==3.5.55
 whitenoise==4.1.4
 openpyxl==2.4.5
 python-dateutil==2.8.1
