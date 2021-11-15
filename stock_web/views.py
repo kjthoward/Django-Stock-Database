@@ -2037,11 +2037,7 @@ def useitem(httprequest, pk):
                                     )
                                     print(e)
                 if int(item.current_vol) == 0:
-                    message += ["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
-                    if item.team.name == "CYTO":
-                        message += [
-                            "Have you updated the FISH Probe manager in StarLIMS?"
-                        ]
+                    message += ["THIS TUBE MAY BE EMPTY, PLEASE CHECK IT'S VOLUME"]
                 if form.cleaned_data["date_used"] >= item.date_exp:
                     message += ["WARNING - ITEM USED AFTER EXPIRY DATE"]
                 if message != []:
