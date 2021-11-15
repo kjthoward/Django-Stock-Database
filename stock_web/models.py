@@ -707,7 +707,7 @@ class Inventory(models.Model):
 
     @classmethod
     def take_out(
-        cls, vol, item, user, reason, date=datetime.datetime.now().date(), sol=None
+        cls, vol, item, user, reason=None, date=datetime.datetime.now().date(), sol=None
     ):
         with transaction.atomic():
             if reason == "":
