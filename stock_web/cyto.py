@@ -119,7 +119,7 @@ def ADD_CYTO():
                 inv_item.save()
                 inv_item.refresh_from_db()
                 Inventory.take_out(
-                    vol_used, inv_item.pk, username, datetime.datetime.today()
+                    vol_used, inv_item.pk, username, date=datetime.datetime.today()
                 )
             if date_val != "":
                 inv_item = Inventory.objects.get(internal__batch_number=id)
