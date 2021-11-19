@@ -1,5 +1,6 @@
 from django.db import models, transaction, IntegrityError
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import F
@@ -123,9 +124,28 @@ class Reagents(models.Model):
     team_def = models.ForeignKey(
         Teams, on_delete=models.PROTECT, verbose_name="Default Team"
     )
-    count_no = models.PositiveIntegerField(default=0, verbose_name="Unopened Items")
-    open_no = models.PositiveIntegerField(default=0, verbose_name="Opened Items")
-    min_count = models.PositiveIntegerField(verbose_name="Minimum Stock Level")
+    # storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
+    count_no = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        default=0,
+        verbose_name="Unopened Items",
+    )
+    open_no = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        default=0,
+        verbose_name="Opened Items",
+    )
+    min_count = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        default=0,
+        verbose_name="Minimum Stock Level",
+    )
     recipe = models.ForeignKey(
         "Recipe", on_delete=models.PROTECT, blank=True, null=True
     )
@@ -421,8 +441,8 @@ class Recipe(models.Model):
     @classmethod
     def create(cls, values):
         with transaction.atomic():
-            minstock = values["number"]
-            del values["number"]
+            minstock = values["min_count"]
+            del values["min_count"]
             def_team = values["team_def"]
             del values["team_def"]
             recipe = cls(**values)
@@ -559,11 +579,19 @@ class Inventory(models.Model):
     fin_text = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Finished Reason"
     )
-    vol_rec = models.PositiveIntegerField(
-        verbose_name="Volume Received (µl)", blank=True, null=True
+    vol_rec = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        verbose_name="Volume Received (µl)",
+        blank=True,
+        null=True,
     )
-    current_vol = models.PositiveIntegerField(
-        verbose_name="Current Volume (µl)", blank=True, null=True
+    current_vol = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        verbose_name="Current Volume (µl)",
+        blank=True,
+        null=True,
     )
     last_usage = models.ForeignKey(
         "VolUsage", blank=True, null=True, on_delete=models.PROTECT
@@ -678,21 +706,36 @@ class Inventory(models.Model):
                 invitem.save()
 
     @classmethod
-    def take_out(cls, vol, item, user, date=datetime.datetime.now().date(), sol=None):
+    def take_out(
+        cls, vol, item, user, reason=None, date=datetime.datetime.now().date(), sol=None
+    ):
         with transaction.atomic():
+            if reason == "":
+                reason = None
             invitem = Inventory.objects.get(id=item)
             start_vol = invitem.current_vol
             invitem.current_vol = F("current_vol") - vol
             invitem.save()
             invitem.refresh_from_db()
-            if invitem.current_vol == 0:
-                values = {"date_fin": date, "fin_text": "", "vol": vol}
-                invitem.finish(values, item, user)
-            else:
-                reagent = Reagents.objects.get(pk=invitem.reagent_id)
-                reagent.count_no = F("count_no") - vol
+            reagent = Reagents.objects.get(pk=invitem.reagent_id)
+            reagent.count_no = F("count_no") - vol
+            reagent.save()
+            reagent.refresh_from_db()
+            if reagent.count_no < 0:
+                open_items = Inventory.objects.filter(
+                    is_op=True, finished=False, reagent=reagent
+                )
+                un_open_items = Inventory.objects.filter(
+                    is_op=False, finished=False, reagent=reagent
+                )
+                new_vol = 0
+                for inv_item in open_items:
+                    new_vol += inv_item.current_vol
+                reagent.count_no = new_vol
                 reagent.save()
-            VolUsage.use(item, start_vol, invitem.current_vol, vol, user, sol, date)
+            VolUsage.use(
+                item, start_vol, invitem.current_vol, vol, user, sol, reason, date
+            )
 
     @classmethod
     def validate(cls, values, reagent_id, lot, user):
@@ -760,11 +803,12 @@ class VolUsage(models.Model):
         verbose_name_plural = "Volume Usage"
 
     item = models.ForeignKey(Inventory, blank=True, null=True, on_delete=models.PROTECT)
-    start = models.PositiveIntegerField()
-    end = models.PositiveIntegerField()
-    used = models.IntegerField()
+    start = models.DecimalField(max_digits=7, decimal_places=2)
+    end = models.DecimalField(max_digits=7, decimal_places=2)
+    used = models.DecimalField(max_digits=7, decimal_places=2)
     date = models.DateField(default=datetime.date.today)
     user = models.ForeignKey(User, on_delete=models.PROTECT)
+    reason = models.CharField(max_length=100, blank=True, null=True)
     sol = models.ForeignKey(
         "Solutions", on_delete=models.PROTECT, blank=True, null=True
     )
@@ -778,8 +822,10 @@ class VolUsage(models.Model):
         volume,
         user,
         sol,
+        reason,
         date=datetime.datetime.now().date(),
     ):
+        print(reason)
         invitem = Inventory.objects.get(pk=int(item))
         use = VolUsage.objects.create(
             item=invitem,
@@ -789,6 +835,7 @@ class VolUsage(models.Model):
             date=date,
             user=user,
             sol=sol,
+            reason=reason,
         )
         invitem.last_usage = use
         invitem.save()
@@ -989,3 +1036,24 @@ class EmailGroup(models.Model):
 
     user = models.OneToOneField("auth.User", unique=True, on_delete=models.PROTECT)
     team = models.ForeignKey(Teams, on_delete=models.PROTECT, null=True, blank=True)
+
+class Comments(models.Model):
+    class Meta:
+        verbose_name_plural = "Item Comments"
+
+    def __str__(self):
+        return f"{self.item} - {self.comment} - {self.user.username} - {self.date_made}"
+
+    date_made = models.DateField(default=datetime.date.today, verbose_name="Date Made")
+    user = models.ForeignKey(
+        User,
+        limit_choices_to={"is_active": True},
+        on_delete=models.PROTECT,
+    )
+    comment = models.TextField(max_length=250, verbose_name="comment")
+    item = models.ForeignKey(
+        Inventory,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )

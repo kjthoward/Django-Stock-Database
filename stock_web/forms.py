@@ -4,8 +4,9 @@ from django import forms
 from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
+from decimal import Decimal
 from bootstrap_daterangepicker import widgets, fields
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams
+from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams, Comments
 from django.contrib.auth.forms import PasswordChangeForm
 
 
@@ -127,6 +128,10 @@ class NewInvForm(forms.ModelForm):
 
 
 class NewProbeForm(forms.ModelForm):
+    vol_rec = forms.DecimalField(
+        max_digits=7, decimal_places=2, min_value=0, label="Volume Received (µl)"
+    )
+
     class Meta:
         model = Inventory
         fields = (
@@ -182,17 +187,27 @@ class NewProbeForm(forms.ModelForm):
 
 
 class UseItemForm(forms.ModelForm):
-    vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
+    vol_used = forms.DecimalField(
+        max_digits=7, decimal_places=2, label=u"Volume Used (µl)"
+    )
     date_used = forms.DateField(widget=DateInput(), label=u"Date Used")
+    reason = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.Textarea(attrs={"style": "height:4em;"}),
+        label=u"Reason",
+    )
 
     class Meta:
         model = Inventory
-        fields = ("current_vol", "date_op", "last_usage")
+        fields = ("current_vol", "date_op", "last_usage", "reason")
         widgets = {
             "current_vol": forms.HiddenInput,
             "date_op": forms.HiddenInput,
             "last_usage": forms.HiddenInput,
         }
+
+    field_order = ["vol_used", "date_used", "reason"]
 
     def clean(self):
         super(UseItemForm, self).clean()
@@ -218,6 +233,17 @@ class UseItemForm(forms.ModelForm):
                         ),
                     )
                 ]
+        if self.cleaned_data["vol_used"] < 0 and self.cleaned_data["reason"]=="":
+            errors += [
+                (
+                    "reason",
+                    forms.ValidationError(
+                        "If a negative value is entered a reason must be given"
+                    ),
+                )
+            ]
+        elif self.cleaned_data["vol_used"] == 0:
+            errors += [("vol_used", forms.ValidationError("Volume used cannot be 0"))]
         if errors != []:
             for error in errors:
                 self.add_error(error[0], error[1])
@@ -304,6 +330,14 @@ class FinishItemForm(forms.ModelForm):
             self.fields["fin_text"].required = True
 
 
+class AddCommentForm(forms.ModelForm):
+    class Meta:
+        model = Comments
+        fields = ("comment",)
+        # widgets = {"date_made": forms.HiddenInput}
+        labels = {"comment": "Comment"}
+
+
 class NewSupForm(forms.ModelForm):
     class Meta:
         model = Suppliers
@@ -384,7 +418,9 @@ class NewReagentForm(forms.ModelForm):
 
 
 class NewRecipeForm(forms.ModelForm):
-    number = forms.IntegerField(min_value=0, label=u"Minimum Stock Level")
+    min_count = forms.DecimalField(
+        max_digits=7, decimal_places=2, min_value=0, label=u"Minimum Stock Level"
+    )
     team_def = forms.ModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         label=u"Default Team",
@@ -723,12 +759,15 @@ class UnValForm(forms.Form):
 
 
 class ChangeUseForm(forms.Form):
-    vol_used = forms.IntegerField(label=u"New Volume Used (µl)")
+    vol_used = forms.DecimalField(
+        max_digits=7, decimal_places=2, label=u"New Volume Used (µl)"
+    )
     sure = forms.BooleanField(
         label="Tick this box and click save to proceed with the action"
     )
-    current_vol = forms.IntegerField(required=False, widget=forms.HiddenInput())
-    last_usage = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    reason = forms.CharField(label=u"Reason for change", required=True, max_length=100)
+    current_vol = forms.DecimalField(required=False, widget=forms.HiddenInput())
+    last_usage = forms.DecimalField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
         super(ChangeUseForm, self).clean()
@@ -743,7 +782,7 @@ class ChangeUseForm(forms.Form):
                     forms.ValidationError("Volume Used Exceeds Current Volume in Tube"),
                 )
             ]
-        if self.cleaned_data["vol_used"] == int(self.data["last_usage"]):
+        if self.cleaned_data["vol_used"] == Decimal(self.data["last_usage"]):
             errors += [
                 ("vol_used", forms.ValidationError("New volume used is the same."))
             ]

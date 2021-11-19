@@ -20,7 +20,7 @@
                 </td>
                 {% endfor %}
                 <td><input type="checkbox" name="requests" value="{{ request_id }}" {{ checked }} /></td>
-				{% if vol %}<td><input type="number" name="volume"/></td>{% endif %}
+				{% if vol %}<td><input type="number" name="volume" step="0.01" min="0"/></td>{% endif %}
         <!-- hidden text box for items that don't need an input volume, given 'a' value so can be ignored later -->
         {% if not vol %}<td><input type="hidden" name="volume" value="a"/></td>{% endif %}
 				<td></td>

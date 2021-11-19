@@ -16,7 +16,10 @@ import datetime
 import math
 import random
 import string
+import textwrap
+from decimal import Decimal
 from .prime import PRIME
+from .cyto import ADD_CYTO
 from .email import send, EMAIL
 from .pdf_report import report_gen
 from .models import (
@@ -32,6 +35,7 @@ from .models import (
     VolUsage,
     Emails,
     EmailGroup,
+    Comments,
 )
 from .forms import (
     LoginForm,
@@ -71,6 +75,7 @@ from .forms import (
     ChangeExpForm,
     ChangeRecForm,
     ChangeFinForm,
+    AddCommentForm,
 )
 
 LOGINURL = settings.LOGIN_URL
@@ -125,6 +130,15 @@ def prime(httprequest):
         PRIME()
         messages.success(httprequest, "Database Primed")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
+
+
+def add_cyto(httprequest):
+    suppliers, reagents, inventory, recipes = ADD_CYTO()
+    messages.success(
+        httprequest,
+        f"Cyto Reagents ({reagents}), Suppliers ({suppliers}), Recipes {recipes} and Inventory Items ({inventory}) added",
+    )
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
 def vol_migrate(httprequest):
@@ -711,9 +725,13 @@ def listinv(httprequest):
     for item in items:
         values = [
             item.name,
-            "{}µl".format(item.count_no) if item.track_vol == True else item.count_no,
-            item.open_no,
-            "{}µl".format(item.min_count) if item.track_vol == True else item.min_count,
+            "{}µl".format(item.count_no)
+            if item.track_vol == True
+            else int(item.count_no),
+            int(item.open_no),
+            "{}µl".format(item.min_count)
+            if item.track_vol == True
+            else int(item.min_count),
         ]
         urls = [
             reverse(
@@ -1420,6 +1438,7 @@ def invreport(httprequest, team, filters, what, extension):
         else:
             form = form()
     else:
+        colours = False
         if filters != "_":
             query = dict([q.split("=") for q in filters.split(";")])
             for key, value in query.items():
@@ -1427,6 +1446,7 @@ def invreport(httprequest, team, filters, what, extension):
                     value.strip("()").replace("'", "").replace(" ", "").split(",")
                 )
         elif what == "exp":
+            colours = True
             title = "Items Expiring Soon Report - Downloaded {}".format(
                 datetime.datetime.today().date().strftime("%d-%m-%Y")
             )
@@ -1527,10 +1547,10 @@ def invreport(httprequest, team, filters, what, extension):
                         item.supplier_def.name if item.supplier_def is not None else "",
                         "{}µl".format(item.count_no)
                         if item.track_vol == True
-                        else item.count_no,
+                        else int(item.count_no),
                         "{}µl".format(item.min_count)
                         if item.track_vol == True
-                        else item.min_count,
+                        else int(item.min_count),
                     ]
                 ]
         if extension == "0":
@@ -1538,7 +1558,9 @@ def invreport(httprequest, team, filters, what, extension):
             httpresponse[
                 "Content-Disposition"
             ] = 'attachment; filename="{}.pdf"'.format(title)
-            table = report_gen(body, title, httpresponse, httprequest.user.username)
+            table = report_gen(
+                body, title, httpresponse, httprequest.user.username, colours
+            )
 
         if extension == "1":
             workbook = openpyxl.Workbook()
@@ -1608,6 +1630,15 @@ def _item_context(httprequest, item, undo):
                 sol_val = False
                 title.append(str(comp) + " - NOT VALIDATED")
             title_url.append(reverse("stock_web:item", args=[comp.id]))
+    item_comments = Comments.objects.filter(item=item).order_by("date_made")
+    if item_comments is not None:
+        for comment in item_comments:
+            title.append(
+                textwrap.fill(
+                    f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}"
+                )
+            )
+            title_url.append("")
     if item.val is None and item.sol is None:
         title.append("****ITEM NOT VALIDATED****")
         title_url.append("")
@@ -1714,6 +1745,10 @@ def _item_context(httprequest, item, undo):
         else:
             values += ["Discard Item"]
         urls += [reverse("stock_web:finishitem", args=[item.id])]
+    if undo != "undo":
+        headings += ["Action"]
+        values += ["Add Comment"]
+        urls += [reverse("stock_web:add_comment", args=[item.id])]
     body = [(zip(values, urls, urls), False)]
     if undo == "undo":
         toolbar = _toolbar(httprequest, active="Edit Data")
@@ -1763,6 +1798,15 @@ def _vol_context(httprequest, item, undo):
     if item.witness is not None:
         title.append("Witnessed By - {}".format(item.witness))
         title_url.append("")
+    item_comments = Comments.objects.filter(item=item).order_by("date_made")
+    if item_comments is not None:
+        for comment in item_comments:
+            title.append(
+                textwrap.fill(
+                    f"Comment - {comment.comment} by {comment.user.username} on {comment.date_made.strftime('%d/%m/%Y')}"
+                )
+            )
+            title_url.append("")
     if item.sol is not None:
         for comp in item.sol.list_comp():
             if comp.val_id is not None:
@@ -1867,7 +1911,10 @@ def _vol_context(httprequest, item, undo):
         else:
             values += ["Discard Item"]
         urls += [reverse("stock_web:finishitem", args=[item.id])]
-
+    if undo != "undo":
+        headings += ["Action"]
+        values += ["Add Comment"]
+        urls += [reverse("stock_web:add_comment", args=[item.id])]
     body = [(zip(values, urls, urls), stripe)]
     if undo == "undo":
         toolbar = _toolbar(httprequest, active="Edit Data")
@@ -1888,6 +1935,10 @@ def _vol_context(httprequest, item, undo):
             cyto_headings += ["Action"]
         uses = VolUsage.objects.filter(item=item.pk)
         uses = sorted(uses, key=lambda use: use.date)
+        REASON = False
+        if any([use.reason is not None for use in uses]):
+            cyto_headings.append("Reason")
+            REASON = True
         cyto_body = []
         for use in uses:
             values = [
@@ -1898,6 +1949,9 @@ def _vol_context(httprequest, item, undo):
                 use.user,
             ]
             urls = ["", "", "", "", ""]
+            if REASON == True:
+                values.append(use.reason if use.reason else "")
+                urls.append("")
             if use.sol is not None:
                 urls = [
                     reverse(
@@ -1954,6 +2008,7 @@ def useitem(httprequest, pk):
                     form.cleaned_data["vol_used"],
                     int(pk),
                     httprequest.user,
+                    form.cleaned_data["reason"],
                     form.cleaned_data["date_used"],
                 )
                 item.refresh_from_db()
@@ -1999,7 +2054,7 @@ def useitem(httprequest, pk):
                                     )
                                     print(e)
                 if int(item.current_vol) == 0:
-                    message += ["THIS TUBE IS EMPTY, PLEASE DISCARD IT!"]
+                    message += ["THIS TUBE MAY BE EMPTY, PLEASE CHECK ITS VOLUME"]
                 if form.cleaned_data["date_used"] >= item.date_exp:
                     message += ["WARNING - ITEM USED AFTER EXPIRY DATE"]
                 if message != []:
@@ -2012,7 +2067,7 @@ def useitem(httprequest, pk):
     cancelurl = reverse("stock_web:item", args=[pk])
     return render(
         httprequest,
-        "stock_web/form.html",
+        "stock_web/useitemform.html",
         {
             "header": header,
             "form": form,
@@ -2187,7 +2242,7 @@ def finishitem(httprequest, pk):
             )
         else:
             if form.is_valid():
-
+                message = []
                 Inventory.finish(form.cleaned_data, pk, httprequest.user)
                 if item.reagent.track_vol == True or item.is_op == False:
                     if item.reagent.count_no < item.reagent.min_count:
@@ -2195,16 +2250,16 @@ def finishitem(httprequest, pk):
                             make = "made"
                         else:
                             make = "ordered"
-                        messages.success(
-                            httprequest,
+                        message += [
                             "Current stock level for {0} is {1}{2}. \nMinimum quantity is {3}{2}. \nCheck if more needs to be {4}".format(
                                 item.reagent.name,
                                 item.reagent.count_no,
                                 "µl" if item.reagent.track_vol else "",
                                 item.reagent.min_count,
                                 make,
-                            ),
-                        )
+                            )
+                        ]
+
                         if EMAIL == True:
                             subject = "{} - Stock Level is below minimum level".format(
                                 item.reagent.name
@@ -2259,6 +2314,10 @@ def finishitem(httprequest, pk):
                                         to=user.email, subj=subject, text=text
                                     )
                                     print(e)
+                if item.reagent.track_vol == True and item.team.name == "CYTO":
+                    message += ["Have you updated the FISH Probe manager in StarLIMS?"]
+                if message != []:
+                    messages.success(httprequest, " \n".join(message))
                 return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
     else:
         if Inventory.objects.get(pk=int(pk)).finished == True:
@@ -2269,6 +2328,47 @@ def finishitem(httprequest, pk):
             messages.success(httprequest, "WARNING - THIS ITEM HAS NOT BEEN VALIDATED")
         form = form(instance=item, initial={"date_fin": datetime.datetime.now()})
     submiturl = reverse("stock_web:finishitem", args=[pk])
+    cancelurl = reverse("stock_web:item", args=[pk])
+    return render(
+        httprequest,
+        "stock_web/form.html",
+        {
+            "header": header,
+            "form": form,
+            "toolbar": _toolbar(httprequest),
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+        },
+    )
+
+
+@user_passes_test(is_logged_in, login_url=LOGINURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def add_comment(httprequest, pk):
+    item = Inventory.objects.get(pk=int(pk))
+    form = AddCommentForm
+    header = ["Adding comment for item: {}".format(item)]
+    if httprequest.method == "POST":
+        form = form(httprequest.POST, instance=item)
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            if form.is_valid():
+                comment = Comments.objects.create(
+                    user=httprequest.user,
+                    date_made=datetime.datetime.today(),
+                    comment=form.data["comment"],
+                    item=item,
+                )
+                messages.success(httprequest, f"Comment Added for: {item}")
+                return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:add_comment", args=[pk])
     cancelurl = reverse("stock_web:item", args=[pk])
     return render(
         httprequest,
@@ -2461,7 +2561,7 @@ def newinv(httprequest, pk):
                             form.data["num_rec"]
                         )
                     elif item.track_vol == True:
-                        quant = form.cleaned_data["reagent"].count_no + int(
+                        quant = form.cleaned_data["reagent"].count_no + Decimal(
                             form.data["vol_rec"]
                         )
                     if quant < form.cleaned_data["reagent"].min_count:
@@ -2505,6 +2605,13 @@ def newinv(httprequest, pk):
                                     form.data["vol_rec"], form.cleaned_data["reagent"]
                                 ),
                             )
+                            if (
+                                Teams.objects.get(pk=int(form.data["team"])).name
+                                == "CYTO"
+                            ):
+                                message += [
+                                    "Have you updated the FISH Probe manager in StarLIMS?"
+                                ]
                     if form.cleaned_data["date_exp"] < (
                         form.cleaned_data["date_rec"] + relativedelta(months=+6)
                     ):
@@ -2800,7 +2907,7 @@ def newreagent(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(
         httprequest,
-        "stock_web/form.html",
+        "stock_web/newreagentform.html",
         {
             "header": ["New Reagent Input"],
             "form": form,
@@ -2903,7 +3010,7 @@ def newrecipe(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(
         httprequest,
-        "stock_web/form.html",
+        "stock_web/newreagentform.html",
         {
             "header": ["New Recipe Input"],
             "form": form,
@@ -3814,47 +3921,46 @@ def undoitem(httprequest, task, pk):
                             return HttpResponseRedirect(
                                 reverse("stock_web:undoitem", args=[task, pk])
                             )
-                        with transaction.atomic():
-                            item.current_vol += use.used - int(
-                                form.cleaned_data["vol_used"]
-                            )
-                            item.reagent.count_no += use.used - int(
-                                form.cleaned_data["vol_used"]
-                            )
-                            item.reagent.save()
-                            if item.finished == True:
-                                item.finished = False
-                                item.date_fin = None
-                                item.fin_user = None
-                                item.fin_text = None
-                                if item.date_op is not None:
-                                    item.reagent.open_no = F("open_no") + 1
-                                    item.reagent.save()
-                                elif int(form.cleaned_data["vol_used"]) != 0:
-                                    item.date_op = datetime.date.today()
-                                    item.op_user = httprequest.user
-                                    item.is_op = True
-                                    item.reagent.open_no = F("open_no") + 1
-                                    item.reagent.save()
+                        item.current_vol += use.used - Decimal(
+                            form.cleaned_data["vol_used"]
+                        )
+                        item.reagent.count_no += use.used - Decimal(
+                            form.cleaned_data["vol_used"]
+                        )
+                        item.reagent.save()
+                        if item.finished == True:
+                            item.finished = False
+                            item.date_fin = None
+                            item.fin_user = None
+                            item.fin_text = None
+                            if item.date_op is not None:
+                                item.reagent.open_no = F("open_no") + 1
+                                item.reagent.save()
+                            elif int(form.cleaned_data["vol_used"]) != 0:
+                                item.date_op = datetime.date.today()
+                                item.op_user = httprequest.user
+                                item.is_op = True
+                                item.reagent.open_no = F("open_no") + 1
+                                item.reagent.save()
 
-                            if int(form.cleaned_data["vol_used"]) == 0:
-                                if len(uses) > 1:
-                                    item.last_usage = uses[1]
-                                else:
-                                    item.last_usage = None
-                                item.save()
-                                use.delete()
+                        if Decimal(form.cleaned_data["vol_used"]) == 0.00:
+                            if len(uses) > 1:
+                                item.last_usage = uses[1]
                             else:
-                                use.end = use.start - int(form.cleaned_data["vol_used"])
-                                use.used = int(form.cleaned_data["vol_used"])
-                                use.user = httprequest.user
-                                use.save()
-                                item.save()
-                            return HttpResponseRedirect(
-                                reverse("stock_web:editinv", args=[pk])
-                            )
+                                item.last_usage = None
+                            item.save()
+                            use.delete()
+                        else:
+                            use.end = use.start - Decimal(form.cleaned_data["vol_used"])
+                            use.used = Decimal(form.cleaned_data["vol_used"])
+                            use.user = httprequest.user
+                            use.reason = form.cleaned_data["reason"]
+                            use.save()
+                            item.save()
+                        return HttpResponseRedirect(
+                            reverse("stock_web:editinv", args=[pk])
+                        )
         else:
-
             form = form(
                 initial={
                     "vol_used": item.last_usage.used,
