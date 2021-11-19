@@ -825,7 +825,6 @@ class VolUsage(models.Model):
         reason,
         date=datetime.datetime.now().date(),
     ):
-        print(reason)
         invitem = Inventory.objects.get(pk=int(item))
         use = VolUsage.objects.create(
             item=invitem,
