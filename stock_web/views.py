@@ -19,7 +19,6 @@ import string
 import textwrap
 from decimal import Decimal
 from .prime import PRIME
-from .cyto import ADD_CYTO
 from .email import send, EMAIL
 from .pdf_report import report_gen
 from .models import (
@@ -132,15 +131,6 @@ def prime(httprequest):
         return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
-def add_cyto(httprequest):
-    suppliers, reagents, inventory, recipes = ADD_CYTO()
-    messages.success(
-        httprequest,
-        f"Cyto Reagents ({reagents}), Suppliers ({suppliers}), Recipes {recipes} and Inventory Items ({inventory}) added",
-    )
-    return HttpResponseRedirect(reverse("stock_web:listinv"))
-
-
 def vol_migrate(httprequest):
     open_items = Inventory.objects.filter(is_op=True, finished=False)
     un_open_items = Inventory.objects.filter(is_op=False, finished=False)
@@ -162,12 +152,6 @@ def vol_migrate(httprequest):
             reagent.open_no = num_open.count()
             reagent.count_no = vol
             reagent.save()
-    return HttpResponseRedirect(reverse("stock_web:listinv"))
-
-
-def user_groups(httprequest):
-    for user in User.objects.all():
-        EmailGroup.objects.create(user=user, team=None)
     return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
