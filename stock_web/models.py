@@ -36,6 +36,7 @@ class ForceReset(models.Model):
 def create_profile(sender, instance, created, **kwargs):
     if created:
         ForceReset.objects.create(user=instance)
+        EmailGroup.objects.create(user=instance, team=None)
     if instance.email != "":
         USER = ForceReset.objects.get(user=instance)
         if USER.emailed == False:
