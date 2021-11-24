@@ -1035,7 +1035,6 @@ def inventory(httprequest, search, what, sortby, page):
             ],
         ),
     ]
-    headings = zip(headings, headurls)
     body = []
 
     if "date_op" in sortby:
@@ -1053,6 +1052,7 @@ def inventory(httprequest, search, what, sortby, page):
             )
 
     items_trunc = items[(page - 1) * 200 : page * 200]
+    max_comment = max([len(Comments.objects.filter(item=x)) for x in items_trunc])
     for item in items_trunc:
         values = [
             item.reagent.name,
@@ -1080,6 +1080,17 @@ def inventory(httprequest, search, what, sortby, page):
             "",
             "",
         ]
+        item_comments = Comments.objects.filter(item=item).order_by("date_made")
+        added = 0
+        if item_comments is not None:
+            for comment in item_comments:
+                values.append(textwrap.fill(comment.comment))
+                urls.append("")
+                added += 1
+        while added < max_comment:
+            values.append("")
+            urls.append("")
+            added += 1
         body.append(
             (
                 zip(values, urls),
@@ -1087,6 +1098,11 @@ def inventory(httprequest, search, what, sortby, page):
                 True if item.days_remaining() < 0 else False,
             )
         )
+    if max_comment != 0:
+        for _ in range(max_comment):
+            headings.append("Comment")
+            headurls.append("")
+    headings = zip(headings, headurls)
     context = {
         "header": title,
         "headings": headings,
@@ -1112,28 +1128,36 @@ def inventory(httprequest, search, what, sortby, page):
 
             worksheet.append([heading[0] for heading in headings])
             for item in items:
-                worksheet.append(
-                    [
-                        item.reagent.name,
-                        item.reagent.cat_no,
-                        item.supplier.name,
-                        item.internal.batch_number,
-                        item.date_rec.strftime("%d/%m/%Y"),
-                        item.date_exp.strftime("%d/%m/%Y"),
-                        item.date_op.strftime("%d/%m/%Y")
-                        if item.date_op is not None
-                        else "",
-                        item.val.val_date.strftime("%d/%m/%Y")
-                        if item.val_id is not None
-                        else "",
-                        item.date_fin.strftime("%d/%m/%Y")
-                        if item.date_fin is not None
-                        else "",
-                        item.days_remaining(),
-                        item.team.name if item.team is not None else "",
-                    ]
-                )
+                values = [
+                    item.reagent.name,
+                    item.reagent.cat_no,
+                    item.supplier.name,
+                    item.internal.batch_number,
+                    item.date_rec.strftime("%d/%m/%Y"),
+                    item.date_exp.strftime("%d/%m/%Y"),
+                    item.date_op.strftime("%d/%m/%Y")
+                    if item.date_op is not None
+                    else "",
+                    item.val.val_date.strftime("%d/%m/%Y")
+                    if item.val_id is not None
+                    else "",
+                    item.date_fin.strftime("%d/%m/%Y")
+                    if item.date_fin is not None
+                    else "",
+                    item.days_remaining(),
+                    item.team.name if item.team is not None else "",
+                ]
 
+                item_comments = Comments.objects.filter(item=item).order_by("date_made")
+                added = 0
+                if item_comments is not None:
+                    for comment in item_comments:
+                        values.append(comment.comment)
+                        added += 1
+                while added < max_comment:
+                    values.append("")
+                    added += 1
+                worksheet.append(values)
             httpresponse = HttpResponse(
                 content=openpyxl.writer.excel.save_virtual_workbook(workbook),
                 content_type="application/ms-excel",
@@ -1150,27 +1174,36 @@ def inventory(httprequest, search, what, sortby, page):
             )
             contents = [[heading[0] for heading in headings]]
             for item in items:
-                contents.append(
-                    [
-                        item.reagent.name,
-                        item.reagent.cat_no,
-                        item.supplier.name,
-                        item.internal.batch_number,
-                        item.date_rec.strftime("%d/%m/%Y"),
-                        item.date_exp.strftime("%d/%m/%Y"),
-                        item.date_op.strftime("%d/%m/%Y")
-                        if item.date_op is not None
-                        else "",
-                        item.val.val_date.strftime("%d/%m/%Y")
-                        if item.val_id is not None
-                        else "",
-                        item.date_fin.strftime("%d/%m/%Y")
-                        if item.date_fin is not None
-                        else "",
-                        item.days_remaining(),
-                        item.team.name if item.team is not None else "",
-                    ]
-                )
+                values = [
+                    item.reagent.name,
+                    item.reagent.cat_no,
+                    item.supplier.name,
+                    item.internal.batch_number,
+                    item.date_rec.strftime("%d/%m/%Y"),
+                    item.date_exp.strftime("%d/%m/%Y"),
+                    item.date_op.strftime("%d/%m/%Y")
+                    if item.date_op is not None
+                    else "",
+                    item.val.val_date.strftime("%d/%m/%Y")
+                    if item.val_id is not None
+                    else "",
+                    item.date_fin.strftime("%d/%m/%Y")
+                    if item.date_fin is not None
+                    else "",
+                    item.days_remaining(),
+                    item.team.name if item.team is not None else "",
+                ]
+
+                item_comments = Comments.objects.filter(item=item).order_by("date_made")
+                added = 0
+                if item_comments is not None:
+                    for comment in item_comments:
+                        values.append(comment.comment.strip())
+                        added += 1
+                while added < max_comment:
+                    values.append("")
+                    added += 1
+                contents.append(values)
             httpresponse = HttpResponse(content_type="application/pdf")
             httpresponse[
                 "Content-Disposition"
@@ -2805,6 +2838,7 @@ def createnewsol(httprequest, pk):
         potentials = recipe.liststock()
         potentials.sort(key=attrgetter("is_op"), reverse=True)
         comp_vol = any(p.current_vol is not None for p in potentials)
+        max_comment = max([len(Comments.objects.filter(item=x)) for x in potentials])
         if comp_vol == False:
             vol = False
             headings = [
@@ -2851,10 +2885,22 @@ def createnewsol(httprequest, pk):
                     if p.current_vol is not None
                     else "N/A",
                 )
+            item_comments = Comments.objects.filter(item=p).order_by("date_made")
+            added = 0
+            if item_comments is not None:
+                for comment in item_comments:
+                    temp.append(textwrap.fill(comment.comment))
+                    added += 1
+            while added < max_comment:
+                temp.append("")
+                added += 1
             values.append(temp)
             inv_ids.append(p.id)
             checked.append("")
             VOL.append(p.current_vol is not None)
+        if max_comment != 0:
+            for _ in range(max_comment):
+                headings.insert(8,"Comment")
         context = {
             "headings": headings,
             "body": zip(values, inv_ids, checked, VOL),
