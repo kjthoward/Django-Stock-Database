@@ -1052,7 +1052,10 @@ def inventory(httprequest, search, what, sortby, page):
             )
 
     items_trunc = items[(page - 1) * 200 : page * 200]
-    max_comment = max([len(Comments.objects.filter(item=x)) for x in items_trunc])
+    try:
+        max_comment = max([len(Comments.objects.filter(item=x)) for x in items_trunc])
+    except:
+        max_comment = 0
     for item in items_trunc:
         values = [
             item.reagent.name,
@@ -2838,7 +2841,12 @@ def createnewsol(httprequest, pk):
         potentials = recipe.liststock()
         potentials.sort(key=attrgetter("is_op"), reverse=True)
         comp_vol = any(p.current_vol is not None for p in potentials)
-        max_comment = max([len(Comments.objects.filter(item=x)) for x in potentials])
+        try:
+            max_comment = max(
+                [len(Comments.objects.filter(item=x)) for x in potentials]
+            )
+        except:
+            max_comment = 0
         if comp_vol == False:
             vol = False
             headings = [
@@ -2900,7 +2908,7 @@ def createnewsol(httprequest, pk):
             VOL.append(p.current_vol is not None)
         if max_comment != 0:
             for _ in range(max_comment):
-                headings.insert(8,"Comment")
+                headings.insert(8, "Comment")
         context = {
             "headings": headings,
             "body": zip(values, inv_ids, checked, VOL),
