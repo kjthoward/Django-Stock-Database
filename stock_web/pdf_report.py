@@ -84,7 +84,7 @@ def fake_for_pages(body, title, httpresponse, user):
     return doc.page
 
 
-def report_gen(body, title, httpresponse, user, shade):
+def report_gen(body, title, httpresponse, user, shade=False):
     styles = getSampleStyleSheet()
     styleNormal = styles["Normal"]
     styleHeading = styles["Heading1"]
