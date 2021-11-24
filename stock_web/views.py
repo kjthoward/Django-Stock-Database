@@ -19,6 +19,7 @@ import string
 import textwrap
 from decimal import Decimal
 from .prime import PRIME
+from .cyto import ADD_CYTO
 from .email import send, EMAIL
 from .pdf_report import report_gen
 from .models import (
@@ -101,7 +102,14 @@ def is_admin(user):
 def is_super_admin(user):
     return user.is_staff
 
-
+def add_cyto(httprequest):
+    solutions = ADD_CYTO()
+    messages.success(
+        httprequest,
+        f"Cyto Solutions ({solutions})",
+    )
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
+    
 # used in user_passes_test decorator to check if the account has a forced password reset active (decorate used as
 # even though after logging in with a reset password it prompts you to change, could go to any link manually to skip
 # decorator means you will always be brought back to change password
