@@ -140,20 +140,6 @@ def prime(httprequest):
         return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
-def fix_usages(httprequest):
-    for item in Inventory.objects.filter(team__name="CYTO"):
-        if item.last_usage is not None:
-            usages = VolUsage.objects.filter(item=item)
-            highest = usages.latest("date")
-            if len(usages.filter(date=highest.date)) > 1:
-                highest = usages.filter(date=highest.date).latest("date")
-            if item.last_usage != highest:
-                item.last_usage = highest
-                item.save()
-    messages.success(httprequest, "Volume Usages Fixed")
-    return HttpResponseRedirect(reverse("stock_web:listinv"))
-
-
 def vol_migrate(httprequest):
     open_items = Inventory.objects.filter(is_op=True, finished=False)
     un_open_items = Inventory.objects.filter(is_op=False, finished=False)
