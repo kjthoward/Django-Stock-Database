@@ -102,14 +102,15 @@ def is_admin(user):
 def is_super_admin(user):
     return user.is_staff
 
-def add_cyto(httprequest):
-    solutions = ADD_CYTO()
-    messages.success(
-        httprequest,
-        f"Cyto Solutions ({solutions})",
-    )
-    return HttpResponseRedirect(reverse("stock_web:listinv"))
-    
+
+# def add_cyto(httprequest):
+#     solutions = ADD_CYTO()
+#     messages.success(
+#         httprequest,
+#         f"Cyto Solutions ({solutions})",
+#     )
+#     return HttpResponseRedirect(reverse("stock_web:listinv"))
+
 # used in user_passes_test decorator to check if the account has a forced password reset active (decorate used as
 # even though after logging in with a reset password it prompts you to change, could go to any link manually to skip
 # decorator means you will always be brought back to change password
@@ -137,6 +138,20 @@ def prime(httprequest):
         PRIME()
         messages.success(httprequest, "Database Primed")
         return HttpResponseRedirect(reverse("stock_web:listinv"))
+
+
+def fix_usages(httprequest):
+    for item in Inventory.objects.filter(team__name="CYTO"):
+        if item.last_usage is not None:
+            usages = VolUsage.objects.filter(item=item)
+            highest = usages.latest("date")
+            if len(usages.filter(date=highest.date)) > 1:
+                highest = usages.filter(date=highest.date).latest("date")
+            if item.last_usage != highest:
+                item.last_usage = highest
+                item.save()
+    messages.success(httprequest, "Volume Usages Fixed")
+    return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
 def vol_migrate(httprequest):
