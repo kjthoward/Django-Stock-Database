@@ -2770,8 +2770,8 @@ def createnewsol(httprequest, pk):
                 sum_vol = 0
                 for item, vol in vols_used.items():
                     invitem = Inventory.objects.get(pk=int(item))
-                    sum_vol += int(vol)
-                    if int(invitem.current_vol) - int(vol) < 0:
+                    sum_vol += Decimal(vol)
+                    if Decimal(invitem.current_vol) - Decimal(vol) < 0:
                         errors += [
                             "Reagent {} only has {}µl in the tube. Cannot take {}µl".format(
                                 invitem.reagent.name, invitem.current_vol, vol
@@ -2783,7 +2783,7 @@ def createnewsol(httprequest, pk):
                         reverse("stock_web:createnewsol", args=[pk])
                     )
                 if recipe.track_vol == True:
-                    if int(vol_made) < sum_vol:
+                    if Decimal(vol_made) < sum_vol:
                         messages.success(
                             httprequest,
                             "Total Volume of Reagents Used is {}µl. Total Volume made must be at least this volume".format(
