@@ -1978,15 +1978,15 @@ def _vol_context(httprequest, item, undo):
                 use.user,
             ]
             urls = ["", "", "", "", ""]
-            if REASON == True:
-                values.append(use.reason if use.reason else "")
-                urls.append("")
             if use.sol is not None:
                 urls = [
                     reverse(
                         "stock_web:item", args=[Inventory.objects.get(sol=use.sol).pk]
                     )
                 ] * 5
+            if REASON == True:
+                values.append(use.reason if use.reason else "")
+                urls.append("")
             if undo == "undo":
                 if use == item.last_usage:
                     if item.finished == True:
