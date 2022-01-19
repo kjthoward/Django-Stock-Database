@@ -706,8 +706,6 @@ class Inventory(models.Model):
             invitem.op_user = user
             invitem.is_op = True
             invitem.save()
-            
-                
 
     @classmethod
     def take_out(
@@ -848,6 +846,11 @@ class VolUsage(models.Model):
 class Solutions(models.Model):
     class Meta:
         verbose_name_plural = "Solutions"
+
+    def __str__(self):
+        return str(
+            f"{self.recipe} - {Inventory.objects.get(sol=self.id).internal.batch_number}"
+        )
 
     recipe = models.ForeignKey(
         Recipe, on_delete=models.PROTECT, verbose_name="Recipe Name"
@@ -1039,6 +1042,7 @@ class EmailGroup(models.Model):
 
     user = models.OneToOneField("auth.User", unique=True, on_delete=models.PROTECT)
     team = models.ForeignKey(Teams, on_delete=models.PROTECT, null=True, blank=True)
+
 
 class Comments(models.Model):
     class Meta:
