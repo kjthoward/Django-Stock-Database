@@ -666,7 +666,7 @@ class Inventory(models.Model):
             for _ in range(amount):
                 inventory = cls(**values)
                 try:
-                    internal_number = Internal.create(Inventory.objects.last().id)
+                    internal_number = Internal.create(Internal.objects.last().id)
                 except:
                     internal_number = Internal.create(0)
                 inventory.internal = internal_number
