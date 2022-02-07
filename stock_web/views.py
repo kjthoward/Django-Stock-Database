@@ -17,6 +17,7 @@ import math
 import random
 import string
 import textwrap
+import logging
 from decimal import Decimal
 from .prime import PRIME
 from .cyto import ADD_CYTO
@@ -81,7 +82,7 @@ from .forms import (
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
 UNAUTHURL = "/stock/unauth/"
-
+logger = logging.getLogger(__file__)
 CONDITIONS = {
     "GD": "Good",
     "DU": "Damaged - Usable",
