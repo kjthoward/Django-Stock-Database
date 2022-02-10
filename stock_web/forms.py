@@ -188,14 +188,14 @@ class NewProbeForm(forms.ModelForm):
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.DecimalField(
-        max_digits=7, decimal_places=2, label=u"Volume Used (µl)"
+        max_digits=7, decimal_places=2, label="Volume Used (µl)"
     )
-    date_used = forms.DateField(widget=DateInput(), label=u"Date Used")
+    date_used = forms.DateField(widget=DateInput(), label="Date Used")
     reason = forms.CharField(
         max_length=100,
         required=False,
         widget=forms.Textarea(attrs={"style": "height:4em;"}),
-        label=u"Reason",
+        label="Reason",
     )
 
     class Meta:
@@ -233,7 +233,7 @@ class UseItemForm(forms.ModelForm):
                         ),
                     )
                 ]
-        if self.cleaned_data["vol_used"] < 0 and self.cleaned_data["reason"]=="":
+        if self.cleaned_data["vol_used"] < 0 and self.cleaned_data["reason"] == "":
             errors += [
                 (
                     "reason",
@@ -419,11 +419,11 @@ class NewReagentForm(forms.ModelForm):
 
 class NewRecipeForm(forms.ModelForm):
     min_count = forms.DecimalField(
-        max_digits=7, decimal_places=2, min_value=0, label=u"Minimum Stock Level"
+        max_digits=7, decimal_places=2, min_value=0, label="Minimum Stock Level"
     )
     team_def = forms.ModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
-        label=u"Default Team",
+        label="Default Team",
         widget=Select2Widget,
         required=True,
     )
@@ -453,6 +453,9 @@ class NewRecipeForm(forms.ModelForm):
         self.fields["team_def"].queryset = Teams.objects.exclude(
             is_active=False
         ).exclude(name="ALL")
+        for field in self.fields:
+            if "comp" in field:
+                self.fields[field].queryset = Reagents.objects.exclude(is_active=False)
 
     def clean(self):
         super(NewRecipeForm, self).clean()
@@ -498,7 +501,7 @@ class NewRecipeForm(forms.ModelForm):
 class SearchForm(forms.Form):
     rec_range = fields.DateRangeField(
         required=False,
-        label=u"Received Between",
+        label="Received Between",
         input_formats=["%Y-%m-%d"],
         widget=widgets.DateRangeWidget(
             format="%Y-%m-%d", attrs={"style": "width:15em"}
@@ -506,17 +509,17 @@ class SearchForm(forms.Form):
     )
     open_range = fields.DateRangeField(
         required=False,
-        label=u"Opened Between",
+        label="Opened Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     val_range = fields.DateRangeField(
         required=False,
-        label=u"Validated Between",
+        label="Validated Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     fin_range = fields.DateRangeField(
         required=False,
-        label=u"Finished Between",
+        label="Finished Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     reagent = forms.CharField(label="Reagent Name", max_length=30, required=False)
@@ -525,7 +528,7 @@ class SearchForm(forms.Form):
     int_id = forms.CharField(label="Stock Number", max_length=4, required=False)
     team = forms.ModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
-        label=u"Team",
+        label="Team",
         widget=Select2Widget,
         required=False,
     )
@@ -550,7 +553,7 @@ class SearchForm(forms.Form):
 class ValeDatesForm(forms.Form):
     val_range = fields.DateRangeField(
         required=False,
-        label=u"Validated Between",
+        label="Validated Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
 
@@ -568,7 +571,7 @@ class ChangeDefSupForm(forms.Form):
         .exclude(name="Internal")
         .exclude(is_active=False)
         .order_by("name"),
-        label=u"Select New Supplier",
+        label="Select New Supplier",
         widget=Select2Widget,
         required=False,
     )
@@ -605,7 +608,7 @@ class ChangeDefTeamForm(forms.Form):
         .exclude(is_active=False)
         .exclude(name="ALL")
         .order_by("name"),
-        label=u"Select New Team",
+        label="Select New Team",
         widget=Select2Widget,
     )
     old = forms.ModelChoiceField(
@@ -667,7 +670,7 @@ class EditSupForm(forms.Form):
     name = ShowActiveModelChoiceField(
         queryset=Suppliers.objects.all().exclude(name="Internal").order_by("name"),
         widget=Select2Widget,
-        label=u"Supplier",
+        label="Supplier",
     )
 
     def clean(self):
@@ -692,7 +695,7 @@ class EditTeamForm(forms.Form):
     name = ShowActiveModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
         widget=Select2Widget,
-        label=u"Team",
+        label="Team",
     )
 
     def clean(self):
@@ -717,7 +720,7 @@ class EditReagForm(forms.Form):
     name = ShowActiveModelChoiceField(
         queryset=Reagents.objects.all().order_by("name"),
         widget=Select2Widget,
-        label=u"Reagent",
+        label="Reagent",
     )
 
 
@@ -760,12 +763,12 @@ class UnValForm(forms.Form):
 
 class ChangeUseForm(forms.Form):
     vol_used = forms.DecimalField(
-        max_digits=7, decimal_places=2, label=u"New Volume Used (µl)"
+        max_digits=7, decimal_places=2, label="New Volume Used (µl)"
     )
     sure = forms.BooleanField(
         label="Tick this box and click save to proceed with the action"
     )
-    reason = forms.CharField(label=u"Reason for change", required=True, max_length=100)
+    reason = forms.CharField(label="Reason for change", required=True, max_length=100)
     current_vol = forms.DecimalField(required=False, widget=forms.HiddenInput())
     last_usage = forms.DecimalField(required=False, widget=forms.HiddenInput())
 
@@ -824,7 +827,7 @@ class StockReportForm(forms.Form):
     )
     rec_range = fields.DateRangeField(
         required=False,
-        label=u"Received Between",
+        label="Received Between",
         input_formats=["%Y-%m-%d"],
         widget=widgets.DateRangeWidget(
             format="%Y-%m-%d", attrs={"style": "width:15em"}
@@ -832,17 +835,17 @@ class StockReportForm(forms.Form):
     )
     open_range = fields.DateRangeField(
         required=False,
-        label=u"Opened Between",
+        label="Opened Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     val_range = fields.DateRangeField(
         required=False,
-        label=u"Validated Between",
+        label="Validated Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     fin_range = fields.DateRangeField(
         required=False,
-        label=u"Finished Between",
+        label="Finished Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     in_stock = forms.ChoiceField(
@@ -860,7 +863,7 @@ class InvReportForm(forms.Form):
     )
     rec_range = fields.DateRangeField(
         required=False,
-        label=u"Received Between",
+        label="Received Between",
         input_formats=["%Y-%m-%d"],
         widget=widgets.DateRangeWidget(
             format="%Y-%m-%d", attrs={"style": "width:15em"}
@@ -868,22 +871,22 @@ class InvReportForm(forms.Form):
     )
     open_range = fields.DateRangeField(
         required=False,
-        label=u"Opened Between",
+        label="Opened Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     val_range = fields.DateRangeField(
         required=False,
-        label=u"Validated Between",
+        label="Validated Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     fin_range = fields.DateRangeField(
         required=False,
-        label=u"Finished Between",
+        label="Finished Between",
         widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
     )
     team = forms.ModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
-        label=u"Team",
+        label="Team",
         widget=Select2Widget,
         required=False,
     )
@@ -938,7 +941,7 @@ class PasswordChangeForm(PasswordChangeForm):
 
 
 class ChangeExpForm(forms.Form):
-    new_exp_date = forms.DateField(widget=DateInput(), label=u"Expiry Date")
+    new_exp_date = forms.DateField(widget=DateInput(), label="Expiry Date")
     date_rec = forms.DateField(widget=forms.HiddenInput(), required=False)
 
     def clean(self):
@@ -951,7 +954,7 @@ class ChangeExpForm(forms.Form):
 
 
 class ChangeRecForm(forms.Form):
-    new_date = forms.DateField(widget=DateInput(), label=u"Date Received")
+    new_date = forms.DateField(widget=DateInput(), label="Date Received")
     open = forms.BooleanField(widget=forms.HiddenInput(), required=False)
     date_op = forms.DateField(widget=forms.HiddenInput(), required=False)
     date_exp = forms.DateField(widget=forms.HiddenInput(), required=False)
@@ -984,7 +987,7 @@ class ChangeRecForm(forms.Form):
 
 
 class ChangeFinForm(forms.Form):
-    new_date = forms.DateField(widget=DateInput(), label=u"Date Finished")
+    new_date = forms.DateField(widget=DateInput(), label="Date Finished")
     date_rec = forms.DateField(widget=forms.HiddenInput(), required=False)
     open = forms.BooleanField(widget=forms.HiddenInput(), required=False)
     date_op = forms.DateField(widget=forms.HiddenInput(), required=False)
@@ -1012,11 +1015,11 @@ class WitnessForm(forms.Form):
         .exclude(username="Admin")
         .order_by("username"),
         widget=Select2Widget,
-        label=u"Select Witness",
+        label="Select Witness",
     )
     team = forms.ModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
-        label=u"Team",
+        label="Team",
         widget=Select2Widget,
         required=True,
     )
@@ -1025,7 +1028,7 @@ class WitnessForm(forms.Form):
 class TeamOnlyForm(forms.Form):
     team = forms.ModelChoiceField(
         queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
-        label=u"Team",
+        label="Team",
         widget=Select2Widget,
         required=True,
     )
