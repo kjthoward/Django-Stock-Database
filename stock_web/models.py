@@ -346,6 +346,14 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
+    added_by = models.ForeignKey(
+        User,
+        limit_choices_to={"is_active": True},
+        on_delete=models.PROTECT,
+        verbose_name="Added By",
+        blank=True,
+        null=True,
+    )
     name = models.CharField(max_length=100, unique=True)
     comp1 = models.ForeignKey(
         Reagents,
@@ -440,14 +448,16 @@ class Recipe(models.Model):
     witness_req = models.BooleanField(default=False, verbose_name="Witness Required?")
 
     @classmethod
-    def create(cls, values):
+    def create(cls, values, user):
         with transaction.atomic():
             minstock = values["min_count"]
             del values["min_count"]
             def_team = values["team_def"]
             del values["team_def"]
             recipe = cls(**values)
+            recipe.added_by = user
             recipe.save()
+            del values["added_by"]
             try:
                 values = {
                     "name": values["name"],

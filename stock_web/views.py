@@ -2450,6 +2450,7 @@ def recipes(httprequest):
         "Shelf Life (Months)",
         "Active",
         "Witness Required?",
+        "Added By",
     ]
     items = Recipe.objects.all().order_by(Lower("name"))
     body = []
@@ -2461,9 +2462,11 @@ def recipes(httprequest):
             item.shelf_life,
             "YES" if item.reagent.is_active else "NO",
             "YES" if item.witness_req else "NO",
+            item.added_by.username if item.added_by is not None else "",
         ]
         urls = [
             reverse("stock_web:recipe", args=[item.id]),
+            "",
             "",
             "",
             "",
@@ -3049,7 +3052,7 @@ def newrecipe(httprequest):
             form = form(httprequest.POST)
             if form.is_valid():
 
-                Recipe.create(form.cleaned_data)
+                Recipe.create(form.cleaned_data,httprequest.user)
                 messages.info(httprequest, "{} Added".format(form.cleaned_data["name"]))
                 return HttpResponseRedirect(reverse("stock_web:newrecipe"))
     else:

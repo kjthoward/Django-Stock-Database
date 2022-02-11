@@ -433,6 +433,7 @@ class NewRecipeForm(forms.ModelForm):
         fields = "__all__"
         widgets = {
             "reagent": forms.HiddenInput,
+            "added_by": forms.HiddenInput,
             "comp1": Select2Widget,
             "comp2": Select2Widget,
             "comp3": Select2Widget,
