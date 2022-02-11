@@ -104,6 +104,7 @@ class Recipe_Admin(admin.ModelAdmin):
         "track_vol",
         "list_comp_recipe",
         "witness_req",
+        "added_by"
     )
     search_fields = (
         "name",
@@ -118,6 +119,7 @@ class Recipe_Admin(admin.ModelAdmin):
         "comp8__name",
         "comp9__name",
         "comp10__name",
+        "added_by__username",
     )
 
 
