@@ -73,6 +73,7 @@ from .forms import (
     WitnessForm,
     TeamOnlyForm,
     ValeDatesForm,
+    CompSearchForm,
     ChangeExpForm,
     ChangeRecForm,
     ChangeFinForm,
@@ -271,6 +272,7 @@ def _toolbar(httprequest, active=""):
         search_dropdown = [
             {"name": "Search", "url": reverse("stock_web:search")},
             {"name": "Validation Dates", "url": reverse("stock_web:valdates")},
+            {"name": "Component Search", "url": reverse("stock_web:compsearch")},
         ]
         toolbar[1][0].append(
             {"name": "Search", "glyphicon": "search", "dropdown": search_dropdown}
@@ -700,6 +702,63 @@ def valdates(httprequest):
         )
 
 
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def compsearch(httprequest):
+    if httprequest.method == "POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
+            return HttpResponseRedirect(reverse("stock_web:listinv"))
+        else:
+            form = CompSearchForm(httprequest.POST)
+            if form.is_valid():
+                queries = []
+                for key, query in [
+                    ("int_id", "comp_search"),
+                    ("val_status", "val_id__isnull"),
+                    ("rec_range", "date_rec__range"),
+                    ("open_range", "date_op__range"),
+                    ("val_range", "val_id__val_date__range"),
+                    ("fin_range", "date_fin__range"),
+                    ("team", "team__exact"),
+                    ("inc_open", "is_op__lte"),
+                ]:
+                    val = form.cleaned_data[key]
+                    if key == "team" and val is not None:
+                        val = str(val.id)
+                    if val:
+                        if val[0] != None:
+                            if "range" in query:
+                                val = (
+                                    val[0].strftime("%Y-%m-%d"),
+                                    val[1].strftime("%Y-%m-%d"),
+                                )
+                            if key == "in_stock" and val == "2":
+                                query = "finished__exact"
+                                val = "1"
+                            queries += ["{}={}".format(query, val)]
+                return HttpResponseRedirect(
+                    reverse(
+                        "stock_web:inventory",
+                        args=["search", ";".join(queries), "_", "1"],
+                    )
+                )
+    else:
+        form = CompSearchForm(initial={"in_stock": 1, "inc_open": 1})
+    submiturl = reverse("stock_web:search")
+    cancelurl = reverse("stock_web:listinv")
+    return render(
+        httprequest,
+        "stock_web/searchform.html",
+        {
+            "form": form,
+            "heading": "Enter Component To Search For Solutions Using That Item",
+            "toolbar": _toolbar(httprequest, active="Search"),
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+        },
+    )
+
+
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def listinv(httprequest):
@@ -874,7 +933,8 @@ def inventory(httprequest, search, what, sortby, page):
     elif search == "search" or search == "filter":
         query = dict([q.split("=") for q in what.split(";")])
         if search == "search":
-            for key, value in query.items():
+            title = "Search Results"
+            for key, value in list(query.items()):
                 if "range" in key:
                     query[key] = (
                         value.strip("()").replace("'", "").replace(" ", "").split(",")
@@ -886,8 +946,17 @@ def inventory(httprequest, search, what, sortby, page):
                         value = True
 
                     query[key] = value
-
-            title = "Search Results"
+                if "comp_search" in key:
+                    sol_ids = []
+                    comp_nos = [f"comp{x}" for x in range(1, 11)]
+                    for comp in comp_nos:
+                        search_item = {f"{comp}__internal__batch_number": value}
+                        results = Solutions.objects.filter(**search_item)
+                        for r in results:
+                            sol_ids.append(r.id)
+                    del query["comp_search"]
+                    query["sol_id__in"] = sol_ids
+                    title += f" - Items Containing {value}"
 
         elif search == "filter" and "reagent__name__iexact" in query.keys():
             title = query["reagent__name__iexact"]
@@ -3052,7 +3121,7 @@ def newrecipe(httprequest):
             form = form(httprequest.POST)
             if form.is_valid():
 
-                Recipe.create(form.cleaned_data,httprequest.user)
+                Recipe.create(form.cleaned_data, httprequest.user)
                 messages.info(httprequest, "{} Added".format(form.cleaned_data["name"]))
                 return HttpResponseRedirect(reverse("stock_web:newrecipe"))
     else:

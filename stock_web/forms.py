@@ -559,6 +559,57 @@ class ValeDatesForm(forms.Form):
     )
 
 
+class CompSearchForm(forms.Form):
+    rec_range = fields.DateRangeField(
+        required=False,
+        label="Solution Created Between",
+        input_formats=["%Y-%m-%d"],
+        widget=widgets.DateRangeWidget(
+            format="%Y-%m-%d", attrs={"style": "width:15em"}
+        ),
+    )
+    open_range = fields.DateRangeField(
+        required=False,
+        label="Solution Opened Between",
+        widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
+    )
+    val_range = fields.DateRangeField(
+        required=False,
+        label="Solution Validated Between",
+        widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
+    )
+    fin_range = fields.DateRangeField(
+        required=False,
+        label="Solution Finished Between",
+        widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
+    )
+    team = forms.ModelChoiceField(
+        queryset=Teams.objects.all().order_by("name").exclude(name="ALL"),
+        label="Solution Team",
+        widget=Select2Widget,
+        required=False,
+    )
+    in_stock = forms.ChoiceField(
+        label="Include Finished Items?",
+        choices=[(0, "NO"), (1, "YES"), (2, "Show Only Finished")],
+        widget=Select2Widget,
+    )
+    inc_open = forms.ChoiceField(
+        label="Include Open Items?",
+        choices=[(0, "NO"), (1, "YES")],
+        widget=Select2Widget,
+    )
+    val_status = forms.ChoiceField(
+        label="Validation Status",
+        choices=[(1, "Not Validated"), (0, "Validated")],
+        widget=Select2Widget,
+        required=False,
+    )
+    int_id = forms.CharField(
+        label="Component Stock Number", max_length=4, required=True
+    )
+
+
 class ChangeDefSupForm1(forms.Form):
     name = forms.ModelChoiceField(
         queryset=Reagents.objects.filter(recipe_id=None).order_by("name"),

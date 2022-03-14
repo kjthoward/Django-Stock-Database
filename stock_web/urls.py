@@ -13,6 +13,7 @@ urlpatterns = [
     re_path(r"^newinv/(.*)/$", views.newinv, name="newinv"),
     re_path(r"^search/$", views.search, name="search"),
     re_path(r"^valdates/$", views.valdates, name="valdates"),
+    re_path(r"^compsearch/$", views.compsearch, name="compsearch"),
     re_path(r"^createnewsol/(.*)$", views.createnewsol, name="createnewsol"),
     re_path(r"^newsup/$", views.newsup, name="newsup"),
     re_path(r"^newteam/$", views.newteam, name="newteam"),
