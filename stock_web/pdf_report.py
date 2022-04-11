@@ -23,14 +23,18 @@ def fake_for_pages(body, title, httpresponse, user):
 
     def head_footer(canvas, doc):
         canvas.saveState()
-        P = Paragraph("BROKEN - Contact kieran.howard@ouh.nhs.uk", styleNormal)
+        P = Paragraph(
+            "BROKEN - Contact GeneticsLabsBioinformatics@oxnet.nhs.uk", styleNormal
+        )
         w, h = P.wrap(doc.width, doc.bottomMargin)
         P.drawOn(canvas, doc.leftMargin, h)
         P = Paragraph("Page BUGGED of BROKEN", styleNormal)
         w, h = P.wrap(doc.width, doc.bottomMargin)
         P.drawOn(canvas, doc.width + doc.leftMargin, h)
 
-        P = Paragraph("BUGGED - Contact kieran.howard@ouh.nhs.uk", styleHeading)
+        P = Paragraph(
+            "BUGGED - Contact GeneticsLabsBioinformatics@oxnet.nhs.uk", styleHeading
+        )
         w, h = P.wrap(doc.width + doc.leftMargin + doc.rightMargin, doc.topMargin)
         P.drawOn(canvas, 0, doc.height + doc.topMargin)
         canvas.restoreState()
@@ -113,8 +117,8 @@ def report_gen(body, title, httpresponse, user, shade=False):
 
         canvas.restoreState()
 
-    i=0
-    hash_rows=[]
+    i = 0
+    hash_rows = []
     new_body = []
     for b in body:
         temp = []
@@ -144,7 +148,7 @@ def report_gen(body, title, httpresponse, user, shade=False):
                     temp += [part]
             except:
                 temp += [part]
-        i+=1
+        i += 1
         new_body += [temp]
     TABLE = Table(data=new_body, repeatRows=1)
     TABLE.setStyle(
@@ -159,7 +163,9 @@ def report_gen(body, title, httpresponse, user, shade=False):
     if shade == True:
         for each in set(hash_rows):
             bg_color = colors.red
-            TABLE.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
+            TABLE.setStyle(
+                TableStyle([("BACKGROUND", (0, each), (-1, each), bg_color)])
+            )
     table = []
     table.append(TABLE)
     doc = BaseDocTemplate(

@@ -2492,7 +2492,7 @@ def item(httprequest, pk):
     except:
         messages.success(
             httprequest,
-            "The item you're trying to access does not exist.\n If you think you are getting this message in error please email kieran.howard@ouh.nhs.uk",
+            "The item you're trying to access does not exist.\n If you think you are getting this message in error please email GeneticsLabsBioinformatics@oxnet.nhs.uk",
         )
         return HttpResponseRedirect(reverse("stock_web:listinv"))
     if item.reagent.track_vol == False:
