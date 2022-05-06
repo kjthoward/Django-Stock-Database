@@ -142,6 +142,44 @@ def prime(httprequest):
         return HttpResponseRedirect(reverse("stock_web:listinv"))
 
 
+def add_4OD(httprequest):
+    with transaction.atomic():
+        to_add = []
+        added = 0
+        with open("import.tsv", "rt") as f:
+            for line in f:
+                to_add.append(line.strip("\n"))
+        for item in to_add:
+            reagent, condition, supplier, team, lot_no, po, date_rec, user_rec, date_exp, is_op, date_op, date_val, val_run = item.split("\t")
+            values={}
+            values["num_rec"] = 1
+            print(reagent)
+            values["reagent"] = Reagents.objects.get(name=reagent.strip())
+            print(supplier)
+            values["supplier"] = Suppliers.objects.get(name=supplier.strip())
+            values["team"] =  Teams.objects.get(name=team.strip())
+            values["lot_no"] = lot_no
+            values["cond_rec"] = "GD"
+            values["date_rec"] = datetime.datetime.strptime(date_rec,"%d/%m/%Y")
+            values["po"] = po
+            values["date_exp"] = datetime.datetime.strptime(date_exp, "%d/%m/%Y")
+            user =  User.objects.get(username="4OD")
+            new_item = Inventory.create(values,user)
+            new_item = Inventory.objects.get(internal__batch_number=new_item[0])
+            if int(is_op) == 1:
+                new_item.is_op = True
+                new_item.date_op = datetime.datetime.strptime(date_op, "%d/%m/%Y")
+                new_item.save()
+            if date_val != "":
+                val_values={}
+                val_values["val_date"] = datetime.datetime.strptime(date_val, "%d/%m/%Y")
+                val_values["val_run"] = val_run
+                new_item.validate(val_values, values["reagent"], lot_no, user)
+            added += 1
+        messages.success(httprequest,f"added {added} records")
+        return HttpResponseRedirect(reverse("stock_web:listinv"))
+
+
 def vol_migrate(httprequest):
     open_items = Inventory.objects.filter(is_op=True, finished=False)
     un_open_items = Inventory.objects.filter(is_op=False, finished=False)
