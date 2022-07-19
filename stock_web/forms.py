@@ -417,6 +417,32 @@ class NewReagentForm(forms.ModelForm):
             )
 
 
+class UploadReagentsForm(forms.Form):
+    file = forms.FileField(widget=forms.FileInput(attrs={"accept": "text/csv"}))
+
+    def clean(self):
+        super(UploadReagentsForm, self).clean()
+        if not self.files["file"].name.endswith(".csv"):
+            self.add_error("file", forms.ValidationError("File extension must be .csv"))
+        elif self.files["file"].readline().decode("utf-8").strip().split(",") != [
+            "Name",
+            "Catalogue Number",
+            "Default Supplier",
+            "Default Team",
+            "Minimum Stock Level",
+            "Volume tracked",
+        ]:
+            self.add_error("file", forms.ValidationError("File headers are incorrect, please use the provided template"))
+        else:
+            for line in self.files["file"].readlines():
+                line = line.decode("utf-8").strip()
+                error=False
+                if len(line.split(",")) != 6:
+                    error=True
+                    
+            if error==True:
+                self.add_error("file", forms.ValidationError("File contents format is incorrect, please use the provided template and check that no fields contain a comma"))
+                
 class NewRecipeForm(forms.ModelForm):
     min_count = forms.DecimalField(
         max_digits=7, decimal_places=2, min_value=0, label="Minimum Stock Level"

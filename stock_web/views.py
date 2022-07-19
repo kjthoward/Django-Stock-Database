@@ -13,6 +13,7 @@ from django.db.models.functions import Lower
 from operator import attrgetter
 import openpyxl
 import datetime
+import csv
 import math
 import random
 import string
@@ -50,6 +51,7 @@ from .forms import (
     NewSupForm,
     NewTeamForm,
     NewReagentForm,
+    UploadReagentsForm,
     NewRecipeForm,
     SearchForm,
     ChangeDefSupForm1,
@@ -302,6 +304,10 @@ def _toolbar(httprequest, active=""):
             {"name": "Supplier", "url": reverse("stock_web:newsup")},
             {"name": "Team", "url": reverse("stock_web:newteam")},
             {"name": "Reagent", "url": reverse("stock_web:newreagent")},
+            {
+                "name": "Reagents - Bulk Upload",
+                "url": reverse("stock_web:uploadreagents"),
+            },
             {"name": "Recipe", "url": reverse("stock_web:newrecipe")},
         ]
         toolbar.append(
@@ -3074,6 +3080,80 @@ def newreagent(httprequest):
             "cancelurl": cancelurl,
         },
     )
+
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def uploadreagents(httprequest):
+    form = UploadReagentsForm
+    if httprequest.method == "POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "upload":
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            form = form(httprequest.POST, httprequest.FILES)
+            if form.is_valid():
+                file = form.files["file"]
+                file.seek(0)
+                data = csv.DictReader(file.read().decode().split("\n"))
+                MADE = []
+                ERRORS = []
+                for row in data:
+                    try:
+                        values={}
+                        values["name"] = row["Name"]
+                        values["cat_no"] = row["Catalogue Number"]
+                        values["supplier_def"] = Suppliers.objects.get(name=row["Default Supplier"])
+                        values["team_def"] = Teams.objects.get(name=row["Default Team"])
+                        values["min_count"] = row["Minimum Stock Level"]
+                        values["track_vol"] = True if row["Volume tracked"]==1 else False
+                        reageant = Reagents.create(values).name
+                        MADE.append(f"ADDED {reageant}")
+                    except Exception as e:
+                        ERRORS.append(f"FAILED TO ADD {row['Name']} - {e}")
+                for made in MADE:
+                    messages.info(httprequest, made)
+                for error in ERRORS:
+                    messages.info(httprequest, error)
+                return HttpResponseRedirect(reverse("stock_web:uploadreagents"))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:uploadreagents")
+    cancelurl = reverse("stock_web:listinv")
+    return render(
+        httprequest,
+        "stock_web/uploadreagentsform.html",
+        {
+            "header": ["New Reagent Upload"],
+            "form": form,
+            "toolbar": _toolbar(httprequest, active="new"),
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+        },
+    )
+
+
+def get_template(httprequest):
+    response = HttpResponse(content_type="text/csv")
+    response[
+        "Content-Disposition"
+    ] = 'attachment; filename="reagent_upload_template.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "Name",
+            "Catalogue Number",
+            "Default Supplier",
+            "Default Team",
+            "Minimum Stock Level",
+            "Volume tracked",
+        ]
+    )
+
+    return response
 
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
