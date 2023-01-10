@@ -2691,83 +2691,76 @@ def newinv(httprequest, pk):
         elif item.track_vol == True:
             form = NewProbeForm
         if httprequest.method == "POST":
-            if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
-                return HttpResponseRedirect(
-                    httprequest.session["referer"]
-                    if ("referer" in httprequest.session)
-                    else reverse("stock_web:listinv")
-                )
-            else:
-                form = form(httprequest.POST, instance=item)
-                if form.is_valid():
-                    ids = Inventory.create(form.cleaned_data, httprequest.user)
-                    message = []
-                    if item.track_vol == False:
-                        quant = form.cleaned_data["reagent"].count_no + int(
-                            form.data["num_rec"]
+            form = form(httprequest.POST, instance=item)
+            if form.is_valid():
+                ids = Inventory.create(form.cleaned_data, httprequest.user)
+                message = []
+                if item.track_vol == False:
+                    quant = form.cleaned_data["reagent"].count_no + int(
+                        form.data["num_rec"]
+                    )
+                elif item.track_vol == True:
+                    quant = form.cleaned_data["reagent"].count_no + Decimal(
+                        form.data["vol_rec"]
+                    )
+                if quant < form.cleaned_data["reagent"].min_count:
+                    if form.cleaned_data["reagent"].recipe is not None:
+                        make = "made"
+                    else:
+                        make = "ordered"
+                    message += [
+                        "Current unopened stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(
+                            form.cleaned_data["reagent"].name,
+                            quant,
+                            form.cleaned_data["reagent"].min_count,
+                            make,
                         )
-                    elif item.track_vol == True:
-                        quant = form.cleaned_data["reagent"].count_no + Decimal(
-                            form.data["vol_rec"]
-                        )
-                    if quant < form.cleaned_data["reagent"].min_count:
-                        if form.cleaned_data["reagent"].recipe is not None:
-                            make = "made"
-                        else:
-                            make = "ordered"
+                    ]
+                if item.recipe is None:
+                    items = Inventory.objects.filter(
+                        reagent=form.cleaned_data["reagent"].id,
+                        lot_no=form.cleaned_data["lot_no"],
+                        val_id__gte=0,
+                    )
+                    if len(items) > 0:
                         message += [
-                            "Current unopened stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(
-                                form.cleaned_data["reagent"].name,
-                                quant,
-                                form.cleaned_data["reagent"].min_count,
-                                make,
+                            "THIS ITEM IS VALIDATED. RUN {}".format(
+                                items[0].val.val_run
                             )
                         ]
-                    if item.recipe is None:
-                        items = Inventory.objects.filter(
-                            reagent=form.cleaned_data["reagent"].id,
-                            lot_no=form.cleaned_data["lot_no"],
-                            val_id__gte=0,
+                    else:
+                        message += ["THIS ITEM IS NOT VALIDATED"]
+                    if item.track_vol == False:
+                        messages.error(
+                            httprequest,
+                            "{}x {} added".format(
+                                form.data["num_rec"], form.cleaned_data["reagent"]
+                            ),
                         )
-                        if len(items) > 0:
+                    elif item.track_vol == True:
+                        messages.error(
+                            httprequest,
+                            "1x {}µl of {} added".format(
+                                form.data["vol_rec"], form.cleaned_data["reagent"]
+                            ),
+                        )
+                        if (
+                            Teams.objects.get(pk=int(form.data["team"])).name
+                            == "CYTO"
+                        ):
                             message += [
-                                "THIS ITEM IS VALIDATED. RUN {}".format(
-                                    items[0].val.val_run
-                                )
+                                "Have you updated the FISH Probe manager in StarLIMS?"
                             ]
-                        else:
-                            message += ["THIS ITEM IS NOT VALIDATED"]
-                        if item.track_vol == False:
-                            messages.error(
-                                httprequest,
-                                "{}x {} added".format(
-                                    form.data["num_rec"], form.cleaned_data["reagent"]
-                                ),
-                            )
-                        elif item.track_vol == True:
-                            messages.error(
-                                httprequest,
-                                "1x {}µl of {} added".format(
-                                    form.data["vol_rec"], form.cleaned_data["reagent"]
-                                ),
-                            )
-                            if (
-                                Teams.objects.get(pk=int(form.data["team"])).name
-                                == "CYTO"
-                            ):
-                                message += [
-                                    "Have you updated the FISH Probe manager in StarLIMS?"
-                                ]
-                    if form.cleaned_data["date_exp"] < (
-                        form.cleaned_data["date_rec"] + relativedelta(months=+6)
-                    ):
-                        message += ["ITEM EXPIRES WITHIN 6 MONTHS"]
-                    if message != []:
-                        messages.success(httprequest, " \n".join(message))
-                    messages.error(httprequest, "STOCK NUMBERS:")
-                    for ID in ids:
-                        messages.info(httprequest, ID)
-                    return HttpResponseRedirect(reverse("stock_web:newinv", args=["_"]))
+                if form.cleaned_data["date_exp"] < (
+                    form.cleaned_data["date_rec"] + relativedelta(months=+6)
+                ):
+                    message += ["ITEM EXPIRES WITHIN 6 MONTHS"]
+                if message != []:
+                    messages.success(httprequest, " \n".join(message))
+                messages.error(httprequest, "STOCK NUMBERS:")
+                for ID in ids:
+                    messages.info(httprequest, ID)
+                return HttpResponseRedirect(reverse("stock_web:newinv", args=["_"]))
         else:
             form = form(
                 initial={

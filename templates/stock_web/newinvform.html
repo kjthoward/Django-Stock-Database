@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <form action="{{ submiturl }}" method="post">
+    <form action="{{ submiturl }}" method="post" onsubmit="submit.disabled = true">
       {% csrf_token %}
       <fieldset><legend>{{ heading }}</legend>
           <table onchange="show_accept()">
