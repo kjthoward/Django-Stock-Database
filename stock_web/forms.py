@@ -6,7 +6,16 @@ from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
 from decimal import Decimal
 from bootstrap_daterangepicker import widgets, fields
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams, Comments
+from .models import (
+    Suppliers,
+    Reagents,
+    Internal,
+    Insert,
+    Recipe,
+    Inventory,
+    Teams,
+    Comments,
+)
 from django.contrib.auth.forms import PasswordChangeForm
 
 
@@ -268,6 +277,25 @@ class OpenItemForm(forms.ModelForm):
             )
 
 
+class AddKitInsForm(forms.ModelForm):
+    class Meta:
+        model = Insert
+        fields = "__all__"
+        widgets = {
+            "checked_user": forms.HiddenInput,
+            "reagent": forms.HiddenInput,
+            "date_checked": DateInput(),
+            "location": forms.Textarea(attrs={"style": "height:4em;"}),
+            "action": forms.Textarea(attrs={"style": "height:4em;"}),
+            "date_confirmed": forms.HiddenInput,
+            "confirmed_user": forms.HiddenInput,
+        }
+
+class ConfirmKitInsForm(forms.Form):
+    sure = forms.BooleanField(
+        label="Tick this box and click save If the above information is correct"
+    )
+
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=DateInput(), label="Validation Date")
     val_run = forms.CharField(
@@ -389,6 +417,7 @@ class NewReagentForm(forms.ModelForm):
             "team_def": Select2Widget,
             "storage": forms.HiddenInput,
             "is_active": forms.HiddenInput,
+            "latest_insert": forms.HiddenInput,
         }
         labels = {
             "track_vol": "Tick if this reagent should have it's volume tracked (e.g FISH probe)"
@@ -432,17 +461,28 @@ class UploadReagentsForm(forms.Form):
             "Minimum Stock Level",
             "Volume tracked",
         ]:
-            self.add_error("file", forms.ValidationError("File headers are incorrect, please use the provided template"))
+            self.add_error(
+                "file",
+                forms.ValidationError(
+                    "File headers are incorrect, please use the provided template"
+                ),
+            )
         else:
             for line in self.files["file"].readlines():
                 line = line.decode("utf-8").strip()
-                error=False
+                error = False
                 if len(line.split(",")) != 6:
-                    error=True
-                    
-            if error==True:
-                self.add_error("file", forms.ValidationError("File contents format is incorrect, please use the provided template and check that no fields contain a comma"))
-                
+                    error = True
+
+            if error == True:
+                self.add_error(
+                    "file",
+                    forms.ValidationError(
+                        "File contents format is incorrect, please use the provided template and check that no fields contain a comma"
+                    ),
+                )
+
+
 class NewRecipeForm(forms.ModelForm):
     min_count = forms.DecimalField(
         max_digits=7, decimal_places=2, min_value=0, label="Minimum Stock Level"
@@ -576,6 +616,18 @@ class SearchForm(forms.Form):
         required=False,
     )
 
+
+class InsertDatesForm(forms.Form):
+    rec_range = fields.DateRangeField(
+        required=False,
+        label="Items Received Between",
+        widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
+    )
+    stage = forms.ChoiceField(
+        label="Check Stage",
+        choices=[(0, "ANY"), (1, "No Insert Information"), (2, "Requires Confirmation")],
+        widget=Select2Widget,
+    )
 
 class ValeDatesForm(forms.Form):
     val_range = fields.DateRangeField(
