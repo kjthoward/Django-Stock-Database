@@ -2742,20 +2742,18 @@ def view_kit_ins(httprequest, pk):
             else:
                 link = ""
             urls = [link] * 7
-            if (
-                httprequest.user.is_staff == True
-                and ins.id == Reagents.objects.get(pk=int(pk)).latest_insert_id
-            ):
-                values.append("Copy Version")
-                urls.append(
-                    reverse(
-                        "stock_web:add_kit_ins",
-                        args=[Reagents.objects.get(pk=int(pk)).id, 1],
+            if httprequest.user.is_staff == True:
+                if ins.id == Reagents.objects.get(pk=int(pk)).latest_insert_id:
+                    values.append("Copy Version")
+                    urls.append(
+                        reverse(
+                            "stock_web:add_kit_ins",
+                            args=[Reagents.objects.get(pk=int(pk)).id, 1],
+                        )
                     )
-                )
-            else:
-                values.append("")
-                urls.append("")
+                else:
+                    values.append("")
+                    urls.append("")
             try:
                 val(values[3])
                 urls[3] = values[3]
