@@ -2839,13 +2839,6 @@ def add_man_info(httprequest, pk, copy):
     form = AddKitInsForm
     if item.recipe is not None:
         return HttpResponseRedirect(reverse("stock_web:listinv"))
-    elif item.latest_insert is not None:
-        if item.latest_insert.confirmed_user is None:
-            messages.success(
-                httprequest,
-                "Please confirm the previous insert version before trying to add a new version",
-            )
-            return HttpResponseRedirect(reverse("stock_web:view_man_info", args=[pk]))
     header = [f"Adding Manufacturer’s Instructions for {item.name}"]
     if httprequest.method == "POST":
         form = form(httprequest.POST)
@@ -2875,6 +2868,13 @@ def add_man_info(httprequest, pk, copy):
                 "version": item.latest_insert.version,
             }
         else:
+            if item.latest_insert is not None:
+                if item.latest_insert.confirmed_user is None:
+                    messages.success(
+                        httprequest,
+                        "Please confirm the previous insert version before trying to add a new version",
+                    )
+                    return HttpResponseRedirect(reverse("stock_web:view_man_info", args=[pk]))
             initial = {
                 "date_checked": datetime.datetime.now(),
                 "checked_user": httprequest.user,
