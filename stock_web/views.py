@@ -2719,7 +2719,8 @@ def view_kit_ins(httprequest, pk):
             "Date Checked",
             "Checked By",
             "Location",
-            "Actions Taken",
+            "Initial Actions Taken",
+            "Final Actions Taken",
             "Confirmed By",
             "Date Confirmed",
         ]
@@ -2733,7 +2734,8 @@ def view_kit_ins(httprequest, pk):
                 ins.date_checked,
                 ins.checked_user,
                 textwrap.fill(ins.location),
-                textwrap.fill(ins.action),
+                textwrap.fill(ins.initial_action),
+                textwrap.fill(ins.final_action) if ins.final_action is not None else "",
                 ins.confirmed_user if ins.confirmed_user is not None else "",
                 ins.date_confirmed if ins.confirmed_user is not None else "",
             ]
@@ -2741,7 +2743,7 @@ def view_kit_ins(httprequest, pk):
                 link = reverse("stock_web:confirm_insert", args=[ins.id])
             else:
                 link = ""
-            urls = [link] * 7
+            urls = [link] * 8
             if httprequest.user.is_staff == True:
                 if ins.id == Reagents.objects.get(pk=int(pk)).latest_insert_id:
                     values.append("Copy Version")
@@ -2761,13 +2763,13 @@ def view_kit_ins(httprequest, pk):
                 pass
             body.append((zip(values, urls), False))
         if httprequest.user.is_staff == True:
-            values = ["ADD NEW"] * 8
+            values = ["ADD NEW"] * 9
             urls = [
                 reverse(
                     "stock_web:add_kit_ins",
                     args=[Reagents.objects.get(pk=int(pk)).id, 0],
                 )
-            ] * 8
+            ] * 9
             body.append((zip(values, urls), False))
     context = {
         "header": title,
@@ -2793,7 +2795,7 @@ def confirm_insert(httprequest, pk):
         f"Date Checked: {insert.date_checked}",
         f"Checked By: {insert.checked_user}",
         f"Location: {insert.location}",
-        f"Actions Taken: {insert.action}",
+        f"Actions Taken: {insert.initial_action}",
     ]
     if httprequest.method == "POST":
         if "submit" not in httprequest.POST:
@@ -2805,13 +2807,13 @@ def confirm_insert(httprequest, pk):
         else:
             form = form(httprequest.POST)
             if form.is_valid():
-                if form.cleaned_data["sure"] == True:
-                    insert.confirmed_user = httprequest.user
-                    insert.date_confirmed = datetime.date.today()
-                    insert.save()
-                    return HttpResponseRedirect(
-                        reverse("stock_web:view_kit_ins", args=[insert.reagent_id])
-                    )
+                insert.final_action = form.cleaned_data["final_action"]
+                insert.confirmed_user = httprequest.user
+                insert.date_confirmed = datetime.date.today()
+                insert.save()
+                return HttpResponseRedirect(
+                    reverse("stock_web:view_kit_ins", args=[insert.reagent_id])
+                )
     else:
         form = form()
     return render(
@@ -2865,7 +2867,7 @@ def add_kit_ins(httprequest, pk, copy):
                 "date_checked": datetime.datetime.now(),
                 "checked_user": httprequest.user,
                 "reagent": item,
-                "action": "N/A, same as previous information",
+                "initial_action": "N/A, same as previous information",
                 "location": item.latest_insert.location,
                 "version": item.latest_insert.version,
             }

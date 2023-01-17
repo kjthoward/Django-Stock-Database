@@ -286,15 +286,23 @@ class AddKitInsForm(forms.ModelForm):
             "reagent": forms.HiddenInput,
             "date_checked": DateInput(),
             "location": forms.Textarea(attrs={"style": "height:4em;"}),
-            "action": forms.Textarea(attrs={"style": "height:4em;"}),
+            "initial_action": forms.Textarea(attrs={"style": "height:4em;"}),
+            "final_action": forms.HiddenInput,
             "date_confirmed": forms.HiddenInput,
             "confirmed_user": forms.HiddenInput,
         }
 
+
 class ConfirmKitInsForm(forms.Form):
-    sure = forms.BooleanField(
-        label="Tick this box and click save If the above information is correct"
+    final_action = forms.CharField(
+        required=True,
+        widget=forms.Textarea(attrs={"style": "height:4em;"}),
+        label="Final Action Taken",
     )
+    # sure = forms.BooleanField(
+    #     label="Tick this box and click save If the above information is correct"
+    # )
+
 
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=DateInput(), label="Validation Date")
@@ -625,9 +633,14 @@ class InsertDatesForm(forms.Form):
     )
     stage = forms.ChoiceField(
         label="Check Stage",
-        choices=[(0, "ANY"), (1, "No Insert Information"), (2, "Requires Confirmation")],
+        choices=[
+            (0, "ANY"),
+            (1, "No Insert Information"),
+            (2, "Requires Confirmation"),
+        ],
         widget=Select2Widget,
     )
+
 
 class ValeDatesForm(forms.Form):
     val_range = fields.DateRangeField(

@@ -541,7 +541,9 @@ class Insert(models.Model):
 
     location = models.CharField(max_length=150, verbose_name="Location of Kit Insert")
 
-    action = models.CharField(max_length=150, verbose_name="Action Taken")
+    initial_action = models.CharField(max_length=150, verbose_name="Initial Action Taken")
+
+    final_action = models.CharField(max_length=150, verbose_name="Final Action Taken", blank=True, null=True)
 
     version = models.CharField(max_length=15, verbose_name="Kit Insert Version")
 
@@ -564,9 +566,10 @@ class Insert(models.Model):
 
     @classmethod
     def new(cls, values):
-        if "N/A" in values["action"].upper() or "NO ACTION" in values["action"].upper():
+        if "N/A" in values["initial_action"].upper() or "NO ACTION" in values["initial_action"].upper():
             values["confirmed_user"] = values["checked_user"]
             values["date_confirmed"] = values["date_checked"]
+            values["final_action"] = values["initial_action"]
         ins_id = cls(**values)
         ins_id.save()
         return ins_id
