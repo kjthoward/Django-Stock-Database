@@ -151,6 +151,7 @@ class Reagents(models.Model):
         "Recipe", on_delete=models.PROTECT, blank=True, null=True
     )
     track_vol = models.BooleanField(default=False, verbose_name="Volume Tracked")
+    inserts_req = models.BooleanField(default=True, verbose_name="Will this item come with Manufacturer’s Instructions?")
     is_active = models.BooleanField(default=True)
     latest_insert = models.ForeignKey(
         "Insert",

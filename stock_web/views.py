@@ -1897,6 +1897,9 @@ def _item_context(httprequest, item, undo):
         if item.reagent.latest_insert is not None:
             title.append(item.reagent.latest_insert)
             title_url.append(reverse("stock_web:view_kit_ins", args=[item.reagent.id]))
+        elif item.reagent.inserts_req is False:
+            title.append("Manufacturer’s Instructions are not required for this item")
+            title_url.append("")
         else:
             title.append("KIT INSERT MISSING")
             if user_passes_test(is_admin):
@@ -2675,7 +2678,7 @@ def add_comment(httprequest, pk):
 def view_kit_ins(httprequest, pk):
     if pk == "_":
         title = "Most Recent Kit Insert Information"
-        items = Reagents.objects.filter(is_active=True, recipe=None)
+        items = Reagents.objects.filter(is_active=True, recipe=None, inserts_req=True)
         headings = [
             "Reagent Name",
             "Catalogue Number",
