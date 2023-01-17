@@ -258,8 +258,8 @@ def _toolbar(httprequest, active=""):
                     "glyphicon": "download",
                 },
                 {
-                    "name": "Kit Inserts",
-                    "url": reverse("stock_web:view_kit_ins", args=["_"]),
+                    "name": "Manufacturer’s Instructions",
+                    "url": reverse("stock_web:view_man_info", args=["_"]),
                     "glyphicon": "tags",
                 },
             ],
@@ -329,7 +329,7 @@ def _toolbar(httprequest, active=""):
         search_dropdown = [
             {"name": "Search", "url": reverse("stock_web:search")},
             {
-                "name": "Inserts by Date",
+                "name": "Manufacturer's Info by Date",
                 "url": reverse("stock_web:insertdates", args=["_", "_"]),
             },
             {"name": "Validation Dates", "url": reverse("stock_web:valdates")},
@@ -722,7 +722,7 @@ def insertdates(httprequest, date, stage):
         )
         if stage == 1:
             items = [item for item in items if item.reagent.latest_insert is None]
-            title += " that have no kit insert information"
+            title += " that have no manufacturer’s instructions"
         elif stage == 2:
             items = [item for item in items if item.reagent.latest_insert is not None]
             items = [
@@ -730,7 +730,7 @@ def insertdates(httprequest, date, stage):
                 for item in items
                 if item.reagent.latest_insert.confirmed_user is None
             ]
-            title += " that have a kit insert requiring confirmation"
+            title += " that have a manufacturer’s instructions requiring confirmation"
         reagent_count = collections.Counter([x.reagent for x in items])
         headings = [
             "Reagent Name",
@@ -755,18 +755,18 @@ def insertdates(httprequest, date, stage):
                 count,
             ]
             if item.latest_insert is not None:
-                link = reverse("stock_web:view_kit_ins", args=[item.id, 0])
+                link = reverse("stock_web:view_man_info", args=[item.id, 0])
             elif httprequest.user.is_staff == False:
                 link = ""
             else:
-                link = reverse("stock_web:add_kit_ins", args=[item.id, 0])
+                link = reverse("stock_web:add_man_info", args=[item.id, 0])
             urls = [link, link, link, link, link, link]
             body.append((zip(values, urls), False))
         context = {
             "header": title,
             "headings": headings,
             "body": body,
-            "toolbar": _toolbar(httprequest, active="Kit Inserts"),
+            "toolbar": _toolbar(httprequest, active="Manufacturer’s Instructions"),
         }
         return render(httprequest, "stock_web/list.html", context)
 
@@ -1896,15 +1896,15 @@ def _item_context(httprequest, item, undo):
     elif item.sol is None and undo != "undo":
         if item.reagent.latest_insert is not None:
             title.append(item.reagent.latest_insert)
-            title_url.append(reverse("stock_web:view_kit_ins", args=[item.reagent.id]))
+            title_url.append(reverse("stock_web:view_man_info", args=[item.reagent.id]))
         elif item.reagent.inserts_req is False:
             title.append("Manufacturer’s Instructions are not required for this item")
             title_url.append("")
         else:
-            title.append("KIT INSERT MISSING")
+            title.append("MANUFACTURER'S INSTRUCTIONS MISSING")
             if user_passes_test(is_admin):
                 title_url.append(
-                    reverse("stock_web:add_kit_ins", args=[item.reagent.id, 0])
+                    reverse("stock_web:add_man_info", args=[item.reagent.id, 0])
                 )
             else:
                 title.append("")
@@ -2095,12 +2095,12 @@ def _vol_context(httprequest, item, undo):
     elif item.sol is None and undo != "undo":
         if item.reagent.latest_insert is not None:
             title.append(item.reagent.latest_insert)
-            title_url.append(reverse("stock_web:view_kit_ins", args=[item.reagent.id]))
+            title_url.append(reverse("stock_web:view_man_info", args=[item.reagent.id]))
         else:
-            title.append("KIT INSERT MISSING")
+            title.append("MANUFACTURER'S INSTRUCTIONS MISSING")
             if user_passes_test(is_admin):
                 title_url.append(
-                    reverse("stock_web:add_kit_ins", args=[item.reagent.id, 0])
+                    reverse("stock_web:add_man_info", args=[item.reagent.id, 0])
                 )
             else:
                 title.append("")
@@ -2675,9 +2675,9 @@ def add_comment(httprequest, pk):
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def view_kit_ins(httprequest, pk):
+def view_man_info(httprequest, pk):
     if pk == "_":
-        title = "Most Recent Kit Insert Information"
+        title = "Most Recent Manufacturer’s Instructions"
         items = Reagents.objects.filter(is_active=True, recipe=None, inserts_req=True)
         headings = [
             "Reagent Name",
@@ -2700,20 +2700,20 @@ def view_kit_ins(httprequest, pk):
                 else "NONE",
             ]
             if item.latest_insert is not None:
-                link = reverse("stock_web:view_kit_ins", args=[item.id])
+                link = reverse("stock_web:view_man_info", args=[item.id])
             elif httprequest.user.is_staff == False:
                 link = ""
             else:
-                link = reverse("stock_web:add_kit_ins", args=[item.id, 0])
+                link = reverse("stock_web:add_man_info", args=[item.id, 0])
             urls = [link, link, link, link, link]
             body.append((zip(values, urls), False))
     else:
-        title = f"Kit Insert History for {Reagents.objects.get(pk=int(pk)).name} - {Reagents.objects.get(pk=int(pk)).supplier_def.name}"
+        title = f"Manufacturer’s Instructions History for {Reagents.objects.get(pk=int(pk)).name} - {Reagents.objects.get(pk=int(pk)).supplier_def.name}"
         inserts = Insert.objects.filter(reagent_id=int(pk))
         if len(inserts) == 0:
             return HttpResponseRedirect(
                 reverse(
-                    "stock_web:add_kit_ins",
+                    "stock_web:add_man_info",
                     args=[Reagents.objects.get(pk=int(pk)).id, 0],
                 )
             )
@@ -2752,7 +2752,7 @@ def view_kit_ins(httprequest, pk):
                     values.append("Copy Version")
                     urls.append(
                         reverse(
-                            "stock_web:add_kit_ins",
+                            "stock_web:add_man_info",
                             args=[Reagents.objects.get(pk=int(pk)).id, 1],
                         )
                     )
@@ -2769,7 +2769,7 @@ def view_kit_ins(httprequest, pk):
             values = ["ADD NEW"] * 9
             urls = [
                 reverse(
-                    "stock_web:add_kit_ins",
+                    "stock_web:add_man_info",
                     args=[Reagents.objects.get(pk=int(pk)).id, 0],
                 )
             ] * 9
@@ -2778,7 +2778,7 @@ def view_kit_ins(httprequest, pk):
         "header": title,
         "headings": headings,
         "body": body,
-        "toolbar": _toolbar(httprequest, active="Kit Inserts"),
+        "toolbar": _toolbar(httprequest, active="Manufacturer’s Instructions"),
     }
     return render(httprequest, "stock_web/list.html", context)
 
@@ -2788,11 +2788,11 @@ def view_kit_ins(httprequest, pk):
 def confirm_insert(httprequest, pk):
     insert = Insert.objects.get(pk=pk)
     if insert.confirmed_user is not None:
-        return HttpResponseRedirect(reverse("stock_web:view_kit_ins", args=["_"]))
+        return HttpResponseRedirect(reverse("stock_web:view_man_info", args=["_"]))
     form = ConfirmKitInsForm
     submiturl = reverse("stock_web:confirm_insert", args=[pk])
-    cancelurl = reverse("stock_web:view_kit_ins", args=["_"])
-    toolbar = _toolbar(httprequest, active="Kit Inserts")
+    cancelurl = reverse("stock_web:view_man_info", args=["_"])
+    toolbar = _toolbar(httprequest, active="Manufacturer’s Instructions")
     subheading = [
         f"Version: {insert.version}",
         f"Date Checked: {insert.date_checked}",
@@ -2815,7 +2815,7 @@ def confirm_insert(httprequest, pk):
                 insert.date_confirmed = datetime.date.today()
                 insert.save()
                 return HttpResponseRedirect(
-                    reverse("stock_web:view_kit_ins", args=[insert.reagent_id])
+                    reverse("stock_web:view_man_info", args=[insert.reagent_id])
                 )
     else:
         form = form()
@@ -2834,7 +2834,7 @@ def confirm_insert(httprequest, pk):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def add_kit_ins(httprequest, pk, copy):
+def add_man_info(httprequest, pk, copy):
     item = Reagents.objects.get(pk=int(pk))
     form = AddKitInsForm
     if item.recipe is not None:
@@ -2845,8 +2845,8 @@ def add_kit_ins(httprequest, pk, copy):
                 httprequest,
                 "Please confirm the previous insert version before trying to add a new version",
             )
-            return HttpResponseRedirect(reverse("stock_web:view_kit_ins", args=[pk]))
-    header = [f"Adding kit insert information for {item.name}"]
+            return HttpResponseRedirect(reverse("stock_web:view_man_info", args=[pk]))
+    header = [f"Adding Manufacturer’s Instructions for {item.name}"]
     if httprequest.method == "POST":
         form = form(httprequest.POST)
         if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -2860,9 +2860,9 @@ def add_kit_ins(httprequest, pk, copy):
                 insert = Insert.new(form.cleaned_data)
                 item.latest_insert = insert
                 item.save()
-                messages.success(httprequest, f"Added kit insert: {item.name}")
+                messages.success(httprequest, f"Added Manufacturer’s Instructions: {item.name}")
                 return HttpResponseRedirect(
-                    reverse("stock_web:view_kit_ins", args=[item.pk])
+                    reverse("stock_web:view_man_info", args=[item.pk])
                 )
     else:
         if int(copy) == 1:
@@ -2884,7 +2884,7 @@ def add_kit_ins(httprequest, pk, copy):
             # inital with previous information
             initial=initial
         )
-    submiturl = reverse("stock_web:add_kit_ins", args=[pk, copy])
+    submiturl = reverse("stock_web:add_man_info", args=[pk, copy])
     cancelurl = reverse("stock_web:listinv")
     return render(
         httprequest,
@@ -2892,7 +2892,7 @@ def add_kit_ins(httprequest, pk, copy):
         {
             "header": header,
             "form": form,
-            "toolbar": _toolbar(httprequest, active="Kit Inserts"),
+            "toolbar": _toolbar(httprequest, active="Manufacturer’s Instructions"),
             "submiturl": submiturl,
             "cancelurl": cancelurl,
         },
@@ -3128,7 +3128,7 @@ def newinv(httprequest, pk):
                             lot_no=form.cleaned_data["lot_no"],
                         )
                         if len(items) == int(form.data["num_rec"]):
-                            message += ["NEW LOT NUMBER, CHECK KIT INSERT"]
+                            message += ["NEW LOT NUMBER, CHECK MANUFACTURER'S INSTRUCTIONS"]
                         if item.track_vol == False:
                             messages.error(
                                 httprequest,

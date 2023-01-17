@@ -635,7 +635,7 @@ class InsertDatesForm(forms.Form):
         label="Check Stage",
         choices=[
             (0, "ANY"),
-            (1, "No Insert Information"),
+            (1, "No Manufacturer's Information"),
             (2, "Requires Confirmation"),
         ],
         widget=Select2Widget,
