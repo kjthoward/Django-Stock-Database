@@ -1702,13 +1702,7 @@ def invreport(httprequest, team, filters, what, extension):
             form = form()
     else:
         colours = False
-        if filters != "_":
-            query = dict([q.split("=") for q in filters.split(";")])
-            for key, value in query.items():
-                query[key] = (
-                    value.strip("()").replace("'", "").replace(" ", "").split(",")
-                )
-        elif what == "exp":
+        if what == "exp":
             colours = True
             title = "Items Expiring Soon Report - Downloaded {}".format(
                 datetime.datetime.today().date().strftime("%d-%m-%Y")
@@ -1726,6 +1720,11 @@ def invreport(httprequest, team, filters, what, extension):
             if team != "ALL":
                 items = items.filter(team=team)
             if filters != "_":
+                query = dict([q.split("=") for q in filters.split(";")])
+                for key, value in query.items():
+                    query[key] = (
+                        value.strip("()").replace("'", "").replace(" ", "").split(",")
+                    )
                 items = items.filter(**query)
             if len(items) == 0:
                 messages.success(
