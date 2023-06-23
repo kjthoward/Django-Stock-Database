@@ -716,18 +716,26 @@ def insertdates(httprequest, date, stage):
     else:
         stage = int(stage)
         start, end = date.split(" ")
-        if start!="None" and end!="None":
+        if start != "None" and end != "None":
             title = f"Items received between {start} and {end}"
             items = Inventory.objects.select_related("reagent").filter(
-                date_rec__range=[start, end], sol_id=None, reagent__inserts_req=True)
+                date_rec__range=[start, end], sol_id=None, reagent__inserts_req=True
+            )
         else:
             title = "All Items Received"
-            items = Inventory.objects.select_related("reagent").all().filter(sol_id=None, reagent__inserts_req=True)
+            items = (
+                Inventory.objects.select_related("reagent")
+                .all()
+                .filter(sol_id=None, reagent__inserts_req=True)
+            )
         if stage == 1:
             items = items.filter(reagent__latest_insert_id=None)
             title += " that have no manufacturer’s instructions"
         elif stage == 2:
-            items = items.filter(reagent__latest_insert_id__gt=0, reagent__latest_insert__confirmed_user=None)
+            items = items.filter(
+                reagent__latest_insert_id__gt=0,
+                reagent__latest_insert__confirmed_user=None,
+            )
             title += " that have a manufacturer’s instructions requiring confirmation"
         reagent_count = collections.Counter([x.reagent for x in items])
         headings = [
@@ -2675,7 +2683,9 @@ def add_comment(httprequest, pk):
 def view_man_info(httprequest, pk):
     if pk == "_":
         title = "Most Recent Manufacturer’s Instructions"
-        items = Reagents.objects.select_related("latest_insert").filter(is_active=True, recipe=None, inserts_req=True)
+        items = Reagents.objects.select_related("latest_insert").filter(
+            is_active=True, recipe=None, inserts_req=True
+        )
         headings = [
             "Reagent Name",
             "Catalogue Number",
@@ -2850,7 +2860,9 @@ def add_man_info(httprequest, pk, copy):
                 insert = Insert.new(form.cleaned_data)
                 item.latest_insert = insert
                 item.save()
-                messages.success(httprequest, f"Added Manufacturer’s Instructions: {item.name}")
+                messages.success(
+                    httprequest, f"Added Manufacturer’s Instructions: {item.name}"
+                )
                 return HttpResponseRedirect(
                     reverse("stock_web:view_man_info", args=[item.pk])
                 )
@@ -2871,7 +2883,9 @@ def add_man_info(httprequest, pk, copy):
                         httprequest,
                         "Please confirm the previous insert version before trying to add a new version",
                     )
-                    return HttpResponseRedirect(reverse("stock_web:view_man_info", args=[pk]))
+                    return HttpResponseRedirect(
+                        reverse("stock_web:view_man_info", args=[pk])
+                    )
             initial = {
                 "date_checked": datetime.datetime.now(),
                 "checked_user": httprequest.user,
@@ -2935,7 +2949,24 @@ def recipes(httprequest):
         "Witness Required?",
         "Added By",
     ]
-    items = Recipe.objects.select_related("comp1","comp2","comp3","comp4","comp5","comp6","comp7","comp8","comp9","comp10", "reagent","added_by").all().order_by(Lower("name"))
+    items = (
+        Recipe.objects.select_related(
+            "comp1",
+            "comp2",
+            "comp3",
+            "comp4",
+            "comp5",
+            "comp6",
+            "comp7",
+            "comp8",
+            "comp9",
+            "comp10",
+            "reagent",
+            "added_by",
+        )
+        .all()
+        .order_by(Lower("name"))
+    )
     body = []
 
     for item in items:
@@ -3125,7 +3156,9 @@ def newinv(httprequest, pk):
                             lot_no=form.cleaned_data["lot_no"],
                         )
                         if len(items) == int(form.data["num_rec"]):
-                            message += ["NEW LOT NUMBER, CHECK MANUFACTURER'S INSTRUCTIONS"]
+                            message += [
+                                "NEW LOT NUMBER, CHECK MANUFACTURER'S INSTRUCTIONS"
+                            ]
                         if item.track_vol == False:
                             messages.error(
                                 httprequest,
@@ -3503,6 +3536,9 @@ def uploadreagents(httprequest):
                         values["track_vol"] = (
                             True if row["Volume tracked"] == 1 else False
                         )
+                        values["inserts_req"] = (
+                            True if row["Manufacturers Info Required?"] == 1 else Fasle
+                        )
                         reageant = Reagents.create(values).name
                         MADE.append(f"ADDED {reageant}")
                     except Exception as e:
@@ -3543,6 +3579,7 @@ def get_template(httprequest):
             "Default Team",
             "Minimum Stock Level",
             "Volume tracked",
+            "Manufacturers Info Required?",
         ]
     )
 
