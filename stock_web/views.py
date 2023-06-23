@@ -716,10 +716,14 @@ def insertdates(httprequest, date, stage):
     else:
         stage = int(stage)
         start, end = date.split(" ")
-        title = f"Items received between {start} and {end}"
-        items = Inventory.objects.select_related("reagent").filter(
-            date_rec__range=[start, end]
-        )
+        if start!="None" and end!="None":
+            title = f"Items received between {start} and {end}"
+            items = Inventory.objects.select_related("reagent").filter(
+                date_rec__range=[start, end]
+            )
+        else:
+            title = "All Items Received"
+            items = Inventory.objects.select_related("reagent").all()
         if stage == 1:
             items = [item for item in items if item.reagent.latest_insert is None]
             title += " that have no manufacturer’s instructions"
@@ -755,7 +759,7 @@ def insertdates(httprequest, date, stage):
                 count,
             ]
             if item.latest_insert is not None:
-                link = reverse("stock_web:view_man_info", args=[item.id, 0])
+                link = reverse("stock_web:view_man_info", args=[item.id])
             elif httprequest.user.is_staff == False:
                 link = ""
             else:
