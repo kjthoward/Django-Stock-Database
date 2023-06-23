@@ -3145,7 +3145,10 @@ def newinv(httprequest, pk):
                                 form.data["vol_rec"], form.cleaned_data["reagent"]
                             ),
                         )
-                        if Teams.objects.get(pk=int(form.data["team"])).name == "CYTO":
+                        if (
+                            Teams.objects.get(pk=int(form.data["team"])).name
+                            == "FISH"
+                        ):
                             message += [
                                 "Have you updated the FISH Probe manager in StarLIMS?"
                             ]
