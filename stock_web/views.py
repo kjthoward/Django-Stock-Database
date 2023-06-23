@@ -2746,7 +2746,7 @@ def newinv(httprequest, pk):
                         )
                         if (
                             Teams.objects.get(pk=int(form.data["team"])).name
-                            == "CYTO"
+                            == "FISH"
                         ):
                             message += [
                                 "Have you updated the FISH Probe manager in StarLIMS?"
