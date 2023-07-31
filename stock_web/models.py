@@ -174,6 +174,11 @@ class Reagents(models.Model):
         else:
             return "{} - D/A".format(self.name)
 
+    def show_mi_req(self):
+        if self.inserts_req == False:
+            return self.name
+        else:
+            return "{} - REQUIRED".format(self.name)
 
 first = [
     "A",

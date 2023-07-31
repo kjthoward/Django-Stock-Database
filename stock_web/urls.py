@@ -40,6 +40,7 @@ urlpatterns = [
     re_path(r"^change_password/$", views.change_password, name="change_password"),
     re_path(r"^activteam/$", views.activteam, name="activteam"),
     re_path(r"^activsup/$", views.activsup, name="activsup"),
+    re_path(r"^toggle_mi/$", views.toggle_mi, name="toggle_mi"),
     re_path(r"^activreag/$", views.activreag, name="activreag"),
     re_path(r"^changedefsup/(.*)/$", views.changedefsup, name="changedefsup"),
     re_path(r"^changedefteam/(.*)/$", views.changedefteam, name="changedefteam"),

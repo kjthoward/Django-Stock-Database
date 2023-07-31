@@ -65,6 +65,7 @@ from .forms import (
     ChangeDefTeamForm,
     RemoveSupForm,
     EditSupForm,
+    ToggleMiForm,
     EditTeamForm,
     EditReagForm,
     EditInvForm,
@@ -284,6 +285,7 @@ def _toolbar(httprequest, active=""):
             "name": "(De)Activate Reagents/Recipies",
             "url": reverse("stock_web:activreag"),
         },
+        {"name": "Toggle Manufacturers Inserts Requirement", "url": reverse("stock_web:toggle_mi")},
         {"name": "(De)Activate Suppliers", "url": reverse("stock_web:activsup")},
         {"name": "(De)Activate Team", "url": reverse("stock_web:activteam")},
         {"name": "Remove Suppliers", "url": reverse("stock_web:removesup")},
@@ -751,7 +753,7 @@ def insertdates(httprequest, date, stage):
             values = [
                 item.name,
                 item.cat_no if item.cat_no is not None else "",
-                item.name,
+                item.supplier_def,
                 item.latest_insert.version
                 if item.latest_insert is not None
                 else "NONE",
@@ -2872,7 +2874,7 @@ def add_man_info(httprequest, pk, copy):
                 "date_checked": datetime.datetime.now(),
                 "checked_user": httprequest.user,
                 "reagent": item,
-                "initial_action": "N/A, same as previous information",
+                "initial_action": "N/A, same as previous version",
                 "location": item.latest_insert.location,
                 "version": item.latest_insert.version,
             }
@@ -3540,7 +3542,7 @@ def uploadreagents(httprequest):
                             True if row["Volume tracked"] == 1 else False
                         )
                         values["inserts_req"] = (
-                            True if row["Manufacturers Info Required?"] == 1 else Fasle
+                            True if row["Manufacturers Info Required?"] == 1 else False
                         )
                         reageant = Reagents.create(values).name
                         MADE.append(f"ADDED {reageant}")
@@ -3724,6 +3726,54 @@ def activsup(httprequest):
         form = form()
 
     submiturl = reverse("stock_web:activsup")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+
+    return render(
+        httprequest,
+        "stock_web/form.html",
+        {
+            "header": header,
+            "form": form,
+            "toolbar": toolbar,
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+            "active": "admin",
+        },
+    )
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def toggle_mi(httprequest):
+    header = ["Toggle if Manufacturers Information is required"]
+    form = ToggleMiForm
+    if httprequest.method == "POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                if form.cleaned_data["name"].inserts_req == True:
+                    form.cleaned_data["name"].inserts_req = False
+                    message = "Reagent: {} No Longer Requires Manufacturers information".format(
+                        form.cleaned_data["name"].name
+                    )
+                else:
+                    form.cleaned_data["name"].inserts_req = True
+                    message = "Reagent: {} Now Requires Manufacturers information".format(
+                        form.cleaned_data["name"].name
+                    )
+                form.cleaned_data["name"].save()
+                messages.success(httprequest, message)
+                return HttpResponseRedirect(reverse("stock_web:toggle_mi"))
+    else:
+        form = form()
+
+    submiturl = reverse("stock_web:toggle_mi")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 

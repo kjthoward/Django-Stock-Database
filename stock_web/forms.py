@@ -41,6 +41,11 @@ class ShowActiveModelChoiceField(forms.ModelChoiceField):
         return obj.show_active()
 
 
+class ShowReagentMiChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.show_mi_req()
+
+
 class NewInvForm1(forms.ModelForm):
     reagent = forms.ModelChoiceField(
         queryset=Reagents.objects.all().exclude(is_active=False).order_by("name"),
@@ -832,6 +837,32 @@ class EditSupForm(forms.Form):
             )
             for reagent in Reagents.objects.filter(supplier_def=self.data["name"]):
                 self.add_error("name", forms.ValidationError(reagent))
+
+
+class ToggleMiForm(forms.Form):
+    name = ShowReagentMiChoiceField(
+        queryset=Reagents.objects.all()
+        .exclude(supplier_def__name="Internal")
+        .order_by("name"),
+        widget=Select2Widget,
+        label="Reagent",
+    )
+
+    def clean(self):
+        super(ToggleMiForm, self).clean()
+        if (
+            len(Insert.objects.filter(reagent__name=self.cleaned_data["name"])) > 0
+        ) and (
+            Reagents.objects.get(name=self.cleaned_data["name"]).inserts_req == True
+        ):
+            self.add_error(
+                "name",
+                forms.ValidationError(
+                    "Unable to Removed Manufacturers Information Requirement: {}. Information has already been entered for this reagent.".format(
+                        self.cleaned_data["name"]
+                    )
+                ),
+            )
 
 
 class EditTeamForm(forms.Form):
