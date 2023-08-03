@@ -2700,7 +2700,7 @@ def view_man_info(httprequest, pk):
             values = [
                 item.name,
                 item.cat_no if item.cat_no is not None else "",
-                item.supplier_def.name,
+                item.supplier_def.name if item.supplier_def is not None else "",
                 item.latest_insert.version
                 if item.latest_insert is not None
                 else "NONE",
