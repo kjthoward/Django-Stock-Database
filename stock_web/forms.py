@@ -6,7 +6,16 @@ from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
 from decimal import Decimal
 from bootstrap_daterangepicker import widgets, fields
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Teams, Comments
+from .models import (
+    Suppliers,
+    Reagents,
+    Internal,
+    Insert,
+    Recipe,
+    Inventory,
+    Teams,
+    Comments,
+)
 from django.contrib.auth.forms import PasswordChangeForm
 
 
@@ -30,6 +39,11 @@ class DateInput(forms.DateInput):
 class ShowActiveModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return obj.show_active()
+
+
+class ShowReagentMiChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.show_mi_req()
 
 
 class NewInvForm1(forms.ModelForm):
@@ -268,6 +282,33 @@ class OpenItemForm(forms.ModelForm):
             )
 
 
+class AddKitInsForm(forms.ModelForm):
+    class Meta:
+        model = Insert
+        fields = "__all__"
+        widgets = {
+            "checked_user": forms.HiddenInput,
+            "reagent": forms.HiddenInput,
+            "date_checked": DateInput(),
+            "location": forms.Textarea(attrs={"style": "height:4em;"}),
+            "initial_action": forms.Textarea(attrs={"style": "height:4em;"}),
+            "final_action": forms.HiddenInput,
+            "date_confirmed": forms.HiddenInput,
+            "confirmed_user": forms.HiddenInput,
+        }
+
+
+class ConfirmKitInsForm(forms.Form):
+    final_action = forms.CharField(
+        required=True,
+        widget=forms.Textarea(attrs={"style": "height:4em;"}),
+        label="Final Action Taken",
+    )
+    # sure = forms.BooleanField(
+    #     label="Tick this box and click save If the above information is correct"
+    # )
+
+
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=DateInput(), label="Validation Date")
     val_run = forms.CharField(
@@ -389,6 +430,7 @@ class NewReagentForm(forms.ModelForm):
             "team_def": Select2Widget,
             "storage": forms.HiddenInput,
             "is_active": forms.HiddenInput,
+            "latest_insert": forms.HiddenInput,
         }
         labels = {
             "track_vol": "Tick if this reagent should have it's volume tracked (e.g FISH probe)"
@@ -432,17 +474,28 @@ class UploadReagentsForm(forms.Form):
             "Minimum Stock Level",
             "Volume tracked",
         ]:
-            self.add_error("file", forms.ValidationError("File headers are incorrect, please use the provided template"))
+            self.add_error(
+                "file",
+                forms.ValidationError(
+                    "File headers are incorrect, please use the provided template"
+                ),
+            )
         else:
             for line in self.files["file"].readlines():
                 line = line.decode("utf-8").strip()
-                error=False
+                error = False
                 if len(line.split(",")) != 6:
-                    error=True
-                    
-            if error==True:
-                self.add_error("file", forms.ValidationError("File contents format is incorrect, please use the provided template and check that no fields contain a comma"))
-                
+                    error = True
+
+            if error == True:
+                self.add_error(
+                    "file",
+                    forms.ValidationError(
+                        "File contents format is incorrect, please use the provided template and check that no fields contain a comma"
+                    ),
+                )
+
+
 class NewRecipeForm(forms.ModelForm):
     min_count = forms.DecimalField(
         max_digits=7, decimal_places=2, min_value=0, label="Minimum Stock Level"
@@ -574,6 +627,23 @@ class SearchForm(forms.Form):
         choices=[(1, "Not Validated"), (0, "Validated")],
         widget=Select2Widget,
         required=False,
+    )
+
+
+class InsertDatesForm(forms.Form):
+    rec_range = fields.DateRangeField(
+        required=False,
+        label="Items Received Between",
+        widget=widgets.DateRangeWidget(attrs={"style": "width:15em"}),
+    )
+    stage = forms.ChoiceField(
+        label="Check Stage",
+        choices=[
+            (0, "ANY"),
+            (1, "No Manufacturer's Information"),
+            (2, "Requires Confirmation"),
+        ],
+        widget=Select2Widget,
     )
 
 
@@ -767,6 +837,32 @@ class EditSupForm(forms.Form):
             )
             for reagent in Reagents.objects.filter(supplier_def=self.data["name"]):
                 self.add_error("name", forms.ValidationError(reagent))
+
+
+class ToggleMiForm(forms.Form):
+    name = ShowReagentMiChoiceField(
+        queryset=Reagents.objects.all()
+        .exclude(supplier_def__name="Internal")
+        .order_by("name"),
+        widget=Select2Widget,
+        label="Reagent",
+    )
+
+    def clean(self):
+        super(ToggleMiForm, self).clean()
+        if (
+            len(Insert.objects.filter(reagent__name=self.cleaned_data["name"])) > 0
+        ) and (
+            Reagents.objects.get(name=self.cleaned_data["name"]).inserts_req == True
+        ):
+            self.add_error(
+                "name",
+                forms.ValidationError(
+                    "Unable to Removed Manufacturers Information Requirement: {}. Information has already been entered for this reagent.".format(
+                        self.cleaned_data["name"]
+                    )
+                ),
+            )
 
 
 class EditTeamForm(forms.Form):

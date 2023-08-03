@@ -151,7 +151,15 @@ class Reagents(models.Model):
         "Recipe", on_delete=models.PROTECT, blank=True, null=True
     )
     track_vol = models.BooleanField(default=False, verbose_name="Volume Tracked")
+    inserts_req = models.BooleanField(default=True, verbose_name="Will this item come with Manufacturer’s Instructions?")
     is_active = models.BooleanField(default=True)
+    latest_insert = models.ForeignKey(
+        "Insert",
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        verbose_name="Most Recent Kit Insert",
+    )
 
     @classmethod
     def create(cls, values):
@@ -166,6 +174,11 @@ class Reagents(models.Model):
         else:
             return "{} - D/A".format(self.name)
 
+    def show_mi_req(self):
+        if self.inserts_req == False:
+            return self.name
+        else:
+            return "{} - REQUIRED".format(self.name)
 
 first = [
     "A",
@@ -510,6 +523,62 @@ class Recipe(models.Model):
     def Default_Team(self):
         team = Reagents.objects.get(recipe=self.id)
         return str(team.team_def)
+
+
+class Insert(models.Model):
+    def __str__(self):
+        return "Kit Insert checked {}, by {}".format(
+            datetime.datetime.strftime(self.date_checked, "%d/%m/%Y"), self.checked_user
+        )
+
+    class Meta:
+        verbose_name_plural = "Kit Inserts"
+
+    date_checked = models.DateField(
+        default=datetime.date.today, verbose_name="Date Checked"
+    )
+
+    checked_user = models.ForeignKey(
+        User,
+        limit_choices_to={"is_active": True},
+        on_delete=models.PROTECT,
+        related_name="1+",
+    )
+
+    location = models.CharField(max_length=150, verbose_name="Location of Kit Insert")
+
+    initial_action = models.CharField(max_length=150, verbose_name="Initial Action Taken")
+
+    final_action = models.CharField(max_length=150, verbose_name="Final Action Taken", blank=True, null=True)
+
+    version = models.CharField(max_length=15, verbose_name="Kit Insert Version")
+
+    reagent = models.ForeignKey(
+        "Reagents", limit_choices_to={"is_active": True}, on_delete=models.PROTECT
+    )
+
+    date_confirmed = models.DateField(
+        verbose_name="Date Confrimed", blank=True, null=True
+    )
+
+    confirmed_user = models.ForeignKey(
+        User,
+        limit_choices_to={"is_active": True},
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="2+",
+    )
+
+    @classmethod
+    def new(cls, values):
+        if "N/A" in values["initial_action"].upper() or "NO ACTION" in values["initial_action"].upper():
+            values["confirmed_user"] = values["checked_user"]
+            values["date_confirmed"] = values["date_checked"]
+            values["final_action"] = values["initial_action"]
+        ins_id = cls(**values)
+        ins_id.save()
+        return ins_id
 
 
 class Inventory(models.Model):

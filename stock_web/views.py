@@ -2,6 +2,8 @@ from dateutil.relativedelta import relativedelta
 from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.contrib import messages
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User, Group
@@ -14,11 +16,13 @@ from operator import attrgetter
 import openpyxl
 import datetime
 import csv
+import collections
 import math
 import random
 import string
 import textwrap
 import logging
+import validators
 from decimal import Decimal
 from .prime import PRIME
 from .cyto import ADD_CYTO
@@ -32,6 +36,7 @@ from .models import (
     Internal,
     Validation,
     Recipe,
+    Insert,
     Inventory,
     Solutions,
     VolUsage,
@@ -60,6 +65,7 @@ from .forms import (
     ChangeDefTeamForm,
     RemoveSupForm,
     EditSupForm,
+    ToggleMiForm,
     EditTeamForm,
     EditReagForm,
     EditInvForm,
@@ -75,11 +81,14 @@ from .forms import (
     WitnessForm,
     TeamOnlyForm,
     ValeDatesForm,
+    InsertDatesForm,
     CompSearchForm,
     ChangeExpForm,
     ChangeRecForm,
     ChangeFinForm,
     AddCommentForm,
+    AddKitInsForm,
+    ConfirmKitInsForm,
 )
 
 LOGINURL = settings.LOGIN_URL
@@ -249,6 +258,11 @@ def _toolbar(httprequest, active=""):
                     "url": reverse("stock_web:stockreport", args=["_", "_", "_", "_"]),
                     "glyphicon": "download",
                 },
+                {
+                    "name": "Manufacturer’s Instructions",
+                    "url": reverse("stock_web:view_man_info", args=["_"]),
+                    "glyphicon": "tags",
+                },
             ],
             "left",
         )
@@ -271,6 +285,7 @@ def _toolbar(httprequest, active=""):
             "name": "(De)Activate Reagents/Recipies",
             "url": reverse("stock_web:activreag"),
         },
+        {"name": "Toggle Manufacturers Inserts Requirement", "url": reverse("stock_web:toggle_mi")},
         {"name": "(De)Activate Suppliers", "url": reverse("stock_web:activsup")},
         {"name": "(De)Activate Team", "url": reverse("stock_web:activteam")},
         {"name": "Remove Suppliers", "url": reverse("stock_web:removesup")},
@@ -315,6 +330,10 @@ def _toolbar(httprequest, active=""):
         )
         search_dropdown = [
             {"name": "Search", "url": reverse("stock_web:search")},
+            {
+                "name": "Manufacturer's Info by Date",
+                "url": reverse("stock_web:insertdates", args=["_", "_"]),
+            },
             {"name": "Validation Dates", "url": reverse("stock_web:valdates")},
             {"name": "Component Search", "url": reverse("stock_web:compsearch")},
         ]
@@ -649,6 +668,115 @@ def loginview(httprequest):
                     "WARNING - YOUR BROWSER IS NOT SUPPORTED ON THIS SITE. PLEASE SWITCH TO FIREFOX OR GOOGLE CHROME",
                 )
     return render(httprequest, "stock_web/login.html", {"form": form})
+
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def insertdates(httprequest, date, stage):
+    if date == "_":
+        submiturl = reverse("stock_web:insertdates", args=["_", "_"])
+        cancelurl = reverse("stock_web:listinv")
+        toolbar = _toolbar(httprequest, active="Search")
+        header = "Select Date Range to Search for"
+        sub_header = "Items recieved between the specified date range will be searched"
+        form = InsertDatesForm
+        if httprequest.method == "POST":
+            if (
+                "submit" not in httprequest.POST
+                or "Search" not in httprequest.POST["submit"]
+            ):
+                return HttpResponseRedirect(
+                    httprequest.session["referer"]
+                    if ("referer" in httprequest.session)
+                    else reverse("stock_web:listinv")
+                )
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    start, end = form.cleaned_data["rec_range"]
+                    stage = form.cleaned_data["stage"]
+                    return HttpResponseRedirect(
+                        reverse(
+                            "stock_web:insertdates",
+                            args=[f"{start} {end}", stage],
+                        )
+                    )
+        else:
+            form = form()
+            return render(
+                httprequest,
+                "stock_web/insertsearchform.html",
+                {
+                    "header": header,
+                    "sub_header": sub_header,
+                    "form": form,
+                    "toolbar": toolbar,
+                    "submiturl": submiturl,
+                    "cancelurl": cancelurl,
+                },
+            )
+    else:
+        stage = int(stage)
+        start, end = date.split(" ")
+        if start != "None" and end != "None":
+            title = f"Items received between {start} and {end}"
+            items = Inventory.objects.select_related("reagent").filter(
+                date_rec__range=[start, end], sol_id=None, reagent__inserts_req=True
+            )
+        else:
+            title = "All Items Received"
+            items = (
+                Inventory.objects.select_related("reagent")
+                .all()
+                .filter(sol_id=None, reagent__inserts_req=True)
+            )
+        if stage == 1:
+            items = items.filter(reagent__latest_insert_id=None)
+            title += " that have no manufacturer’s instructions"
+        elif stage == 2:
+            items = items.filter(
+                reagent__latest_insert_id__gt=0,
+                reagent__latest_insert__confirmed_user=None,
+            )
+            title += " that have a manufacturer’s instructions requiring confirmation"
+        reagent_count = collections.Counter([x.reagent for x in items])
+        headings = [
+            "Reagent Name",
+            "Catalogue Number",
+            "Default Supplier",
+            "Latest Insert Version",
+            "Insert Last Checked",
+            "Number Recieved",
+        ]
+        body = []
+        for item, count in reagent_count.items():
+            values = [
+                item.name,
+                item.cat_no if item.cat_no is not None else "",
+                item.supplier_def,
+                item.latest_insert.version
+                if item.latest_insert is not None
+                else "NONE",
+                item.latest_insert.date_checked
+                if item.latest_insert is not None
+                else "NONE",
+                count,
+            ]
+            if item.latest_insert is not None:
+                link = reverse("stock_web:view_man_info", args=[item.id])
+            elif httprequest.user.is_staff == False:
+                link = ""
+            else:
+                link = reverse("stock_web:add_man_info", args=[item.id, 0])
+            urls = [link, link, link, link, link, link]
+            body.append((zip(values, urls), False))
+        context = {
+            "header": title,
+            "headings": headings,
+            "body": body,
+            "toolbar": _toolbar(httprequest, active="Manufacturer’s Instructions"),
+        }
+        return render(httprequest, "stock_web/list.html", context)
 
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
@@ -1582,13 +1710,7 @@ def invreport(httprequest, team, filters, what, extension):
             form = form()
     else:
         colours = False
-        if filters != "_":
-            query = dict([q.split("=") for q in filters.split(";")])
-            for key, value in query.items():
-                query[key] = (
-                    value.strip("()").replace("'", "").replace(" ", "").split(",")
-                )
-        elif what == "exp":
+        if what == "exp":
             colours = True
             title = "Items Expiring Soon Report - Downloaded {}".format(
                 datetime.datetime.today().date().strftime("%d-%m-%Y")
@@ -1606,6 +1728,11 @@ def invreport(httprequest, team, filters, what, extension):
             if team != "ALL":
                 items = items.filter(team=team)
             if filters != "_":
+                query = dict([q.split("=") for q in filters.split(";")])
+                for key, value in query.items():
+                    query[key] = (
+                        value.strip("()").replace("'", "").replace(" ", "").split(",")
+                    )
                 items = items.filter(**query)
             if len(items) == 0:
                 messages.success(
@@ -1773,6 +1900,21 @@ def _item_context(httprequest, item, undo):
                 sol_val = False
                 title.append(str(comp) + " - NOT VALIDATED")
             title_url.append(reverse("stock_web:item", args=[comp.id]))
+    elif item.sol is None and undo != "undo":
+        if item.reagent.latest_insert is not None:
+            title.append(item.reagent.latest_insert)
+            title_url.append(reverse("stock_web:view_man_info", args=[item.reagent.id]))
+        elif item.reagent.inserts_req is False:
+            title.append("Manufacturer’s Instructions are not required for this item")
+            title_url.append("")
+        else:
+            title.append("MANUFACTURER'S INSTRUCTIONS MISSING")
+            if user_passes_test(is_admin):
+                title_url.append(
+                    reverse("stock_web:add_man_info", args=[item.reagent.id, 0])
+                )
+            else:
+                title.append("")
     item_comments = Comments.objects.filter(item=item).order_by("date_made")
     if item_comments is not None:
         for comment in item_comments:
@@ -1957,6 +2099,18 @@ def _vol_context(httprequest, item, undo):
             else:
                 title.append(str(comp) + " - NOT VALIDATED")
             title_url.append(reverse("stock_web:item", args=[comp.id]))
+    elif item.sol is None and undo != "undo":
+        if item.reagent.latest_insert is not None:
+            title.append(item.reagent.latest_insert)
+            title_url.append(reverse("stock_web:view_man_info", args=[item.reagent.id]))
+        else:
+            title.append("MANUFACTURER'S INSTRUCTIONS MISSING")
+            if user_passes_test(is_admin):
+                title_url.append(
+                    reverse("stock_web:add_man_info", args=[item.reagent.id, 0])
+                )
+            else:
+                title.append("")
     if item.val is None:
         title.append("****ITEM NOT VALIDATED****")
         title_url.append("")
@@ -2528,6 +2682,238 @@ def add_comment(httprequest, pk):
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def view_man_info(httprequest, pk):
+    if pk == "_":
+        title = "Most Recent Manufacturer’s Instructions"
+        items = Reagents.objects.select_related("latest_insert").filter(
+            is_active=True, recipe=None, inserts_req=True
+        )
+        headings = [
+            "Reagent Name",
+            "Catalogue Number",
+            "Default Supplier",
+            "Latest Insert Version",
+            "Insert Last Checked",
+        ]
+        body = []
+        for item in items:
+            values = [
+                item.name,
+                item.cat_no if item.cat_no is not None else "",
+                item.supplier_def.name,
+                item.latest_insert.version
+                if item.latest_insert is not None
+                else "NONE",
+                item.latest_insert.date_checked
+                if item.latest_insert is not None
+                else "NONE",
+            ]
+            if item.latest_insert is not None:
+                link = reverse("stock_web:view_man_info", args=[item.id])
+            elif httprequest.user.is_staff == False:
+                link = ""
+            else:
+                link = reverse("stock_web:add_man_info", args=[item.id, 0])
+            urls = [link, link, link, link, link]
+            body.append((zip(values, urls), False))
+    else:
+        title = f"Manufacturer’s Instructions History for {Reagents.objects.get(pk=int(pk)).name} - {Reagents.objects.get(pk=int(pk)).supplier_def.name}"
+        inserts = Insert.objects.filter(reagent_id=int(pk))
+        if len(inserts) == 0:
+            return HttpResponseRedirect(
+                reverse(
+                    "stock_web:add_man_info",
+                    args=[Reagents.objects.get(pk=int(pk)).id, 0],
+                )
+            )
+        headings = [
+            "Version",
+            "Date Checked",
+            "Checked By",
+            "Location",
+            "Initial Actions Taken",
+            "Final Actions Taken",
+            "Confirmed By",
+            "Date Confirmed",
+        ]
+        if httprequest.user.is_staff == True:
+            headings.append("Action")
+        body = []
+        val = URLValidator()
+        for ins in inserts:
+            values = [
+                ins.version,
+                ins.date_checked,
+                ins.checked_user,
+                textwrap.fill(ins.location),
+                textwrap.fill(ins.initial_action),
+                textwrap.fill(ins.final_action) if ins.final_action is not None else "",
+                ins.confirmed_user if ins.confirmed_user is not None else "",
+                ins.date_confirmed if ins.confirmed_user is not None else "",
+            ]
+            if ins.confirmed_user is None and httprequest.user.is_staff == True:
+                link = reverse("stock_web:confirm_insert", args=[ins.id])
+            else:
+                link = ""
+            urls = [link] * 8
+            if httprequest.user.is_staff == True:
+                if ins.id == Reagents.objects.get(pk=int(pk)).latest_insert_id:
+                    values.append("Copy Version")
+                    urls.append(
+                        reverse(
+                            "stock_web:add_man_info",
+                            args=[Reagents.objects.get(pk=int(pk)).id, 1],
+                        )
+                    )
+                else:
+                    values.append("")
+                    urls.append("")
+            try:
+                val(values[3])
+                urls[3] = values[3]
+            except ValidationError as e:
+                pass
+            body.append((zip(values, urls), False))
+        if httprequest.user.is_staff == True:
+            values = ["ADD NEW"] * 9
+            urls = [
+                reverse(
+                    "stock_web:add_man_info",
+                    args=[Reagents.objects.get(pk=int(pk)).id, 0],
+                )
+            ] * 9
+            body.append((zip(values, urls), False))
+    context = {
+        "header": title,
+        "headings": headings,
+        "body": body,
+        "toolbar": _toolbar(httprequest, active="Manufacturer’s Instructions"),
+    }
+    return render(httprequest, "stock_web/list.html", context)
+
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def confirm_insert(httprequest, pk):
+    insert = Insert.objects.get(pk=pk)
+    if insert.confirmed_user is not None:
+        return HttpResponseRedirect(reverse("stock_web:view_man_info", args=["_"]))
+    form = ConfirmKitInsForm
+    submiturl = reverse("stock_web:confirm_insert", args=[pk])
+    cancelurl = reverse("stock_web:view_man_info", args=["_"])
+    toolbar = _toolbar(httprequest, active="Manufacturer’s Instructions")
+    subheading = [
+        f"Version: {insert.version}",
+        f"Date Checked: {insert.date_checked}",
+        f"Checked By: {insert.checked_user}",
+        f"Location: {insert.location}",
+        f"Actions Taken: {insert.initial_action}",
+    ]
+    if httprequest.method == "POST":
+        if "submit" not in httprequest.POST:
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                insert.final_action = form.cleaned_data["final_action"]
+                insert.confirmed_user = httprequest.user
+                insert.date_confirmed = datetime.date.today()
+                insert.save()
+                return HttpResponseRedirect(
+                    reverse("stock_web:view_man_info", args=[insert.reagent_id])
+                )
+    else:
+        form = form()
+    return render(
+        httprequest,
+        "stock_web/form.html",
+        {
+            "subheading": subheading,
+            "form": form,
+            "toolbar": toolbar,
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+        },
+    )
+
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def add_man_info(httprequest, pk, copy):
+    item = Reagents.objects.get(pk=int(pk))
+    form = AddKitInsForm
+    if item.recipe is not None:
+        return HttpResponseRedirect(reverse("stock_web:listinv"))
+    header = [f"Adding Manufacturer’s Instructions for {item.name}"]
+    if httprequest.method == "POST":
+        form = form(httprequest.POST)
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            if form.is_valid():
+                insert = Insert.new(form.cleaned_data)
+                item.latest_insert = insert
+                item.save()
+                messages.success(
+                    httprequest, f"Added Manufacturer’s Instructions: {item.name}"
+                )
+                return HttpResponseRedirect(
+                    reverse("stock_web:view_man_info", args=[item.pk])
+                )
+    else:
+        if int(copy) == 1:
+            initial = {
+                "date_checked": datetime.datetime.now(),
+                "checked_user": httprequest.user,
+                "reagent": item,
+                "initial_action": "N/A, same as previous version",
+                "location": item.latest_insert.location,
+                "version": item.latest_insert.version,
+            }
+        else:
+            if item.latest_insert is not None:
+                if item.latest_insert.confirmed_user is None:
+                    messages.success(
+                        httprequest,
+                        "Please confirm the previous insert version before trying to add a new version",
+                    )
+                    return HttpResponseRedirect(
+                        reverse("stock_web:view_man_info", args=[pk])
+                    )
+            initial = {
+                "date_checked": datetime.datetime.now(),
+                "checked_user": httprequest.user,
+                "reagent": item,
+            }
+        form = form(
+            # inital with previous information
+            initial=initial
+        )
+    submiturl = reverse("stock_web:add_man_info", args=[pk, copy])
+    cancelurl = reverse("stock_web:listinv")
+    return render(
+        httprequest,
+        "stock_web/form.html",
+        {
+            "header": header,
+            "form": form,
+            "toolbar": _toolbar(httprequest, active="Manufacturer’s Instructions"),
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+        },
+    )
+
+
+@user_passes_test(is_logged_in, login_url=LOGINURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
     try:
         item = Inventory.objects.select_related(
@@ -2565,7 +2951,24 @@ def recipes(httprequest):
         "Witness Required?",
         "Added By",
     ]
-    items = Recipe.objects.all().order_by(Lower("name"))
+    items = (
+        Recipe.objects.select_related(
+            "comp1",
+            "comp2",
+            "comp3",
+            "comp4",
+            "comp5",
+            "comp6",
+            "comp7",
+            "comp8",
+            "comp9",
+            "comp10",
+            "reagent",
+            "added_by",
+        )
+        .all()
+        .order_by(Lower("name"))
+    )
     body = []
 
     for item in items:
@@ -2751,16 +3154,47 @@ def newinv(httprequest, pk):
                             message += [
                                 "Have you updated the FISH Probe manager in StarLIMS?"
                             ]
-                if form.cleaned_data["date_exp"] < (
-                    form.cleaned_data["date_rec"] + relativedelta(months=+6)
-                ):
-                    message += ["ITEM EXPIRES WITHIN 6 MONTHS"]
-                if message != []:
-                    messages.success(httprequest, " \n".join(message))
-                messages.error(httprequest, "STOCK NUMBERS:")
-                for ID in ids:
-                    messages.info(httprequest, ID)
-                return HttpResponseRedirect(reverse("stock_web:newinv", args=["_"]))
+                        else:
+                            message += ["THIS ITEM IS NOT VALIDATED"]
+                        items = Inventory.objects.filter(
+                            reagent=form.cleaned_data["reagent"].id,
+                            lot_no=form.cleaned_data["lot_no"],
+                        )
+                        if len(items) == int(form.data["num_rec"]):
+                            message += [
+                                "NEW LOT NUMBER, CHECK MANUFACTURER'S INSTRUCTIONS"
+                            ]
+                        if item.track_vol == False:
+                            messages.error(
+                                httprequest,
+                                "{}x {} added".format(
+                                    form.data["num_rec"], form.cleaned_data["reagent"]
+                                ),
+                            )
+                        elif item.track_vol == True:
+                            messages.error(
+                                httprequest,
+                                "1x {}µl of {} added".format(
+                                    form.data["vol_rec"], form.cleaned_data["reagent"]
+                                ),
+                            )
+                            if (
+                                Teams.objects.get(pk=int(form.data["team"])).name
+                                == "CYTO"
+                            ):
+                                message += [
+                                    "Have you updated the FISH Probe manager in StarLIMS?"
+                                ]
+                    if form.cleaned_data["date_exp"] < (
+                        form.cleaned_data["date_rec"] + relativedelta(months=+6)
+                    ):
+                        message += ["ITEM EXPIRES WITHIN 6 MONTHS"]
+                    if message != []:
+                        messages.success(httprequest, " \n".join(message))
+                    messages.error(httprequest, "STOCK NUMBERS:")
+                    for ID in ids:
+                        messages.info(httprequest, ID)
+                    return HttpResponseRedirect(reverse("stock_web:newinv", args=["_"]))
         else:
             form = form(
                 initial={
@@ -3096,13 +3530,20 @@ def uploadreagents(httprequest):
                 ERRORS = []
                 for row in data:
                     try:
-                        values={}
+                        values = {}
                         values["name"] = row["Name"]
                         values["cat_no"] = row["Catalogue Number"]
-                        values["supplier_def"] = Suppliers.objects.get(name=row["Default Supplier"])
+                        values["supplier_def"] = Suppliers.objects.get(
+                            name=row["Default Supplier"]
+                        )
                         values["team_def"] = Teams.objects.get(name=row["Default Team"])
                         values["min_count"] = row["Minimum Stock Level"]
-                        values["track_vol"] = True if row["Volume tracked"]==1 else False
+                        values["track_vol"] = (
+                            True if row["Volume tracked"] == 1 else False
+                        )
+                        values["inserts_req"] = (
+                            True if row["Manufacturers Info Required?"] == 1 else False
+                        )
                         reageant = Reagents.create(values).name
                         MADE.append(f"ADDED {reageant}")
                     except Exception as e:
@@ -3143,6 +3584,7 @@ def get_template(httprequest):
             "Default Team",
             "Minimum Stock Level",
             "Volume tracked",
+            "Manufacturers Info Required?",
         ]
     )
 
@@ -3284,6 +3726,54 @@ def activsup(httprequest):
         form = form()
 
     submiturl = reverse("stock_web:activsup")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+
+    return render(
+        httprequest,
+        "stock_web/form.html",
+        {
+            "header": header,
+            "form": form,
+            "toolbar": toolbar,
+            "submiturl": submiturl,
+            "cancelurl": cancelurl,
+            "active": "admin",
+        },
+    )
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def toggle_mi(httprequest):
+    header = ["Toggle if Manufacturers Information is required"]
+    form = ToggleMiForm
+    if httprequest.method == "POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(
+                httprequest.session["referer"]
+                if ("referer" in httprequest.session)
+                else reverse("stock_web:listinv")
+            )
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                if form.cleaned_data["name"].inserts_req == True:
+                    form.cleaned_data["name"].inserts_req = False
+                    message = "Reagent: {} No Longer Requires Manufacturers information".format(
+                        form.cleaned_data["name"].name
+                    )
+                else:
+                    form.cleaned_data["name"].inserts_req = True
+                    message = "Reagent: {} Now Requires Manufacturers information".format(
+                        form.cleaned_data["name"].name
+                    )
+                form.cleaned_data["name"].save()
+                messages.success(httprequest, message)
+                return HttpResponseRedirect(reverse("stock_web:toggle_mi"))
+    else:
+        form = form()
+
+    submiturl = reverse("stock_web:toggle_mi")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 

@@ -25,6 +25,7 @@
     var open_range_box= document.getElementById("id_open_range");
     var val_range_box= document.getElementById("id_val_range");
     var fin_range_box= document.getElementById("id_fin_range");
+    var date_checked_box= document.getElementById("id_date_checked");
     // checks dropdowns for account name, if it's 4OD or STOCK_FOLDER
     // sets allow_dates to be true which removes the range limit
     var dropdowns = document.getElementsByClassName("dropdown");
@@ -104,6 +105,12 @@
         date_fin_box.min=change_date(-1);
       }
       date_fin_box.max=change_date(0);
+    }
+    if (date_checked_box != null){
+      if (allow_dates == false){
+        date_checked_box.min=change_date(-1);
+      }
+      date_checked_box.max=change_date(0);
     }
   }
   window.onload= function(){

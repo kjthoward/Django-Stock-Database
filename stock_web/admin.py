@@ -22,6 +22,7 @@ from .models import (
     Suppliers,
     Teams,
     Reagents,
+    Insert,
     VolUsage,
     Internal,
     Validation,
@@ -44,6 +45,10 @@ class Supplier_Admin(admin.ModelAdmin):
 class Team_Admin(admin.ModelAdmin):
     list_display = ("name", "is_active")
     search_fields = ("name",)
+
+class Insert_Admin(admin.ModelAdmin):
+    list_display = ("date_checked", "checked_user", "location")
+    search_fields = ("location", "checked_user")
 
 
 class Reagent_Admin(admin.ModelAdmin):
@@ -215,6 +220,7 @@ admin.site.register(Recipe, Recipe_Admin)
 admin.site.register(Inventory, Inventory_Admin)
 admin.site.register(Solutions, Solution_Admin)
 admin.site.register(ForceReset)
+admin.site.register(Insert, Insert_Admin)
 admin.site.register(Emails, Emails_Admin)
 admin.site.register(Comments, Comments_Admin)
 # Changes titles on Admin Site

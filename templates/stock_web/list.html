@@ -1,5 +1,4 @@
 {% extends "stock_web/stock.html" %}
-
 {% block content %}
 <div class="container-fluid">
 
@@ -21,10 +20,10 @@
                 <th scope="col">{{ item }}</th>
                 {% endfor %}
             </tr>
-            {% for row, low in body %} 
+            {% for row, low in body %}
             <tr {% if low %} scope="col" style="color:red" {% endif %}>
                 {% for entry, url in row %}
-                  <td>{% if url %}<a href="{{ url }}">{% endif %}{{ entry }}{% if url %}</a>{% endif %}</td>
+                  <td>{% if url %}<a href="{{ url }}">{% endif %}{{ entry|wordwrap:50|linebreaksbr }}{% if url %}</a>{% endif %}</td>
                 {% endfor %}
             </tr>
             {% endfor %}
@@ -32,18 +31,3 @@
 
 </div>
 {% endblock content %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
